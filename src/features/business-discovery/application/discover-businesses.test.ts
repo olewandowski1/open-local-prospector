@@ -31,7 +31,7 @@ describe("business discovery workflow", () => {
       brief({ category: "word ".repeat(100), mode: "Thorough" }),
     )
     expect(plan.queries).toHaveLength(8)
-    expect(plan.pagesPerQuery).toBe(2)
+    expect(plan.pagesPerQuery).toBe(1)
     expect(
       oversized.queries.every((query) => query.length <= 400 && query.split(/\s+/u).length <= 50),
     ).toBe(true)
@@ -46,7 +46,7 @@ describe("business discovery workflow", () => {
       Effect.succeed({ results: pages.shift() ?? [], moreResults: false }),
     )
     const execute = makeDiscoveryTaskExecutor(
-      { identifier: "fake-brave", search },
+      { identifier: "fake-runtime-search", search },
       makeSqliteDiscoveryRepository(database.path),
     )
 
@@ -90,33 +90,30 @@ describe("business discovery workflow", () => {
     expect(JSON.parse(raw.raw_attributes)).toEqual({ title: "A", url: "https://example.test/a" })
   })
 
-  it("uses pagination and stops as soon as the requested target is reached", async () => {
+  it("uses bounded query variants and stops as soon as the requested target is reached", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const task = await discoveryTask(database.path, "discovery-target", { mode: "Thorough" })
-    const search = vi.fn<DiscoverySource["search"]>((request) =>
-      Effect.succeed(
-        request.offset === 0
-          ? { results: [result("A"), result("B")], moreResults: true }
-          : { results: [result("C"), result("D"), result("E")], moreResults: true },
-      ),
+    const pages = [[result("A"), result("B")], [result("C"), result("D")], [result("E")]]
+    const search = vi.fn<DiscoverySource["search"]>(() =>
+      Effect.succeed({ results: pages.shift() ?? [], moreResults: false }),
     )
 
     const checkpoint = await Effect.runPromise(
       makeDiscoveryTaskExecutor(
-        { identifier: "fake-brave", search },
+        { identifier: "fake-runtime-search", search },
         makeSqliteDiscoveryRepository(database.path),
       )(task),
     )
 
-    expect(search.mock.calls.map(([request]) => request.offset)).toEqual([0, 1])
+    expect(search.mock.calls.map(([request]) => request.offset)).toEqual([0, 0, 0])
     expect(checkpoint.completionState).toBeUndefined()
     expect(checkpoint.nextTasks).toHaveLength(5)
     expect(new Set(checkpoint.nextTasks?.map((next) => next.businessId)).size).toBe(5)
     expect(
       readRow(database.path, "select queries, discoveries, target_remaining from run_metrics"),
     ).toEqual({
-      queries: 2,
+      queries: 3,
       discoveries: 5,
       target_remaining: 0,
     })
@@ -130,7 +127,7 @@ describe("business discovery workflow", () => {
       Effect.succeed({ results: [], moreResults: false }),
     )
     const execute = makeDiscoveryTaskExecutor(
-      { identifier: "fake-brave", search },
+      { identifier: "fake-runtime-search", search },
       makeSqliteDiscoveryRepository(database.path),
     )
     const workerLayer = Layer.merge(

@@ -12,7 +12,7 @@ try {
       `SQLite: ${result.databasePath}`,
       `Artifacts: ${result.artifactsPath}`,
       `Playwright Chromium: ${result.chromium}`,
-      "Add a Brave Search API key to .env.local when discovery is implemented.",
+      "Discovery uses the selected provider subscription runtime; no search API key is needed.",
       "Provider subscription credentials are not requested or stored by setup.",
     ].join("\n")}\n`,
   )

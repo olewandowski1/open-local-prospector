@@ -3,7 +3,6 @@ import { access, stat, statfs } from "node:fs/promises"
 
 import { Effect, Layer } from "effect"
 
-import { hasBraveSearchConfiguration } from "@/features/local-application/configuration"
 import { inspectLocalDatabase } from "@/features/local-application/infrastructure/database/local-database"
 import {
   canExecuteChromium,
@@ -61,5 +60,4 @@ export const ReadinessProbeLive = Layer.succeed(ReadinessProbe, {
     catch: () => new ReadinessProbeError({ dependency: "playwright" }),
   }),
   chromiumIsExecutable: (path) => Effect.sync(() => canExecuteChromium(path)),
-  braveSearchIsConfigured: Effect.sync(() => hasBraveSearchConfiguration()),
 })

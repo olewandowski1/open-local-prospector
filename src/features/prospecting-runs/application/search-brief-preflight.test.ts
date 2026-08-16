@@ -19,7 +19,6 @@ const krakow: SearchArea = {
 }
 const readyDependencies: readonly DependencyReadiness[] = [
   { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
-  { id: "brave-search", label: "Brave Search", status: "Ready", detail: "Ready" },
   { id: "playwright", label: "Playwright", status: "Ready", detail: "Ready" },
   { id: "disk", label: "Disk", status: "Ready", detail: "Ready" },
 ]
@@ -61,7 +60,7 @@ describe("Search Brief preflight", () => {
 
   it("cannot be ready when a dependency fails", async () => {
     const dependencies = readyDependencies.map((dependency) =>
-      dependency.id === "brave-search" ? { ...dependency, status: "Missing" as const } : dependency,
+      dependency.id === "playwright" ? { ...dependency, status: "Missing" as const } : dependency,
     )
     const result = await run([krakow], dependencies)
     expect(result.ready).toBe(false)

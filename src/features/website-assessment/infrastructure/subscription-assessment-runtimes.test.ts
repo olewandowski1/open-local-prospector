@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
+import type { RuntimeProcessRequest } from "@/features/runtime-settings"
 import type { AssessmentEvidenceEnvelope } from "@/features/website-assessment/application/assessment-runtime"
-import type { RuntimeProcessRequest } from "@/features/website-assessment/infrastructure/direct-runtime-process"
 import {
   makeClaudeAssessmentRuntime,
   makeOpenCodeAssessmentRuntime,

@@ -17,7 +17,6 @@ const berlin: SearchArea = {
 }
 const readyDependencies: readonly DependencyReadiness[] = [
   { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
-  { id: "brave-search", label: "Brave", status: "Ready", detail: "Ready" },
   { id: "playwright", label: "Playwright", status: "Ready", detail: "Ready" },
   { id: "disk", label: "Disk", status: "Ready", detail: "Ready" },
 ]

@@ -102,7 +102,7 @@ test("shows partial business failure and a separate factual Technical Run Log", 
             {
               id: "event-1",
               kind: "DiscoveryResult",
-              sourceIdentifier: "brave-search",
+              sourceIdentifier: "subscription-runtime-web-search",
               resultUrl: "https://example.com/result",
               message: "A public result URL was returned.",
               createdAt: "2026-08-16T10:01:00.000Z",
@@ -117,7 +117,7 @@ test("shows partial business failure and a separate factual Technical Run Log", 
   await expect(page.getByText("Completed with Warnings", { exact: true })).toBeVisible()
   await expect(page.getByText("The isolated browser process exited.")).toBeVisible()
   await expect(page.getByRole("heading", { name: "Technical Run Log" })).toBeVisible()
-  await expect(page.getByText("Source: brave-search")).toBeVisible()
+  await expect(page.getByText("Source: subscription-runtime-web-search")).toBeVisible()
   await expect(page.getByRole("link", { name: "Result URL" })).toHaveAttribute(
     "href",
     "https://example.com/result",

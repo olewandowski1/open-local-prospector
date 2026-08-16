@@ -3,6 +3,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Effect } from "effect"
 import {
+  executeRuntimeProcess,
+  type RuntimeProcess,
+  type RuntimeProcessResult,
+} from "@/features/runtime-settings"
+import {
   type AssessmentRuntime,
   AssessmentRuntimeError,
   assessmentSourceUrls,
@@ -12,11 +17,6 @@ import {
   assessmentOutputJsonSchema,
   decodeAssessmentOutput,
 } from "@/features/website-assessment/domain/assessment-output"
-import {
-  executeRuntimeProcess,
-  type RuntimeProcess,
-  type RuntimeProcessResult,
-} from "@/features/website-assessment/infrastructure/direct-runtime-process"
 
 export function makeClaudeAssessmentRuntime(
   executable: string,
@@ -100,7 +100,11 @@ function makeRuntime(
         (directory) =>
           Effect.gen(function* () {
             const prompt = `${buildAssessmentPrompt(evidence)}\nThe required JSON Schema is trusted application configuration:\n${JSON.stringify(assessmentOutputJsonSchema)}`
-            const result = yield* runProcess({ executable, ...command(directory), input: prompt })
+            const result = yield* runProcess({
+              executable,
+              ...command(directory),
+              input: prompt,
+            }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const raw = yield* Effect.try({
               try: () => parse(result),
               catch: () =>

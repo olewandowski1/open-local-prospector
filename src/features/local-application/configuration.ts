@@ -26,7 +26,3 @@ export function loadLocalApplicationConfig(
     environmentTemplatePath: resolve(workingDirectory, ".env.local.example"),
   }
 }
-
-export function hasBraveSearchConfiguration(environment: LocalEnvironment = process.env): boolean {
-  return Boolean(environment.BRAVE_SEARCH_API_KEY?.trim())
-}

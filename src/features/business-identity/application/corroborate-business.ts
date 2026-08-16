@@ -30,6 +30,7 @@ export function makeIdentityTaskExecutor(source: DiscoverySource, repository: Id
         if (completed) continue
         const page = yield* source
           .search({
+            runtime: context.searchBrief.runtime,
             query,
             count: 10,
             offset: 0,

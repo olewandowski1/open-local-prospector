@@ -5,7 +5,6 @@ import {
   Database,
   FolderOpen,
   type LucideIcon,
-  Search,
 } from "lucide-react"
 import type { ReactNode } from "react"
 
@@ -25,7 +24,6 @@ import type {
 
 const dependencyIcons = {
   sqlite: Database,
-  "brave-search": Search,
   playwright: CircleHelp,
   disk: FolderOpen,
 } as const
@@ -52,8 +50,8 @@ export function SettingsPage({
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight">Local readiness</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Check the on-device dependencies used for discovery and website inspection. Provider
-          subscription logins stay outside this application.
+          Check the on-device dependencies used for local storage and website inspection. Discovery
+          uses the selected provider subscription login, which stays outside this application.
         </p>
       </div>
 
@@ -86,10 +84,10 @@ export function SettingsPage({
 
       <Card className="mt-4 bg-muted/30">
         <CardContent>
-          <p className="text-sm font-medium">Secrets stay local</p>
+          <p className="text-sm font-medium">No search API key required</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Settings only reports whether Brave Search is configured. The API key is never shown,
-            sent to the browser, or written to application logs.
+            Codex, Claude Code, or OpenCode performs discovery through its constrained web-search
+            capability. The application never requests or stores provider credentials.
           </p>
         </CardContent>
       </Card>

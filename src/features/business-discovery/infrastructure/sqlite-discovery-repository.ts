@@ -172,8 +172,8 @@ function recordPage(
         occurrence.result.sourceIdentifier,
         occurrence.result.url,
         occurrence.duplicate
-          ? "Brave result matched an earlier discovery input."
-          : "Brave result created a discovery input.",
+          ? "Web-search result matched an earlier discovery input."
+          : "Web-search result created a discovery input.",
         JSON.stringify({
           query: input.query,
           offset: input.offset,
@@ -190,7 +190,7 @@ function recordPage(
       "DiscoveryQuery",
       input.source,
       null,
-      "A bounded Brave Search query completed.",
+      "A bounded subscription-runtime web search completed.",
       JSON.stringify({
         query: input.query,
         offset: input.offset,

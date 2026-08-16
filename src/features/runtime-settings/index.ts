@@ -13,3 +13,10 @@ export {
   RuntimeProbeLive,
   resolveRuntimeExecutable,
 } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
+export {
+  executeRuntimeProcess,
+  type RuntimeProcess,
+  RuntimeProcessError,
+  type RuntimeProcessRequest,
+  type RuntimeProcessResult,
+} from "@/features/runtime-settings/infrastructure/runtime-process"

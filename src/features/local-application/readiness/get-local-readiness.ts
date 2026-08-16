@@ -16,7 +16,7 @@ export class ReadinessProbeError extends Data.TaggedError("ReadinessProbeError")
 }> {}
 
 export type DependencyReadiness = Readonly<{
-  id: "sqlite" | "brave-search" | "playwright" | "disk"
+  id: "sqlite" | "playwright" | "disk"
   label: string
   status: ReadinessStatus
   detail: string
@@ -29,7 +29,6 @@ export interface ReadinessProbeService {
   readonly availableBytes: (path: string) => Effect.Effect<number, ReadinessProbeError>
   readonly chromiumExecutablePath: Effect.Effect<string, ReadinessProbeError>
   readonly chromiumIsExecutable: (path: string) => Effect.Effect<boolean>
-  readonly braveSearchIsConfigured: Effect.Effect<boolean>
 }
 
 export class ReadinessProbe extends Context.Tag("LocalApplication/ReadinessProbe")<
@@ -42,7 +41,6 @@ export const getLocalReadiness = (config: LocalApplicationConfig) =>
     const probe = yield* ReadinessProbe
     return yield* Effect.all([
       getDatabaseReadiness(config.databasePath, probe),
-      getBraveReadiness(probe),
       getPlaywrightReadiness(probe),
       getDiskReadiness(config.artifactsPath, probe),
     ])
@@ -93,19 +91,6 @@ function getDatabaseReadiness(
           'The database settings are incompatible. Run "pnpm run setup" again.',
         )
   })
-}
-
-function getBraveReadiness(probe: ReadinessProbeService): Effect.Effect<DependencyReadiness> {
-  return Effect.map(probe.braveSearchIsConfigured, (configured) =>
-    configured
-      ? dependency("brave-search", "Brave Search", "Ready", "A server-side API key is configured.")
-      : dependency(
-          "brave-search",
-          "Brave Search",
-          "Missing",
-          "Add BRAVE_SEARCH_API_KEY to .env.local.",
-        ),
-  )
 }
 
 function getPlaywrightReadiness(probe: ReadinessProbeService): Effect.Effect<DependencyReadiness> {

@@ -28,7 +28,7 @@ export function planDiscoveryQueries(searchBrief: SearchBrief): DiscoveryPlan {
   const queryLimit = searchBrief.mode === "Thorough" ? 8 : 4
   return {
     queries: [...new Set(variations.map(boundQuery))].slice(0, queryLimit),
-    pagesPerQuery: searchBrief.mode === "Thorough" ? 2 : 1,
+    pagesPerQuery: 1,
   }
 }
 
@@ -68,6 +68,7 @@ export function makeDiscoveryTaskExecutor(
 
           const page = yield* source
             .search({
+              runtime: searchBrief.runtime,
               query,
               count: RESULTS_PER_PAGE,
               offset,

@@ -30,7 +30,6 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
         searchAreas,
         dependencies: [
           { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
-          { id: "brave-search", label: "Brave Search", status: "Ready", detail: "Ready" },
           { id: "playwright", label: "Playwright", status: "Ready", detail: "Ready" },
           { id: "disk", label: "Artifact storage", status: "Ready", detail: "Ready" },
         ],
@@ -88,8 +87,7 @@ test("keeps confirmation disabled after failed preflight", async ({ page }) => {
         searchAreas: [searchAreas[0]],
         dependencies: [
           { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
-          { id: "brave-search", label: "Brave Search", status: "Missing", detail: "Missing" },
-          { id: "playwright", label: "Playwright", status: "Ready", detail: "Ready" },
+          { id: "playwright", label: "Playwright", status: "Missing", detail: "Missing" },
           { id: "disk", label: "Artifact storage", status: "Ready", detail: "Ready" },
         ],
         runtime: { runtimeId: "codex", label: "Codex CLI", status: "Ready", detail: "Ready" },
@@ -117,6 +115,6 @@ test("keeps confirmation disabled after failed preflight", async ({ page }) => {
     preflightButton.click(),
   ])
 
-  await expect(page.getByText("Brave Search")).toBeVisible()
+  await expect(page.getByText("Playwright")).toBeVisible()
   await expect(page.getByRole("button", { name: "Confirm and create run" })).toBeDisabled()
 })

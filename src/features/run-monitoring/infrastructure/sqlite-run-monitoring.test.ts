@@ -35,7 +35,7 @@ describe("SQLite run monitoring", () => {
         .prepare(
           `insert into technical_run_events
            (id, run_id, kind, source_identifier, result_url, message, details, schema_version, created_at)
-           values (?, ?, 'DiscoveryResult', 'brave-search', 'https://example.com/result',
+           values (?, ?, 'DiscoveryResult', 'subscription-runtime-web-search', 'https://example.com/result',
              'A public result URL was returned.', '{}', 1, ?)`,
         )
         .run(crypto.randomUUID(), run.id, Date.now())
@@ -61,7 +61,7 @@ describe("SQLite run monitoring", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "DiscoveryResult",
-          sourceIdentifier: "brave-search",
+          sourceIdentifier: "subscription-runtime-web-search",
           resultUrl: "https://example.com/result",
         }),
       ]),

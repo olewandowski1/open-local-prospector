@@ -8,6 +8,6 @@ export type {
   DiscoveryPage,
   DiscoveryResult,
 } from "@/features/business-discovery/domain/discovered-business"
-export { makeBraveSearchSource } from "@/features/business-discovery/infrastructure/brave-search-source"
 export { discoveredBusinesses } from "@/features/business-discovery/infrastructure/schema"
 export { makeSqliteDiscoveryRepository } from "@/features/business-discovery/infrastructure/sqlite-discovery-repository"
+export { makeSubscriptionRuntimeSearchSource } from "@/features/business-discovery/infrastructure/subscription-runtime-search-source"

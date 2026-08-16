@@ -1,9 +1,9 @@
 import { Console, Effect, Layer, Option } from "effect"
 
 import {
-  makeBraveSearchSource,
   makeDiscoveryTaskExecutor,
   makeSqliteDiscoveryRepository,
+  makeSubscriptionRuntimeSearchSource,
 } from "@/features/business-discovery"
 import {
   makeIdentityTaskExecutor,
@@ -29,15 +29,6 @@ import {
 } from "@/features/website-inspection"
 
 const localConfig = loadLocalApplicationConfig()
-const braveSearch = makeBraveSearchSource(process.env.BRAVE_SEARCH_API_KEY)
-const executeDiscovery = makeDiscoveryTaskExecutor(
-  braveSearch,
-  makeSqliteDiscoveryRepository(localConfig.databasePath),
-)
-const executeIdentity = makeIdentityTaskExecutor(
-  braveSearch,
-  makeSqliteIdentityRepository(localConfig.databasePath),
-)
 const executeInspection = makeInspectionTaskExecutor(
   makePlaywrightWebsiteInspector(),
   makeSqliteInspectionRepository(localConfig.databasePath),
@@ -51,6 +42,20 @@ const program = Effect.gen(function* () {
   const codexExecutable = yield* resolveRuntimeExecutable("codex")
   const claudeExecutable = yield* resolveRuntimeExecutable("claude")
   const opencodeExecutable = yield* resolveRuntimeExecutable("opencode")
+  const runtimeExecutables = {
+    ...(Option.isSome(codexExecutable) ? { codex: codexExecutable.value } : {}),
+    ...(Option.isSome(claudeExecutable) ? { claude: claudeExecutable.value } : {}),
+    ...(Option.isSome(opencodeExecutable) ? { opencode: opencodeExecutable.value } : {}),
+  }
+  const discoverySource = makeSubscriptionRuntimeSearchSource(runtimeExecutables)
+  const executeDiscovery = makeDiscoveryTaskExecutor(
+    discoverySource,
+    makeSqliteDiscoveryRepository(localConfig.databasePath),
+  )
+  const executeIdentity = makeIdentityTaskExecutor(
+    discoverySource,
+    makeSqliteIdentityRepository(localConfig.databasePath),
+  )
   const assessmentRuntimes = {
     ...(Option.isSome(codexExecutable)
       ? {

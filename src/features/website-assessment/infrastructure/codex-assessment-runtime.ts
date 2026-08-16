@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { Effect } from "effect"
+import { executeRuntimeProcess, type RuntimeProcess } from "@/features/runtime-settings"
 
 import {
   type AssessmentRuntime,
@@ -14,10 +15,6 @@ import {
   assessmentOutputJsonSchema,
   decodeAssessmentOutput,
 } from "@/features/website-assessment/domain/assessment-output"
-import {
-  executeRuntimeProcess,
-  type RuntimeProcess,
-} from "@/features/website-assessment/infrastructure/direct-runtime-process"
 
 export function makeCodexAssessmentRuntime(
   executable: string,
@@ -50,7 +47,7 @@ export function makeCodexAssessmentRuntime(
               arguments: codexArguments(schemaPath, directory),
               input: buildAssessmentPrompt(evidence),
               cwd: directory,
-            })
+            }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const parsed = yield* Effect.try({
               try: () => JSON.parse(result.stdout) as unknown,
               catch: () => transient("malformed-output", "The runtime returned malformed JSON."),

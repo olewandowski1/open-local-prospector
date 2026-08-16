@@ -1,8 +1,12 @@
 import { spawn } from "node:child_process"
 
-import { Effect } from "effect"
+import { Data, Effect } from "effect"
 
-import { AssessmentRuntimeError } from "@/features/website-assessment/application/assessment-runtime"
+export class RuntimeProcessError extends Data.TaggedError("RuntimeProcessError")<{
+  readonly classification: "Transient" | "Blocked" | "Infrastructure"
+  readonly code: string
+  readonly message: string
+}> {}
 
 export type RuntimeProcessRequest = Readonly<{
   executable: string
@@ -19,22 +23,20 @@ export type RuntimeProcessResult = Readonly<{ exitCode: number; stdout: string }
 
 export type RuntimeProcess = (
   request: RuntimeProcessRequest,
-) => Effect.Effect<RuntimeProcessResult, AssessmentRuntimeError>
+) => Effect.Effect<RuntimeProcessResult, RuntimeProcessError>
 
 export const executeRuntimeProcess: RuntimeProcess = (request) => {
   const inputLimit = request.inputLimitBytes ?? 256 * 1024
   const outputLimit = request.outputLimitBytes ?? 128 * 1024
   const timeout = request.timeoutMilliseconds ?? 120_000
   if (Buffer.byteLength(request.input) > inputLimit) {
-    return Effect.fail(
-      runtimeError("Infrastructure", "input-limit", "Assessment input is too large."),
-    )
+    return Effect.fail(runtimeError("Infrastructure", "input-limit", "Runtime input is too large."))
   }
-  return Effect.async<RuntimeProcessResult, AssessmentRuntimeError>((resume) => {
+  return Effect.async<RuntimeProcessResult, RuntimeProcessError>((resume) => {
     let settled = false
     let outputBytes = 0
     const stdout: Buffer[] = []
-    const finish = (effect: Effect.Effect<RuntimeProcessResult, AssessmentRuntimeError>) => {
+    const finish = (effect: Effect.Effect<RuntimeProcessResult, RuntimeProcessError>) => {
       if (settled) return
       settled = true
       clearTimeout(timer)
@@ -49,16 +51,14 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     })
     const timer = setTimeout(() => {
       child.kill()
-      finish(
-        Effect.fail(runtimeError("Transient", "runtime-timeout", "Assessment runtime timed out.")),
-      )
+      finish(Effect.fail(runtimeError("Transient", "runtime-timeout", "Runtime timed out.")))
     }, timeout)
     child.stdout.on("data", (chunk: Buffer) => {
       outputBytes += chunk.byteLength
       if (outputBytes > outputLimit) {
         child.kill()
         finish(
-          Effect.fail(runtimeError("Transient", "output-limit", "Assessment output is too large.")),
+          Effect.fail(runtimeError("Transient", "output-limit", "Runtime output is too large.")),
         )
       } else stdout.push(chunk)
     })
@@ -66,11 +66,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     child.on("error", () =>
       finish(
         Effect.fail(
-          runtimeError(
-            "Blocked",
-            "runtime-unavailable",
-            "Assessment runtime could not be launched.",
-          ),
+          runtimeError("Blocked", "runtime-unavailable", "Runtime could not be launched."),
         ),
       ),
     )
@@ -78,11 +74,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
       if (exitCode !== 0) {
         finish(
           Effect.fail(
-            runtimeError(
-              "Blocked",
-              "runtime-failed",
-              "Assessment runtime exited without a valid result.",
-            ),
+            runtimeError("Blocked", "runtime-failed", "Runtime exited without a valid result."),
           ),
         )
       } else finish(Effect.succeed({ exitCode: 0, stdout: Buffer.concat(stdout).toString("utf8") }))
@@ -123,9 +115,9 @@ function safeRuntimeEnvironment(
 }
 
 function runtimeError(
-  classification: AssessmentRuntimeError["classification"],
+  classification: RuntimeProcessError["classification"],
   code: string,
   message: string,
 ) {
-  return new AssessmentRuntimeError({ classification, code, message })
+  return new RuntimeProcessError({ classification, code, message })
 }

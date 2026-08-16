@@ -25,7 +25,6 @@ function createProbe(overrides: Partial<ReadinessProbeService> = {}): ReadinessP
     availableBytes: () => Effect.succeed(20 * 1024 ** 3),
     chromiumExecutablePath: Effect.succeed("/browsers/chromium"),
     chromiumIsExecutable: () => Effect.succeed(true),
-    braveSearchIsConfigured: Effect.succeed(true),
     ...overrides,
   }
 }
@@ -40,7 +39,7 @@ describe("getLocalReadiness", () => {
   it("reports all local dependencies as ready without exposing a secret", async () => {
     const readiness = await runReadiness(createProbe())
 
-    expect(readiness.map(({ status }) => status)).toEqual(["Ready", "Ready", "Ready", "Ready"])
+    expect(readiness.map(({ status }) => status)).toEqual(["Ready", "Ready", "Ready"])
     expect(JSON.stringify(readiness)).not.toContain("secret-value")
   })
 
@@ -48,14 +47,12 @@ describe("getLocalReadiness", () => {
     const readiness = await runReadiness(
       createProbe({
         pathState: () => Effect.succeed("missing"),
-        braveSearchIsConfigured: Effect.succeed(false),
       }),
     )
 
     expect(readiness).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "sqlite", status: "Missing" }),
-        expect.objectContaining({ id: "brave-search", status: "Missing" }),
         expect.objectContaining({ id: "playwright", status: "Missing" }),
         expect.objectContaining({ id: "disk", status: "Missing" }),
       ]),
@@ -68,8 +65,8 @@ describe("getLocalReadiness", () => {
     )
 
     expect(readiness[0]).toMatchObject({ id: "sqlite", status: "Unreachable" })
-    expect(readiness[2]).toMatchObject({ id: "playwright", status: "Unreachable" })
-    expect(readiness[3]).toMatchObject({ id: "disk", status: "Unreachable" })
+    expect(readiness[1]).toMatchObject({ id: "playwright", status: "Unreachable" })
+    expect(readiness[2]).toMatchObject({ id: "disk", status: "Unreachable" })
   })
 
   it("does not expose an underlying dependency error", async () => {
@@ -88,8 +85,8 @@ describe("getLocalReadiness", () => {
       createProbe({ availableBytes: () => Effect.succeed(512 * 1024 ** 2) }),
     )
 
-    expect(readiness[3]).toMatchObject({ id: "disk", status: "Unreachable" })
-    expect(readiness[3]?.detail).toContain("At least 1 GiB")
+    expect(readiness[2]).toMatchObject({ id: "disk", status: "Unreachable" })
+    expect(readiness[2]?.detail).toContain("At least 1 GiB")
   })
 
   it("rejects an installed Chromium binary that cannot execute", async () => {
@@ -97,7 +94,7 @@ describe("getLocalReadiness", () => {
       createProbe({ chromiumIsExecutable: () => Effect.succeed(false) }),
     )
 
-    expect(readiness[2]).toMatchObject({
+    expect(readiness[1]).toMatchObject({
       id: "playwright",
       status: "Unsupported Version",
     })
