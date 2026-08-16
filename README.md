@@ -19,6 +19,8 @@ pnpm run setup
 pnpm dev
 ```
 
+`pnpm dev` starts the loopback-only Next.js web process and the Effect worker as separate child processes. Set `PROSPECTOR_BUSINESS_CONCURRENCY` from 1 through 4 in `.env.local`; the default is 2. Worker restarts recover expired SQLite leases and resume incomplete tasks from their last committed checkpoint.
+
 `pnpm run setup` creates or migrates the local SQLite database, prepares artifact storage, copies the non-secret `.env.local.example` template when needed, and installs the compatible Playwright Chromium build. It is safe to run repeatedly. Use the explicit `run`: `pnpm setup` is a reserved pnpm command and does not invoke project scripts.
 
 Local state is stored under `.local/` by default and is ignored by Git. Set `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in the terminal running setup when an override is needed, and mirror that non-secret path in `.env.local` for the web application. Add `BRAVE_SEARCH_API_KEY` only to `.env.local` to make Brave Search configuration ready; setup never reads it and its value remains server-side.

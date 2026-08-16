@@ -39,9 +39,16 @@ function createPending(
       }
       database
         .prepare(
-          "insert into prospecting_runs (id, request_id, state, search_brief, created_at) values (?, ?, ?, ?, ?)",
+          "insert into prospecting_runs (id, request_id, state, search_brief, created_at, updated_at) values (?, ?, ?, ?, ?, ?)",
         )
-        .run(run.id, requestId, run.state, JSON.stringify(searchBrief), run.createdAt.getTime())
+        .run(
+          run.id,
+          requestId,
+          run.state,
+          JSON.stringify(searchBrief),
+          run.createdAt.getTime(),
+          run.createdAt.getTime(),
+        )
       database
         .prepare(
           `insert into prospecting_defaults (key, radius_km, category, target_count, mode, updated_at)

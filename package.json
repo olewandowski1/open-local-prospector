@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "setup": "tsx src/features/local-application/setup/main.ts",
-    "dev": "next dev --hostname 127.0.0.1 --port 4310",
+    "dev": "concurrently --kill-others --names web,worker \"pnpm dev:web\" \"pnpm dev:worker\"",
+    "dev:web": "next dev --hostname 127.0.0.1 --port 4310",
+    "dev:worker": "node --watch --env-file-if-exists=.env.local --import tsx src/worker/main.ts",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 4310",
     "format": "biome format --write .",
@@ -16,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "worker:check": "tsx src/worker/main.ts --check",
+    "worker:check": "node --env-file-if-exists=.env.local --import tsx src/worker/main.ts --check",
     "db:generate": "drizzle-kit generate",
     "check": "pnpm check:biome && pnpm check:architecture && pnpm typecheck && pnpm test && pnpm build"
   },
@@ -46,6 +48,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
     "lefthook": "2.1.10",
     "shadcn": "4.18.0",
