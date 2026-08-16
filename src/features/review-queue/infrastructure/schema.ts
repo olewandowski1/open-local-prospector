@@ -35,3 +35,32 @@ export const candidateScores = sqliteTable(
     index("candidate_scores_rank_idx").on(table.qualified, table.total, table.scoredAt),
   ],
 )
+
+export const candidateReviews = sqliteTable("candidate_reviews", {
+  id: text().primaryKey(),
+  scoreId: text("score_id")
+    .notNull()
+    .references(() => candidateScores.id, { onDelete: "cascade" })
+    .unique(),
+  status: text().notNull().default("Unreviewed"),
+  rejectionReason: text("rejection_reason"),
+  rejectionNote: text("rejection_note"),
+  privateNotes: text("private_notes").notNull().default(""),
+  followUpAt: integer("follow_up_at", { mode: "timestamp_ms" }),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+})
+
+export const candidateCorrections = sqliteTable(
+  "candidate_corrections",
+  {
+    id: text().primaryKey(),
+    scoreId: text("score_id")
+      .notNull()
+      .references(() => candidateScores.id, { onDelete: "cascade" }),
+    target: text().notNull(),
+    correctedValue: text("corrected_value").notNull(),
+    note: text().notNull().default(""),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [index("candidate_corrections_history_idx").on(table.scoreId, table.createdAt)],
+)
