@@ -1,4 +1,4 @@
-import { Console, Effect, Layer } from "effect"
+import { Console, Effect, Layer, Option } from "effect"
 
 import {
   makeBraveSearchSource,
@@ -13,6 +13,12 @@ import { loadLocalApplicationConfig, migrateLocalDatabase } from "@/features/loc
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
+import { resolveRuntimeExecutable } from "@/features/runtime-settings"
+import {
+  makeAssessmentTaskExecutor,
+  makeCodexAssessmentRuntime,
+  makeSqliteAssessmentRepository,
+} from "@/features/website-assessment"
 import {
   makeInspectionTaskExecutor,
   makePlaywrightWebsiteInspector,
@@ -38,19 +44,32 @@ const executeInspection = makeInspectionTaskExecutor(
 const program = Effect.gen(function* () {
   const worker = loadWorkerConfiguration()
   yield* Effect.try(() => migrateLocalDatabase(localConfig.databasePath))
+  const codexExecutable = yield* resolveRuntimeExecutable("codex")
+  const assessmentRuntimes = Option.isSome(codexExecutable)
+    ? { codex: makeCodexAssessmentRuntime(codexExecutable.value) }
+    : {}
+  const executeAssessment = makeAssessmentTaskExecutor(
+    makeSqliteAssessmentRepository(localConfig.databasePath),
+    assessmentRuntimes,
+  )
   yield* Console.log(
     `Worker ready with concurrency ${worker.concurrency}; SQLite: ${localConfig.databasePath}`,
   )
   if (!process.argv.includes("--check")) {
-    yield* runWorker(`worker-${process.pid}-${crypto.randomUUID()}`, worker)
+    yield* runWorker(`worker-${process.pid}-${crypto.randomUUID()}`, worker).pipe(
+      Effect.provide(
+        Layer.merge(
+          sqliteRunTaskRepositoryLive(localConfig.databasePath),
+          stageExecutorLive(
+            executeDiscovery,
+            executeIdentity,
+            executeInspection,
+            executeAssessment,
+          ),
+        ),
+      ),
+    )
   }
-}).pipe(
-  Effect.provide(
-    Layer.merge(
-      sqliteRunTaskRepositoryLive(loadLocalApplicationConfig().databasePath),
-      stageExecutorLive(executeDiscovery, executeIdentity, executeInspection),
-    ),
-  ),
-)
+})
 
 await Effect.runPromise(program)

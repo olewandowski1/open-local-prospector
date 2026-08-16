@@ -12,6 +12,8 @@ export const stageExecutorLive = (
   executeDiscovery: DiscoveryTaskExecutor,
   executeIdentity?: DiscoveryTaskExecutor,
   executeInspection?: DiscoveryTaskExecutor,
+  executeAssessment?: DiscoveryTaskExecutor,
+  executeScoring?: DiscoveryTaskExecutor,
 ) =>
   Layer.succeed(StageExecutor, {
     execute: (task) => {
@@ -34,6 +36,9 @@ export const stageExecutorLive = (
       if (task.stage === "InspectWebsite" && executeInspection) {
         return executeInspection(task)
       }
+      if (task.stage === "AssessWebsiteOpportunity" && executeAssessment)
+        return executeAssessment(task)
+      if (task.stage === "ScoreCandidate" && executeScoring) return executeScoring(task)
       return Effect.fail(
         new TaskExecutionError({
           classification: "Permanent",

@@ -2,7 +2,7 @@
 
 Open Local Prospector is a local-first application for finding independent businesses whose public online presence suggests a meaningful website opportunity. Poland is the initial focus. The application is designed for one local user and performs no outreach.
 
-The repository contains the product specification, architecture decisions, a responsive shadcn/7Ovr interface, confirmed Search Brief persistence, durable and controllable Prospecting Run execution, bounded Brave Search discovery, canonical business corroboration and eligibility decisions, isolated Playwright Quick inspection, local SQLite setup, subscription-runtime readiness, dependency diagnostics, a separate worker composition root, and verification tooling. Runtime assessment remains planned MVP work.
+The repository contains the product specification, architecture decisions, a responsive shadcn/7Ovr interface, confirmed Search Brief persistence, durable and controllable Prospecting Run execution, bounded Brave Search discovery, canonical business corroboration and eligibility decisions, isolated Playwright Quick inspection, schema-constrained Codex subscription assessment, local SQLite setup, subscription-runtime readiness, dependency diagnostics, a separate worker composition root, and verification tooling.
 
 ## Requirements
 
@@ -80,7 +80,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Architecture decisions](docs/adr)
 - [Implementation plans](plans/README.md)
 
-Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Brave Web Search discovery and identity-evidence lookup use only its official API and do not scrape consumer result pages. Runtime assessment adapters are not implemented yet. Codex, Claude Code, and OpenCode Go currently support readiness detection and local selection. Do not treat remaining PRD acceptance criteria as current behavior.
+Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Brave Web Search discovery and identity-evidence lookup use only its official API and do not scrape consumer result pages. Codex assessment uses a direct, bounded, no-shell CLI adapter and persists only schema-validated, cited output; Claude Code and OpenCode currently support readiness detection and local selection, with assessment adapters still planned. Do not treat remaining PRD acceptance criteria as current behavior.
 
 ## License
 
