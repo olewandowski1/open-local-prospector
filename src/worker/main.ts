@@ -13,6 +13,11 @@ import { loadLocalApplicationConfig, migrateLocalDatabase } from "@/features/loc
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
+import {
+  makeInspectionTaskExecutor,
+  makePlaywrightWebsiteInspector,
+  makeSqliteInspectionRepository,
+} from "@/features/website-inspection"
 
 const localConfig = loadLocalApplicationConfig()
 const braveSearch = makeBraveSearchSource(process.env.BRAVE_SEARCH_API_KEY)
@@ -23,6 +28,11 @@ const executeDiscovery = makeDiscoveryTaskExecutor(
 const executeIdentity = makeIdentityTaskExecutor(
   braveSearch,
   makeSqliteIdentityRepository(localConfig.databasePath),
+)
+const executeInspection = makeInspectionTaskExecutor(
+  makePlaywrightWebsiteInspector(),
+  makeSqliteInspectionRepository(localConfig.databasePath),
+  localConfig.artifactsPath,
 )
 
 const program = Effect.gen(function* () {
@@ -38,7 +48,7 @@ const program = Effect.gen(function* () {
   Effect.provide(
     Layer.merge(
       sqliteRunTaskRepositoryLive(loadLocalApplicationConfig().databasePath),
-      stageExecutorLive(executeDiscovery, executeIdentity),
+      stageExecutorLive(executeDiscovery, executeIdentity, executeInspection),
     ),
   ),
 )

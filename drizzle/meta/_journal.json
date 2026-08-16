@@ -50,6 +50,13 @@
       "when": 1786884065115,
       "tag": "0006_pale_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1786884727234,
+      "tag": "0007_typical_sprite",
+      "breakpoints": true
     }
   ]
 }

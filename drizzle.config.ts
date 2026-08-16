@@ -10,6 +10,7 @@ export default defineConfig({
     "./src/features/run-monitoring/infrastructure/schema.ts",
     "./src/features/business-discovery/infrastructure/schema.ts",
     "./src/features/business-identity/infrastructure/schema.ts",
+    "./src/features/website-inspection/infrastructure/schema.ts",
   ],
   out: "./drizzle",
   dbCredentials: {

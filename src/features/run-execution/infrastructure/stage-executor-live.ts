@@ -11,6 +11,7 @@ type DiscoveryTaskExecutor = (task: RunTask) => Effect.Effect<TaskCheckpoint, Ta
 export const stageExecutorLive = (
   executeDiscovery: DiscoveryTaskExecutor,
   executeIdentity?: DiscoveryTaskExecutor,
+  executeInspection?: DiscoveryTaskExecutor,
 ) =>
   Layer.succeed(StageExecutor, {
     execute: (task) => {
@@ -29,6 +30,9 @@ export const stageExecutorLive = (
       }
       if (task.stage === "CorroborateBusiness" && executeIdentity) {
         return executeIdentity(task)
+      }
+      if (task.stage === "InspectWebsite" && executeInspection) {
+        return executeInspection(task)
       }
       return Effect.fail(
         new TaskExecutionError({
