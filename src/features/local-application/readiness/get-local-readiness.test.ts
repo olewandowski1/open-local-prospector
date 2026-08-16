@@ -5,6 +5,7 @@ import type { LocalApplicationConfig } from "@/features/local-application/config
 import {
   getLocalReadiness,
   ReadinessProbe,
+  ReadinessProbeError,
   type ReadinessProbeService,
 } from "@/features/local-application/readiness/get-local-readiness"
 
@@ -23,6 +24,7 @@ function createProbe(overrides: Partial<ReadinessProbeService> = {}): ReadinessP
     pathIsWritable: () => Effect.succeed(true),
     availableBytes: () => Effect.succeed(20 * 1024 ** 3),
     chromiumExecutablePath: Effect.succeed("/browsers/chromium"),
+    chromiumIsExecutable: () => Effect.succeed(true),
     braveSearchIsConfigured: Effect.succeed(true),
     ...overrides,
   }
@@ -72,7 +74,9 @@ describe("getLocalReadiness", () => {
 
   it("does not expose an underlying dependency error", async () => {
     const readiness = await runReadiness(
-      createProbe({ inspectDatabase: () => Effect.fail(new Error("secret-value")) }),
+      createProbe({
+        inspectDatabase: () => Effect.fail(new ReadinessProbeError({ dependency: "sqlite" })),
+      }),
     )
 
     expect(readiness[0]).toMatchObject({ id: "sqlite", status: "Unreachable" })
@@ -86,5 +90,16 @@ describe("getLocalReadiness", () => {
 
     expect(readiness[3]).toMatchObject({ id: "disk", status: "Unreachable" })
     expect(readiness[3]?.detail).toContain("At least 1 GiB")
+  })
+
+  it("rejects an installed Chromium binary that cannot execute", async () => {
+    const readiness = await runReadiness(
+      createProbe({ chromiumIsExecutable: () => Effect.succeed(false) }),
+    )
+
+    expect(readiness[2]).toMatchObject({
+      id: "playwright",
+      status: "Unsupported Version",
+    })
   })
 })

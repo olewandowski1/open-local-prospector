@@ -19,4 +19,4 @@
 
 Implemented an idempotent host-native setup command with configurable SQLite storage, per-migration transactions, ignored local artifacts, a non-secret environment template, and Playwright Chromium verification. Added an Effect-backed Settings readiness view for SQLite, Brave Search configuration, Playwright, and usable disk capacity without exposing secrets.
 
-Verified by running setup twice, `pnpm check` (Biome, architecture boundaries, TypeScript, 44 unit/integration tests, and production build), and `pnpm test:e2e` (8 passed, 2 expected platform skips). Review findings were addressed before final resolution.
+Verified by running setup twice, `pnpm check` (Biome, architecture boundaries, TypeScript, 45 unit/integration tests, and production build), and `pnpm test:e2e` (8 passed, 2 expected platform skips). Review findings were addressed before final resolution.

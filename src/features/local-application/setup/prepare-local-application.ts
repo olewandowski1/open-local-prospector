@@ -1,12 +1,11 @@
 import { spawnSync } from "node:child_process"
-import { accessSync, constants, copyFileSync, existsSync, mkdirSync } from "node:fs"
+import { constants, copyFileSync, existsSync, mkdirSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname } from "node:path"
 
-import { chromium } from "playwright"
-
 import type { LocalApplicationConfig } from "@/features/local-application/configuration"
 import { migrateLocalDatabase } from "@/features/local-application/infrastructure/database/local-database"
+import { canExecuteChromium } from "@/features/local-application/infrastructure/playwright/chromium-readiness"
 
 export type SetupDependencies = Readonly<{
   ensureDirectory(path: string): void
@@ -64,12 +63,7 @@ function ensureEnvironmentFile(templatePath: string, destinationPath: string): v
 }
 
 function isChromiumReady(): boolean {
-  try {
-    accessSync(chromium.executablePath(), constants.X_OK)
-    return true
-  } catch {
-    return false
-  }
+  return canExecuteChromium()
 }
 
 function installChromium(): void {

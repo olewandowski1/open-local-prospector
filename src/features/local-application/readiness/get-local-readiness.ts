@@ -1,20 +1,19 @@
-import { constants } from "node:fs"
-import { access, stat, statfs } from "node:fs/promises"
+import { Context, Data, Effect, Either } from "effect"
 
-import { Context, Effect, Either, Layer } from "effect"
-import { chromium } from "playwright"
-
-import {
-  hasBraveSearchConfiguration,
-  type LocalApplicationConfig,
-} from "@/features/local-application/configuration"
-import {
-  type DatabaseHealth,
-  inspectLocalDatabase,
-} from "@/features/local-application/infrastructure/database/local-database"
+import type { LocalApplicationConfig } from "@/features/local-application/configuration"
 
 export type ReadinessStatus = "Ready" | "Missing" | "Unreachable" | "Unsupported Version"
 export type PathState = "present" | "missing" | "unreachable"
+
+export type DatabaseHealth = Readonly<{
+  journalMode: string
+  foreignKeys: boolean
+  busyTimeoutMilliseconds: number
+}>
+
+export class ReadinessProbeError extends Data.TaggedError("ReadinessProbeError")<{
+  readonly dependency: "sqlite" | "disk" | "playwright"
+}> {}
 
 export type DependencyReadiness = Readonly<{
   id: "sqlite" | "brave-search" | "playwright" | "disk"
@@ -24,11 +23,12 @@ export type DependencyReadiness = Readonly<{
 }>
 
 export interface ReadinessProbeService {
-  readonly inspectDatabase: (path: string) => Effect.Effect<DatabaseHealth, unknown>
+  readonly inspectDatabase: (path: string) => Effect.Effect<DatabaseHealth, ReadinessProbeError>
   readonly pathState: (path: string) => Effect.Effect<PathState>
   readonly pathIsWritable: (path: string) => Effect.Effect<boolean>
-  readonly availableBytes: (path: string) => Effect.Effect<number, unknown>
-  readonly chromiumExecutablePath: Effect.Effect<string, unknown>
+  readonly availableBytes: (path: string) => Effect.Effect<number, ReadinessProbeError>
+  readonly chromiumExecutablePath: Effect.Effect<string, ReadinessProbeError>
+  readonly chromiumIsExecutable: (path: string) => Effect.Effect<boolean>
   readonly braveSearchIsConfigured: Effect.Effect<boolean>
 }
 
@@ -121,12 +121,20 @@ function getPlaywrightReadiness(probe: ReadinessProbeService): Effect.Effect<Dep
     }
 
     const state = yield* probe.pathState(executable.right)
-    if (state === "present") {
+    if (state === "present" && (yield* probe.chromiumIsExecutable(executable.right))) {
       return dependency(
         "playwright",
         "Playwright Chromium",
         "Ready",
         "Compatible browser installed.",
+      )
+    }
+    if (state === "present") {
+      return dependency(
+        "playwright",
+        "Playwright Chromium",
+        "Unsupported Version",
+        'The installed browser cannot start. Run "pnpm exec playwright install chromium" again.',
       )
     }
     return state === "missing"
@@ -209,51 +217,3 @@ function formatBytes(bytes: number): string {
   const gibibytes = bytes / 1024 ** 3
   return `${gibibytes.toFixed(gibibytes >= 10 ? 0 : 1)} GiB`
 }
-
-function getPathState(path: string): Effect.Effect<PathState> {
-  return Effect.tryPromise({
-    try: () => stat(path),
-    catch: (error) => error,
-  }).pipe(
-    Effect.match({
-      onFailure: (error) =>
-        isNodeError(error) && error.code === "ENOENT" ? "missing" : "unreachable",
-      onSuccess: () => "present",
-    }),
-  )
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error
-}
-
-export const ReadinessProbeLive = Layer.succeed(ReadinessProbe, {
-  inspectDatabase: (path) =>
-    Effect.try({
-      try: () => inspectLocalDatabase(path),
-      catch: (error) => error,
-    }),
-  pathState: getPathState,
-  pathIsWritable: (path) =>
-    Effect.promise(async () => {
-      try {
-        await access(path, constants.W_OK)
-        return true
-      } catch {
-        return false
-      }
-    }),
-  availableBytes: (path) =>
-    Effect.tryPromise({
-      try: async () => {
-        const storage = await statfs(path)
-        return Number(storage.bavail) * Number(storage.bsize)
-      },
-      catch: (error) => error,
-    }),
-  chromiumExecutablePath: Effect.try({
-    try: () => chromium.executablePath(),
-    catch: (error) => error,
-  }),
-  braveSearchIsConfigured: Effect.sync(() => hasBraveSearchConfiguration()),
-})
