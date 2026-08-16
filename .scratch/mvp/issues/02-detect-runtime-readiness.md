@@ -18,4 +18,4 @@
 
 Implemented one Effect-backed runtime readiness contract for Codex CLI, Claude Code, and OpenCode. Production probes resolve only application-owned executable candidates, launch them directly with fixed version/status arguments and no shell, bound time/output, sanitize the inherited environment, and reduce supported CLI output to status and version metadata. Settings provides terminal-only remediation and persists only the selected ready runtime in SQLite.
 
-Verified with fixtures for all five readiness states across all three adapters, subprocess safety and bounded-output tests, SQLite preference restoration, live local provider checks, `pnpm check` (69 tests and production build), and `pnpm test:e2e` (10 passed, 2 expected platform skips).
+Verified with fixtures for all five readiness states across all three adapters, strict subscription-status parsing, Effect-native subprocess timeout/output bounds, SQLite preference migration and restoration, live local provider checks, `pnpm check` (71 tests and production build), and `pnpm test:e2e` (10 passed, 2 expected platform skips).

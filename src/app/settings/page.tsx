@@ -14,11 +14,12 @@ import {
 import {
   getAllRuntimeReadiness,
   getRuntimeReadiness,
+  isRuntimeId,
   type RuntimeId,
-  runtimeIds,
 } from "@/features/runtime-settings/application/runtime-readiness"
 import { runtimePreferenceLive } from "@/features/runtime-settings/infrastructure/runtime-preference-live"
 import { RuntimeProbeLive } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
+import { RuntimeSettingsSection } from "@/features/runtime-settings/presentation/runtime-settings-section"
 
 async function selectRuntime(formData: FormData): Promise<void> {
   "use server"
@@ -53,16 +54,13 @@ export default async function SettingsRoute() {
 
   return (
     <AppShell>
-      <SettingsPage
-        readiness={readiness}
-        runtimes={runtimes}
-        selectedRuntime={Option.getOrUndefined(selected)}
-        selectRuntime={selectRuntime}
-      />
+      <SettingsPage readiness={readiness}>
+        <RuntimeSettingsSection
+          runtimes={runtimes}
+          selectedRuntime={Option.getOrUndefined(selected)}
+          selectRuntime={selectRuntime}
+        />
+      </SettingsPage>
     </AppShell>
   )
-}
-
-function isRuntimeId(value: string): value is RuntimeId {
-  return runtimeIds.some((runtimeId) => runtimeId === value)
 }

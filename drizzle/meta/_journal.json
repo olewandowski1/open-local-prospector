@@ -8,6 +8,13 @@
       "when": 1786877509057,
       "tag": "0000_prepare_local_application",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786879863686,
+      "tag": "0001_runtime_preferences",
+      "breakpoints": true
     }
   ]
 }

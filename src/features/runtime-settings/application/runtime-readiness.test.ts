@@ -15,12 +15,17 @@ const readyAuthentication: Record<RuntimeId, RuntimeCommandResult> = {
   codex: { exitCode: 0, stdout: "Logged in using ChatGPT", stderr: "" },
   claude: {
     exitCode: 0,
-    stdout: JSON.stringify({ loggedIn: true, subscriptionType: "pro", accessToken: "secret" }),
+    stdout: JSON.stringify({
+      loggedIn: true,
+      authMethod: "claude.ai",
+      apiProvider: "firstParty",
+      subscriptionType: "pro",
+    }),
     stderr: "",
   },
   opencode: {
     exitCode: 0,
-    stdout: "Credentials /private/path\nOpenCode Zen oauth\n1 credential",
+    stdout: "Credentials /private/path\nOpenCode Go oauth\n1 credential",
     stderr: "",
   },
 }
@@ -109,9 +114,33 @@ describe.each(["codex", "claude", "opencode"] as const)("%s runtime readiness", 
   })
 })
 
-it("discards account and credential fields returned by provider clients", async () => {
+it("returns only readiness metadata from provider status output", async () => {
   const result = await runProbe("claude", serviceFor("claude", "Ready"))
 
-  expect(JSON.stringify(result)).not.toContain("secret")
   expect(JSON.stringify(result)).not.toContain("subscriptionType")
+})
+
+it("rejects a status response containing an undocumented field", async () => {
+  let call = 0
+  const result = await runProbe("claude", {
+    resolveExecutable: () => Effect.succeed(Option.some("/bin/claude")),
+    execute: () => {
+      call += 1
+      return Effect.succeed(
+        call === 1
+          ? { exitCode: 0, stdout: versionOutput.claude, stderr: "" }
+          : {
+              exitCode: 0,
+              stdout: JSON.stringify({
+                loggedIn: true,
+                subscriptionType: "pro",
+                unexpected: "value",
+              }),
+              stderr: "",
+            },
+      )
+    },
+  })
+
+  expect(result.status).toBe("Unsupported Version")
 })

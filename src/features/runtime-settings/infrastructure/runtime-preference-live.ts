@@ -6,11 +6,11 @@ import {
   RuntimePreferenceRepository,
 } from "@/features/runtime-settings/application/runtime-preference"
 import {
+  isRuntimeId,
   type RuntimeId,
-  runtimeIds,
 } from "@/features/runtime-settings/application/runtime-readiness"
 
-const PREFERENCE_KEY = "selected_runtime"
+const PREFERENCE_KEY = "selected"
 
 export const runtimePreferenceLive = (databasePath: string) =>
   Layer.succeed(RuntimePreferenceRepository, {
@@ -29,7 +29,7 @@ function readSelectedRuntime(databasePath: string): Option.Option<RuntimeId> {
   const database = new Database(databasePath, { readonly: true, fileMustExist: true })
   try {
     const value = database
-      .prepare("select value from local_preferences where key = ?")
+      .prepare("select runtime_id from runtime_preferences where key = ?")
       .pluck()
       .get(PREFERENCE_KEY)
     return typeof value === "string" && isRuntimeId(value) ? Option.some(value) : Option.none()
@@ -45,16 +45,12 @@ function writeSelectedRuntime(databasePath: string, runtimeId: RuntimeId): void 
     database.pragma("busy_timeout = 5000")
     database
       .prepare(
-        `insert into local_preferences (key, value, updated_at)
+        `insert into runtime_preferences (key, runtime_id, updated_at)
          values (?, ?, ?)
-         on conflict(key) do update set value = excluded.value, updated_at = excluded.updated_at`,
+         on conflict(key) do update set runtime_id = excluded.runtime_id, updated_at = excluded.updated_at`,
       )
       .run(PREFERENCE_KEY, runtimeId, Date.now())
   } finally {
     database.close()
   }
-}
-
-function isRuntimeId(value: string): value is RuntimeId {
-  return runtimeIds.some((runtimeId) => runtimeId === value)
 }

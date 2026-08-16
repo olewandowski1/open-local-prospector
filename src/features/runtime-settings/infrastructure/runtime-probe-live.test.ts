@@ -33,6 +33,22 @@ describe("runtime probe infrastructure", () => {
     if (Either.isLeft(result)) expect(result.left.reason).toBe("output-limit")
   })
 
+  it("interrupts a command through the Effect timeout", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(
+        executeRuntimeCommand(
+          process.execPath,
+          ["-e", "setInterval(() => undefined, 1_000)"],
+          process.env,
+          20,
+        ),
+      ),
+    )
+
+    expect(Either.isLeft(result)).toBe(true)
+    if (Either.isLeft(result)) expect(result.left.reason).toBe("timeout")
+  })
+
   it("does not forward provider API credentials", async () => {
     const result = await Effect.runPromise(
       executeRuntimeCommand(

@@ -2,6 +2,10 @@ import { Context, Data, Effect, Either, Option } from "effect"
 
 export const runtimeIds = ["codex", "claude", "opencode"] as const
 export type RuntimeId = (typeof runtimeIds)[number]
+
+export function isRuntimeId(value: string): value is RuntimeId {
+  return runtimeIds.some((runtimeId) => runtimeId === value)
+}
 export type RuntimeReadinessStatus =
   | "Ready"
   | "Missing"
@@ -65,10 +69,10 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     parseAuthentication: ({ exitCode, stdout, stderr }) => {
       const output = `${stdout}\n${stderr}`
       if (/not logged in/iu.test(output)) return "logged-out"
-      if (exitCode === 0 && /logged in/iu.test(output)) return "ready"
+      if (exitCode === 0 && /^logged in using chatgpt\s*$/iu.test(output.trim())) return "ready"
       return "unsupported"
     },
-    installInstruction: "Install Codex CLI, then run: codex login",
+    installInstruction: "Run: npm install -g @openai/codex, then: codex login",
     loginInstruction: "Run in your terminal: codex login",
     updateInstruction: "Update Codex CLI with its official installer.",
   },
@@ -79,15 +83,21 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     authenticationArguments: ["auth", "status", "--json"],
     minimumVersion: [1, 0, 0],
     parseAuthentication: ({ stdout }) => {
+      if (/"(?:accessToken|token|apiKey|secret)"\s*:/iu.test(stdout)) return "unsupported"
       try {
         const value: unknown = JSON.parse(stdout)
-        if (!isRecord(value) || typeof value.loggedIn !== "boolean") return "unsupported"
-        return value.loggedIn ? "ready" : "logged-out"
+        if (!isRecord(value) || !isSupportedClaudeStatus(value)) return "unsupported"
+        if (!value.loggedIn) return "logged-out"
+        const subscriptionType = value.subscriptionType.toLowerCase()
+        return ["pro", "max", "team", "enterprise"].includes(subscriptionType)
+          ? "ready"
+          : "logged-out"
       } catch {
         return "unsupported"
       }
     },
-    installInstruction: "Install Claude Code, then run: claude auth login",
+    installInstruction:
+      "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash. Then run: claude auth login",
     loginInstruction: "Run in your terminal: claude auth login",
     updateInstruction: "Update Claude Code with its official installer.",
   },
@@ -101,9 +111,10 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
       if (exitCode !== 0) return "unsupported"
       const match = `${stdout}\n${stderr}`.match(/(\d+)\s+credentials?/iu)
       if (!match) return "unsupported"
-      return Number(match[1]) > 0 ? "ready" : "logged-out"
+      const hasOpenCodeSubscription = /OpenCode\s+(?:Go|Zen)/iu.test(stdout)
+      return Number(match[1]) > 0 && hasOpenCodeSubscription ? "ready" : "logged-out"
     },
-    installInstruction: "Install OpenCode, then run: opencode auth login",
+    installInstruction: "Run: npm install -g opencode-ai, then: opencode auth login",
     loginInstruction: "Run in your terminal: opencode auth login",
     updateInstruction: "Update OpenCode with: opencode upgrade",
   },
@@ -208,4 +219,23 @@ function meetsMinimumVersion(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function isSupportedClaudeStatus(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & { loggedIn: boolean; subscriptionType: string } {
+  const allowedKeys = new Set([
+    "apiProvider",
+    "authMethod",
+    "email",
+    "loggedIn",
+    "orgId",
+    "orgName",
+    "subscriptionType",
+  ])
+  return (
+    Object.keys(value).every((key) => allowedKeys.has(key)) &&
+    typeof value.loggedIn === "boolean" &&
+    (!value.loggedIn || typeof value.subscriptionType === "string")
+  )
 }

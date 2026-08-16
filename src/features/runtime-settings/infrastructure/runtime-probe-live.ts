@@ -21,6 +21,7 @@ export function executeRuntimeCommand(
   executable: string,
   arguments_: readonly string[],
   environment: RuntimeEnvironment = process.env,
+  timeoutMilliseconds = COMMAND_TIMEOUT_MILLISECONDS,
 ): Effect.Effect<RuntimeCommandResult, RuntimeCommandError> {
   return Effect.async<RuntimeCommandResult, RuntimeCommandError>((resume) => {
     const child = spawn(executable, arguments_, {
@@ -37,7 +38,6 @@ export function executeRuntimeCommand(
     const finish = (effect: Effect.Effect<RuntimeCommandResult, RuntimeCommandError>): void => {
       if (settled) return
       settled = true
-      clearTimeout(timeout)
       resume(effect)
     }
 
@@ -64,15 +64,15 @@ export function executeRuntimeCommand(
       ),
     )
 
-    const timeout = setTimeout(() => {
-      child.kill()
-      finish(Effect.fail(new RuntimeCommandError({ reason: "timeout" })))
-    }, COMMAND_TIMEOUT_MILLISECONDS)
-
     return Effect.sync(() => {
-      child.kill()
+      if (!settled) child.kill()
     })
-  })
+  }).pipe(
+    Effect.timeoutFail({
+      duration: timeoutMilliseconds,
+      onTimeout: () => new RuntimeCommandError({ reason: "timeout" }),
+    }),
+  )
 }
 
 export function resolveRuntimeExecutable(
