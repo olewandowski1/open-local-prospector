@@ -36,6 +36,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     let settled = false
     let outputBytes = 0
     const stdout: Buffer[] = []
+    let stderrTail = Buffer.alloc(0)
     const finish = (effect: Effect.Effect<RuntimeProcessResult, RuntimeProcessError>) => {
       if (settled) return
       settled = true
@@ -62,7 +63,10 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
         )
       } else stdout.push(chunk)
     })
-    child.stderr.on("data", () => undefined)
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderrTail = Buffer.concat([stderrTail, chunk])
+      if (stderrTail.byteLength > 32 * 1024) stderrTail = stderrTail.subarray(-32 * 1024)
+    })
     child.on("error", () =>
       finish(
         Effect.fail(
@@ -72,11 +76,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     )
     child.on("close", (exitCode) => {
       if (exitCode !== 0) {
-        finish(
-          Effect.fail(
-            runtimeError("Blocked", "runtime-failed", "Runtime exited without a valid result."),
-          ),
-        )
+        finish(Effect.fail(classifyRuntimeFailure(stderrTail.toString("utf8"), exitCode)))
       } else finish(Effect.succeed({ exitCode: 0, stdout: Buffer.concat(stdout).toString("utf8") }))
     })
     child.stdin.end(request.input)
@@ -84,6 +84,36 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
       if (!settled) child.kill()
     })
   })
+}
+
+export function classifyRuntimeFailure(stderr: string, exitCode: number | null) {
+  const diagnostic = stderr.match(/(?:^|\n)ERROR:\s*([\s\S]*)$/u)?.[1] ?? ""
+  if (/"code"\s*:\s*"invalid_json_schema"/u.test(diagnostic)) {
+    return runtimeError(
+      "Blocked",
+      "runtime-invalid-json-schema",
+      "Runtime rejected the structured-output schema. Every declared property must be required; optional values must be nullable.",
+    )
+  }
+  if (/rate.?limit|too many requests|\b429\b/iu.test(diagnostic)) {
+    return runtimeError(
+      "Transient",
+      "runtime-rate-limited",
+      "The provider temporarily rate-limited the subscription runtime.",
+    )
+  }
+  if (/not logged in|unauthori[sz]ed|authentication required|please log in/iu.test(diagnostic)) {
+    return runtimeError(
+      "Blocked",
+      "runtime-not-authenticated",
+      "The subscription runtime is not authenticated. Log in through its terminal client.",
+    )
+  }
+  return runtimeError(
+    "Blocked",
+    "runtime-failed",
+    `Runtime exited without a valid result (exit code ${exitCode ?? "unknown"}).`,
+  )
 }
 
 function safeRuntimeEnvironment(

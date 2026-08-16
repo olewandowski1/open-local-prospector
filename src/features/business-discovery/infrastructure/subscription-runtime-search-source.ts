@@ -25,11 +25,11 @@ const searchOutputJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["title", "url"],
+        required: ["title", "url", "description"],
         properties: {
           title: { type: "string", minLength: 1, maxLength: 500 },
           url: { type: "string", minLength: 1, maxLength: 2_000 },
-          description: { type: "string", maxLength: 2_000 },
+          description: { type: ["string", "null"], maxLength: 2_000 },
         },
       },
     },
@@ -216,11 +216,13 @@ function decodePage(
     if (
       !isRecord(item) ||
       !hasOnlyKeys(item, ["title", "url", "description"]) ||
+      !("description" in item) ||
       typeof item.title !== "string" ||
       item.title.length > 500 ||
       typeof item.url !== "string" ||
       item.url.length > 2_000 ||
       (item.description !== undefined &&
+        item.description !== null &&
         (typeof item.description !== "string" || item.description.length > 2_000))
     ) {
       return Effect.fail(invalidOutput())
