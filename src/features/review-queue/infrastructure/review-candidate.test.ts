@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { updateCandidateReview } from "@/features/review-queue/application/review-candidate"
+import { updateCandidateReview } from "@/features/review-queue/infrastructure/review-candidate"
 
 describe("candidate review validation", () => {
   it("requires a reason for rejection", () => {

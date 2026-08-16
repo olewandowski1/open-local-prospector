@@ -8,7 +8,7 @@
     "dev": "concurrently --kill-others --names web,worker \"pnpm dev:web\" \"pnpm dev:worker\"",
     "dev:web": "next dev --hostname 127.0.0.1 --port 4310",
     "dev:worker": "node --watch --env-file-if-exists=.env.local --import tsx src/worker/main.ts",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 4310",
     "format": "biome format --write .",
     "format:check": "biome format .",

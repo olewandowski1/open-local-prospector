@@ -1,27 +1,11 @@
 import Database from "better-sqlite3"
+import {
+  CORRECTION_TARGETS,
+  REJECTION_REASONS,
+  REVIEW_STATUSES,
+} from "@/features/review-queue/domain/review-policy"
 
-export const REVIEW_STATUSES = [
-  "Unreviewed",
-  "Shortlisted",
-  "Rejected",
-  "Contacted",
-  "Archived",
-] as const
-export const REJECTION_REASONS = [
-  "NotALocalDecision",
-  "NotABusinessFit",
-  "EvidenceTooWeak",
-  "AlreadyHasStrongWebsite",
-  "Duplicate",
-  "Other",
-] as const
-export const CORRECTION_TARGETS = [
-  "IdentityLink",
-  "OnlinePresence",
-  "ContactRoute",
-  "OpportunityClass",
-  "SupportingObservation",
-] as const
+export { CORRECTION_TARGETS, REJECTION_REASONS, REVIEW_STATUSES }
 
 export type ReviewUpdate = Readonly<{
   status: (typeof REVIEW_STATUSES)[number]

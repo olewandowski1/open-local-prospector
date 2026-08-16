@@ -1,15 +1,13 @@
 import { expect, test } from "@playwright/test"
 
-test("renders the prospecting overview", async ({ page }) => {
+test("renders the persisted review queue empty state", async ({ page }) => {
   await page.goto("/")
 
   await expect(page).toHaveTitle("Local Prospector")
-  await expect(page.getByRole("heading", { name: "Good morning, Oliver" })).toBeVisible()
-  await expect(page.getByText("Interface preview · sample data")).toBeVisible()
-  await expect(page.getByRole("region", { name: "Prospecting summary" })).toContainText(
-    "Businesses found",
-  )
-  await expect(page.getByRole("link", { name: "New prospecting run" })).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible()
+  await expect(page.getByText("No qualified candidates yet")).toBeVisible()
+  await expect(page.getByText("sample data")).toHaveCount(0)
+  await expect(page.getByRole("main").getByRole("link", { name: "New run" })).toHaveAttribute(
     "href",
     "/runs/new",
   )

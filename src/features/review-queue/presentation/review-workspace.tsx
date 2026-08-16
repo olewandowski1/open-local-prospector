@@ -20,7 +20,7 @@ import {
   CORRECTION_TARGETS,
   REJECTION_REASONS,
   REVIEW_STATUSES,
-} from "@/features/review-queue/application/review-candidate"
+} from "@/features/review-queue/domain/review-policy"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
 export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidate[] }) {

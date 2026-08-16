@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { loadLocalApplicationConfig } from "@/features/local-application"
-import { suppressCandidate } from "@/features/review-queue/application/suppress-candidate"
+import { suppressCandidate } from "@/features/review-queue/infrastructure/suppress-candidate"
 
 export async function POST(request: Request, context: { params: Promise<{ scoreId: string }> }) {
   try {

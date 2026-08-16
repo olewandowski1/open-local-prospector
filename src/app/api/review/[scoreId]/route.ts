@@ -5,7 +5,7 @@ import {
   CORRECTION_TARGETS,
   REVIEW_STATUSES,
   updateCandidateReview,
-} from "@/features/review-queue/application/review-candidate"
+} from "@/features/review-queue/infrastructure/review-candidate"
 
 export async function POST(request: Request, context: { params: Promise<{ scoreId: string }> }) {
   try {

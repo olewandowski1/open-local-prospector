@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { CandidateExport } from "@/features/review-queue/application/export-candidates"
+import type { CandidateExport } from "@/features/review-queue/infrastructure/export-candidates"
 
 describe("export contract", () => {
   it("keeps export data explicit and contains no outreach action", () => {

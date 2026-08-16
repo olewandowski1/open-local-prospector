@@ -79,6 +79,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr)
 - [Implementation plans](plans/README.md)
+- [MVP quality gate](docs/MVP-QUALITY-GATE.md)
 
 Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Brave Web Search discovery and identity-evidence lookup use only its official API and do not scrape consumer result pages. Codex, Claude Code, and OpenCode assessment adapters launch subscription CLIs directly with bounded, no-shell execution and persist only schema-validated, cited output. No adapter falls back to a usage-based API or another provider.
 

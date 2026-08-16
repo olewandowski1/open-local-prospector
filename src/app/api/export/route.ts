@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { loadLocalApplicationConfig } from "@/features/local-application"
-import { exportCandidates } from "@/features/review-queue/application/export-candidates"
+import { exportCandidates } from "@/features/review-queue/infrastructure/export-candidates"
 
 export function GET(request: Request) {
   try {
