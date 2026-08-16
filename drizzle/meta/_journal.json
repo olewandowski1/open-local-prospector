@@ -29,6 +29,13 @@
       "when": 1786881764515,
       "tag": "0003_durable_run_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786882401657,
+      "tag": "0004_run_monitoring",
+      "breakpoints": true
     }
   ]
 }

@@ -68,7 +68,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const command = useWorkspaceCommand()
   const pathname = usePathname()
   const currentPage =
-    pathname === "/settings" ? "Settings" : pathname === "/runs/new" ? "New run" : "Overview"
+    pathname === "/settings"
+      ? "Settings"
+      : pathname === "/runs/new"
+        ? "New run"
+        : pathname.startsWith("/runs/")
+          ? "Run detail"
+          : pathname === "/runs"
+            ? "Runs"
+            : "Overview"
 
   return (
     <SidebarProvider defaultOpen className="min-h-svh">

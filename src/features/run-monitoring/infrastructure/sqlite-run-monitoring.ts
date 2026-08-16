@@ -1,0 +1,332 @@
+import Database from "better-sqlite3"
+import { Effect, Layer } from "effect"
+import type { SearchBrief } from "@/features/prospecting-runs"
+
+import {
+  type RunControl,
+  RunControlRepository,
+  RunMonitoringError,
+  RunReadRepository,
+} from "@/features/run-monitoring/application/run-repositories"
+import {
+  type BusinessProgress,
+  type RunCompletionState,
+  type RunDetail,
+  type RunProgressCounts,
+  type RunSummary,
+  runCompletionStates,
+  type TechnicalRunEvent,
+} from "@/features/run-monitoring/domain/run-progress"
+
+type RunRow = Readonly<{
+  id: string
+  state: string
+  completion_state: string | null
+  current_stage: string | null
+  requested_control: string
+  search_brief: string
+  version: number
+  created_at: number
+  updated_at: number
+  queries: number
+  discoveries: number
+  duplicates: number
+  exclusions: number
+  websites: number
+  assessments: number
+  qualified_candidates: number
+  blocked_inspections: number
+  target_remaining: number
+}>
+
+export const sqliteRunMonitoringLive = (databasePath: string) =>
+  Layer.merge(
+    Layer.succeed(RunReadRepository, {
+      list: readEffect(databasePath, "list", (database) => list(database)),
+      get: (runId) => readEffect(databasePath, "read", (database) => get(database, runId)),
+    }),
+    Layer.succeed(RunControlRepository, {
+      request: (runId, control) =>
+        writeEffect(databasePath, (database) => requestControl(database, runId, control)),
+    }),
+  )
+
+function readEffect<A>(
+  databasePath: string,
+  operation: "list" | "read",
+  use: (database: Database.Database) => A,
+) {
+  return Effect.try({
+    try: () => withDatabase(databasePath, true, use),
+    catch: () => new RunMonitoringError({ operation }),
+  })
+}
+
+function writeEffect(databasePath: string, use: (database: Database.Database) => void) {
+  return Effect.try({
+    try: () => withDatabase(databasePath, false, use),
+    catch: () => new RunMonitoringError({ operation: "control" }),
+  })
+}
+
+function withDatabase<A>(
+  databasePath: string,
+  readonly: boolean,
+  use: (database: Database.Database) => A,
+): A {
+  const database = new Database(databasePath, { readonly, fileMustExist: true })
+  database.pragma("foreign_keys = ON")
+  database.pragma("busy_timeout = 5000")
+  try {
+    return use(database)
+  } finally {
+    database.close()
+  }
+}
+
+const runSelect = `
+  select r.id, r.state, r.completion_state, r.current_stage, r.requested_control,
+    r.search_brief, r.version, r.created_at, r.updated_at,
+    coalesce(m.queries, 0) as queries, coalesce(m.discoveries, 0) as discoveries,
+    coalesce(m.duplicates, 0) as duplicates, coalesce(m.exclusions, 0) as exclusions,
+    coalesce(m.websites, 0) as websites, coalesce(m.assessments, 0) as assessments,
+    coalesce(m.qualified_candidates, 0) as qualified_candidates,
+    coalesce(m.blocked_inspections, 0) as blocked_inspections,
+    coalesce(m.target_remaining, json_extract(r.search_brief, '$.targetCount')) as target_remaining
+  from prospecting_runs r left join run_metrics m on m.run_id = r.id`
+
+function list(database: Database.Database): readonly RunSummary[] {
+  const rows = database.prepare(`${runSelect} order by r.created_at desc`).all() as RunRow[]
+  return rows.map(mapSummary)
+}
+
+function get(database: Database.Database, runId: string): RunDetail {
+  const row = database.prepare(`${runSelect} where r.id = ?`).get(runId) as RunRow | undefined
+  if (!row) throw new Error("run not found")
+  const technicalLog = readTechnicalLog(database, runId)
+  return {
+    ...mapSummary(row),
+    requestedControl: row.requested_control,
+    businesses: readBusinesses(database, runId, technicalLog),
+    technicalLog,
+  }
+}
+
+function mapSummary(row: RunRow): RunSummary {
+  return {
+    id: row.id,
+    state: row.state,
+    ...(isCompletionState(row.completion_state) ? { completionState: row.completion_state } : {}),
+    ...(row.current_stage ? { currentStage: row.current_stage } : {}),
+    searchBrief: JSON.parse(row.search_brief) as SearchBrief,
+    progress: progress(row),
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
+    version: row.version,
+  }
+}
+
+function progress(row: RunRow): RunProgressCounts {
+  return {
+    queries: row.queries,
+    discoveries: row.discoveries,
+    duplicates: row.duplicates,
+    exclusions: row.exclusions,
+    websites: row.websites,
+    assessments: row.assessments,
+    qualifiedCandidates: row.qualified_candidates,
+    blockedInspections: row.blocked_inspections,
+    targetRemaining: Math.max(0, row.target_remaining),
+  }
+}
+
+function readBusinesses(
+  database: Database.Database,
+  runId: string,
+  events: readonly TechnicalRunEvent[],
+): readonly BusinessProgress[] {
+  const rows = database
+    .prepare(
+      `select business_id, stage, status, attempt_count, failure from run_tasks
+       where run_id = ? and business_id is not null order by updated_at desc`,
+    )
+    .all(runId) as Array<{
+    business_id: string
+    stage: string
+    status: string
+    attempt_count: number
+    failure: string | null
+  }>
+  const businesses = new Map<string, BusinessProgress>()
+  for (const row of rows) {
+    const existing = businesses.get(row.business_id)
+    const failureReason = failureMessage(row.failure) ?? existing?.failureReason
+    businesses.set(row.business_id, {
+      id: row.business_id,
+      currentStage: existing?.currentStage ?? row.stage,
+      status: existing?.status ?? row.status,
+      retryCount: (existing?.retryCount ?? 0) + Math.max(0, row.attempt_count - 1),
+      ...(failureReason ? { failureReason } : {}),
+      sourceEvents:
+        existing?.sourceEvents ?? events.filter((event) => event.businessId === row.business_id),
+    })
+  }
+  return [...businesses.values()]
+}
+
+function readTechnicalLog(
+  database: Database.Database,
+  runId: string,
+): readonly TechnicalRunEvent[] {
+  const transitions = database
+    .prepare(
+      `select id, event as kind, task_id, to_state, created_at
+       from run_transitions where run_id = ?`,
+    )
+    .all(runId) as Array<{
+    id: string
+    kind: string
+    task_id: string | null
+    to_state: string
+    created_at: number
+  }>
+  const events = database
+    .prepare(
+      `select id, kind, business_id, source_identifier, result_url, message, created_at
+       from technical_run_events where run_id = ?`,
+    )
+    .all(runId) as Array<{
+    id: string
+    kind: string
+    business_id: string | null
+    source_identifier: string | null
+    result_url: string | null
+    message: string
+    created_at: number
+  }>
+  return [
+    ...transitions.map((transition) => ({
+      id: transition.id,
+      kind: transition.kind,
+      message: `Task transition to ${transition.to_state}.`,
+      createdAt: new Date(transition.created_at).toISOString(),
+    })),
+    ...events.map((event) => ({
+      id: event.id,
+      kind: event.kind,
+      ...(event.business_id ? { businessId: event.business_id } : {}),
+      ...(event.source_identifier ? { sourceIdentifier: event.source_identifier } : {}),
+      ...(event.result_url ? { resultUrl: event.result_url } : {}),
+      message: event.message,
+      createdAt: new Date(event.created_at).toISOString(),
+    })),
+  ].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+}
+
+function requestControl(database: Database.Database, runId: string, control: RunControl): void {
+  database.transaction(() => {
+    const run = database
+      .prepare("select state, requested_control from prospecting_runs where id = ?")
+      .get(runId) as { state: string; requested_control: string } | undefined
+    if (!run) throw new Error("run not found")
+    const now = Date.now()
+    if (control === "Pause") pause(database, runId, run.state, now)
+    if (control === "Resume") resume(database, runId, run.state, now)
+    if (control === "Cancel") cancel(database, runId, run.state, now)
+  })()
+}
+
+function pause(database: Database.Database, runId: string, fromState: string, now: number): void {
+  if (["Completed", "Cancelled"].includes(fromState)) throw new Error("terminal run")
+  const leased = taskCount(database, runId, "Leased")
+  const state = leased > 0 ? "Pausing" : "Paused"
+  database
+    .prepare(
+      `update prospecting_runs set requested_control = 'Pause', state = ?, completion_state = ?,
+       updated_at = ?, version = version + 1 where id = ?`,
+    )
+    .run(state, leased > 0 ? null : "Paused", now, runId)
+  transition(database, runId, fromState, state, "PauseRequested", now)
+}
+
+function resume(database: Database.Database, runId: string, fromState: string, now: number): void {
+  if (fromState === "Cancelled" || fromState === "Completed") throw new Error("terminal run")
+  database
+    .prepare(
+      `update run_tasks set status = 'Pending', available_at = ?, failure = null,
+       updated_at = ?, version = version + 1 where run_id = ? and status = 'Blocked'`,
+    )
+    .run(now, now, runId)
+  const nextState = taskCount(database, runId, "Leased") > 0 ? "Running" : "Pending"
+  database
+    .prepare(
+      `update prospecting_runs set requested_control = 'None', state = ?, completion_state = null,
+       updated_at = ?, version = version + 1 where id = ?`,
+    )
+    .run(nextState, now, runId)
+  transition(database, runId, fromState, nextState, "RunResumed", now)
+}
+
+function cancel(database: Database.Database, runId: string, fromState: string, now: number): void {
+  if (fromState === "Completed" || fromState === "Cancelled") throw new Error("terminal run")
+  database
+    .prepare(
+      `update run_tasks set status = 'Cancelled', updated_at = ?, version = version + 1
+       where run_id = ? and status in ('Pending', 'Blocked')`,
+    )
+    .run(now, runId)
+  const leased = taskCount(database, runId, "Leased")
+  const state = leased > 0 ? "Cancelling" : "Cancelled"
+  database
+    .prepare(
+      `update prospecting_runs set requested_control = 'Cancel', state = ?, completion_state = ?,
+       updated_at = ?, version = version + 1 where id = ?`,
+    )
+    .run(state, leased > 0 ? null : "Cancelled with Partial Results", now, runId)
+  transition(database, runId, fromState, state, "CancelRequested", now)
+}
+
+function taskCount(database: Database.Database, runId: string, status: string): number {
+  return Number(
+    database
+      .prepare("select count(*) from run_tasks where run_id = ? and status = ?")
+      .pluck()
+      .get(runId, status),
+  )
+}
+
+function transition(
+  database: Database.Database,
+  runId: string,
+  fromState: string,
+  toState: string,
+  event: string,
+  now: number,
+): void {
+  database
+    .prepare(
+      `insert into run_transitions
+       (id, run_id, from_state, to_state, event, payload, schema_version, created_at)
+       values (?, ?, ?, ?, ?, '{}', 1, ?)`,
+    )
+    .run(crypto.randomUUID(), runId, fromState, toState, event, now)
+}
+
+function isCompletionState(value: string | null): value is RunCompletionState {
+  return value !== null && runCompletionStates.some((state) => state === value)
+}
+
+function failureMessage(value: string | null): string | undefined {
+  if (!value) return undefined
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return typeof parsed === "object" &&
+      parsed !== null &&
+      "message" in parsed &&
+      typeof parsed.message === "string"
+      ? parsed.message
+      : undefined
+  } catch {
+    return undefined
+  }
+}

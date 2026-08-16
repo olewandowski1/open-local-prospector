@@ -2,7 +2,7 @@
 
 Open Local Prospector is a local-first application for finding independent businesses whose public online presence suggests a meaningful website opportunity. Poland is the initial focus. The application is designed for one local user and performs no outreach.
 
-The repository contains the product specification, architecture decisions, a responsive shadcn/7Ovr interface, confirmed Search Brief and pending Prospecting Run persistence, durable local SQLite setup, subscription-runtime readiness, dependency diagnostics, a separate worker composition root, and verification tooling. Brave Search discovery, website inspection, and run execution remain planned MVP work.
+The repository contains the product specification, architecture decisions, a responsive shadcn/7Ovr interface, confirmed Search Brief persistence, durable and controllable Prospecting Run execution, local SQLite setup, subscription-runtime readiness, dependency diagnostics, a separate worker composition root, and verification tooling. Brave Search discovery, website inspection, and assessment remain planned MVP work.
 
 ## Requirements
 
@@ -80,7 +80,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Architecture decisions](docs/adr)
 - [Implementation plans](plans/README.md)
 
-Playwright website inspection, Brave Search discovery, durable run execution, and assessment adapters are specified but not implemented yet. Codex, Claude Code, and OpenCode Go currently support readiness detection and local selection; execution adapters arrive in later MVP tickets. Do not treat remaining PRD acceptance criteria as current behavior.
+Playwright website inspection, Brave Search discovery, and assessment adapters are specified but not implemented yet. Codex, Claude Code, and OpenCode Go currently support readiness detection and local selection; execution adapters arrive in later MVP tickets. Do not treat remaining PRD acceptance criteria as current behavior.
 
 ## License
 

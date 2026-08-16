@@ -109,8 +109,9 @@ function claim(
   return database.transaction(() => {
     const candidate = database
       .prepare(
-        `select * from run_tasks where status = 'Pending' and available_at <= ?
-         order by created_at, id limit 1`,
+        `select t.* from run_tasks t join prospecting_runs r on r.id = t.run_id
+         where t.status = 'Pending' and t.available_at <= ? and r.requested_control = 'None'
+         and r.state not in ('Completed', 'Cancelled') order by t.created_at, t.id limit 1`,
       )
       .get(now.getTime()) as TaskRow | undefined
     if (!candidate) return Option.none()
@@ -177,8 +178,15 @@ function complete(
       checkpoint.value,
       now,
     )
-    for (const nextTask of checkpoint.nextTasks ?? [])
-      insertTask(database, task.runId, nextTask, now)
+    const requestedControl = database
+      .prepare("select requested_control from prospecting_runs where id = ?")
+      .pluck()
+      .get(task.runId)
+    if (requestedControl !== "Cancel") {
+      for (const nextTask of checkpoint.nextTasks ?? []) {
+        insertTask(database, task.runId, nextTask, now)
+      }
+    }
     updateRunAfterSettledTask(database, task.runId, task.stage, now)
   })()
 }
@@ -194,7 +202,7 @@ function fail(
     const retry = failure.classification === "Transient" && task.attemptCount < task.maxAttempts
     const nextStatus: RunTaskStatus = retry
       ? "Pending"
-      : failure.classification === "Blocked" || failure.classification === "Infrastructure"
+      : failure.classification === "Blocked"
         ? "Blocked"
         : failure.classification === "Cancelled"
           ? "Cancelled"
@@ -253,20 +261,57 @@ function updateRunAfterSettledTask(
        sum(case when status in ('Pending', 'Leased') then 1 else 0 end) as active,
        sum(case when status = 'Blocked' then 1 else 0 end) as blocked,
        sum(case when status = 'FailedPermanent' then 1 else 0 end) as failed,
-       sum(case when status = 'Cancelled' then 1 else 0 end) as cancelled
+       sum(case when status = 'Cancelled' then 1 else 0 end) as cancelled,
+       sum(case when status = 'Leased' then 1 else 0 end) as leased,
+       sum(case when status = 'FailedPermanent' and business_id is null
+         and json_extract(failure, '$.classification') = 'Infrastructure' then 1 else 0 end) as infrastructure
        from run_tasks where run_id = ?`,
     )
-    .get(runId) as { active: number; blocked: number; failed: number; cancelled: number }
+    .get(runId) as {
+    active: number
+    blocked: number
+    failed: number
+    cancelled: number
+    leased: number
+    infrastructure: number
+  }
+  const requestedControl = database
+    .prepare("select requested_control from prospecting_runs where id = ?")
+    .pluck()
+    .get(runId)
+  if (requestedControl === "Pause" && counts.leased === 0) {
+    database
+      .prepare(
+        `update prospecting_runs set state = 'Paused', completion_state = 'Paused',
+         updated_at = ?, version = version + 1 where id = ?`,
+      )
+      .run(now.getTime(), runId)
+    transition(database, runId, null, null, "Paused", "RunPaused", {}, now)
+    return
+  }
+  if (requestedControl === "Cancel" && counts.leased === 0) {
+    database
+      .prepare(
+        `update prospecting_runs set state = 'Cancelled',
+         completion_state = 'Cancelled with Partial Results', updated_at = ?,
+         version = version + 1 where id = ?`,
+      )
+      .run(now.getTime(), runId)
+    transition(database, runId, null, null, "Cancelled", "RunCancelled", {}, now)
+    return
+  }
   if (counts.active > 0) return
 
   const outcome =
-    counts.blocked > 0
-      ? { state: "Paused", completion: "Runtime Unavailable" }
-      : counts.cancelled > 0
-        ? { state: "Cancelled", completion: "Cancelled with Partial Results" }
-        : counts.failed > 0
-          ? { state: "Completed", completion: "Completed with Warnings" }
-          : { state: "Completed", completion: "Search Exhausted" }
+    counts.infrastructure > 0
+      ? { state: "Completed", completion: "Infrastructure Failed" }
+      : counts.blocked > 0
+        ? { state: "Paused", completion: "Runtime Unavailable" }
+        : counts.cancelled > 0
+          ? { state: "Cancelled", completion: "Cancelled with Partial Results" }
+          : counts.failed > 0
+            ? { state: "Completed", completion: "Completed with Warnings" }
+            : { state: "Completed", completion: "Search Exhausted" }
   database
     .prepare(
       `update prospecting_runs set state = ?, completion_state = ?, current_stage = ?,

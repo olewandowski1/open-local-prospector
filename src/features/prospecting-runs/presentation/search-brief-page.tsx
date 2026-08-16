@@ -455,7 +455,8 @@ export function SearchBriefPage({
                       <CheckCircle2 aria-hidden="true" />
                       <AlertTitle>Pending run created</AlertTitle>
                       <AlertDescription>
-                        Run {createdRun.id} is ready for the worker.
+                        Run {createdRun.id} is ready for the worker.{" "}
+                        <Link href={`/runs/${createdRun.id}`}>View progress</Link>.
                       </AlertDescription>
                     </Alert>
                   ) : (
