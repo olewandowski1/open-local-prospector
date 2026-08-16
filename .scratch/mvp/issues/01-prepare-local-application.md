@@ -14,3 +14,9 @@
 - [x] Brave Search secrets remain server-side in ignored configuration and are never rendered or logged.
 - [x] Re-running setup preserves existing local data and exits successfully when no migration is required.
 - [x] Automated tests cover a fresh setup, repeated setup, and a failed dependency check.
+
+## Answer
+
+Implemented an idempotent host-native setup command with configurable SQLite storage, per-migration transactions, ignored local artifacts, a non-secret environment template, and Playwright Chromium verification. Added an Effect-backed Settings readiness view for SQLite, Brave Search configuration, Playwright, and usable disk capacity without exposing secrets.
+
+Verified by running setup twice, `pnpm check` (Biome, architecture boundaries, TypeScript, 44 unit/integration tests, and production build), and `pnpm test:e2e` (8 passed, 2 expected platform skips). Review findings were addressed before final resolution.

@@ -2,8 +2,7 @@ import { mkdirSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 
 import Database from "better-sqlite3"
-import { drizzle } from "drizzle-orm/better-sqlite3"
-import { migrate } from "drizzle-orm/better-sqlite3/migrator"
+import { readMigrationFiles } from "drizzle-orm/migrator"
 
 const BUSY_TIMEOUT_MILLISECONDS = 5_000
 
@@ -22,9 +21,34 @@ export function migrateLocalDatabase(
   try {
     configureConnection(sqlite)
     sqlite.pragma("journal_mode = WAL")
-    migrate(drizzle({ client: sqlite }), { migrationsFolder })
+    applyPendingMigrations(sqlite, migrationsFolder)
   } finally {
     sqlite.close()
+  }
+}
+
+function applyPendingMigrations(sqlite: Database.Database, migrationsFolder: string): void {
+  sqlite.exec(`
+    create table if not exists __drizzle_migrations (
+      id integer primary key autoincrement,
+      hash text not null,
+      created_at numeric not null
+    )
+  `)
+  const latest = sqlite
+    .prepare("select created_at from __drizzle_migrations order by created_at desc limit 1")
+    .get() as { created_at: number } | undefined
+  const recordMigration = sqlite.prepare(
+    "insert into __drizzle_migrations (hash, created_at) values (?, ?)",
+  )
+
+  for (const migration of readMigrationFiles({ migrationsFolder })) {
+    if (latest && latest.created_at >= migration.folderMillis) continue
+
+    sqlite.transaction(() => {
+      for (const statement of migration.sql) sqlite.exec(statement)
+      recordMigration.run(migration.hash, migration.folderMillis)
+    })()
   }
 }
 

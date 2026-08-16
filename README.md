@@ -21,7 +21,7 @@ pnpm dev
 
 `pnpm run setup` creates or migrates the local SQLite database, prepares artifact storage, copies the non-secret `.env.local.example` template when needed, and installs the compatible Playwright Chromium build. It is safe to run repeatedly. Use the explicit `run`: `pnpm setup` is a reserved pnpm command and does not invoke project scripts.
 
-Local state is stored under `.local/` by default and is ignored by Git. Override `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in `.env.local` when needed. Add `BRAVE_SEARCH_API_KEY` there to make Brave Search configuration ready; its value remains server-side.
+Local state is stored under `.local/` by default and is ignored by Git. Set `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in the terminal running setup when an override is needed, and mirror that non-secret path in `.env.local` for the web application. Add `BRAVE_SEARCH_API_KEY` only to `.env.local` to make Brave Search configuration ready; setup never reads it and its value remains server-side.
 
 The Next.js server binds to `127.0.0.1:4310` by default. It is intentionally not exposed to the local network.
 

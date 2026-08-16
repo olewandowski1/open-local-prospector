@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
@@ -64,5 +64,41 @@ describe("local database", () => {
       "utf8",
     )
     expect(migration).toContain("CREATE TABLE `local_preferences`")
+  })
+
+  it("commits each migration in a separate short transaction", () => {
+    const directory = createTemporaryDirectory()
+    const migrationsFolder = join(directory, "migrations")
+    const metadataFolder = join(migrationsFolder, "meta")
+    const databasePath = join(directory, "prospector.sqlite")
+    mkdirSync(metadataFolder, { recursive: true })
+    writeFileSync(
+      join(metadataFolder, "_journal.json"),
+      JSON.stringify({
+        version: "7",
+        dialect: "sqlite",
+        entries: [
+          { idx: 0, version: "6", when: 1, tag: "0000_valid", breakpoints: true },
+          { idx: 1, version: "6", when: 2, tag: "0001_invalid", breakpoints: true },
+        ],
+      }),
+    )
+    writeFileSync(
+      join(migrationsFolder, "0000_valid.sql"),
+      "create table first_migration (id integer);",
+    )
+    writeFileSync(join(migrationsFolder, "0001_invalid.sql"), "this is not valid sql;")
+
+    expect(() => migrateLocalDatabase(databasePath, migrationsFolder)).toThrow()
+
+    const verification = new Database(databasePath, { readonly: true })
+    expect(
+      verification
+        .prepare("select name from sqlite_master where type = 'table' and name = 'first_migration'")
+        .pluck()
+        .get(),
+    ).toBe("first_migration")
+    expect(verification.prepare("select count(*) from __drizzle_migrations").pluck().get()).toBe(1)
+    verification.close()
   })
 })

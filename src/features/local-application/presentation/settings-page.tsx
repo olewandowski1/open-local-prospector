@@ -1,4 +1,12 @@
-import { CheckCircle2, CircleAlert, CircleHelp, Database, FolderOpen, Search } from "lucide-react"
+import {
+  CheckCircle2,
+  CircleAlert,
+  CircleHelp,
+  Database,
+  FolderOpen,
+  type LucideIcon,
+  Search,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -21,18 +29,14 @@ const dependencyIcons = {
   disk: FolderOpen,
 } as const
 
-function statusVariant(status: ReadinessStatus): "secondary" | "outline" | "destructive" {
-  if (status === "Ready") return "secondary"
-  if (status === "Missing") return "outline"
-  return "destructive"
-}
-
-function StatusIcon({ status }: { status: ReadinessStatus }) {
-  return status === "Ready" ? (
-    <CheckCircle2 data-icon="inline-start" aria-hidden="true" />
-  ) : (
-    <CircleAlert data-icon="inline-start" aria-hidden="true" />
-  )
+const statusPresentation: Record<
+  ReadinessStatus,
+  Readonly<{ variant: "secondary" | "outline" | "destructive"; icon: LucideIcon }>
+> = {
+  Ready: { variant: "secondary", icon: CheckCircle2 },
+  Missing: { variant: "outline", icon: CircleAlert },
+  Unreachable: { variant: "destructive", icon: CircleAlert },
+  "Unsupported Version": { variant: "destructive", icon: CircleAlert },
 }
 
 export function SettingsPage({ readiness }: { readiness: readonly DependencyReadiness[] }) {
@@ -49,6 +53,7 @@ export function SettingsPage({ readiness }: { readiness: readonly DependencyRead
       <section aria-label="Local dependency readiness" className="mt-6 grid gap-4 md:grid-cols-2">
         {readiness.map((item) => {
           const Icon = dependencyIcons[item.id]
+          const { icon: StatusIcon, variant } = statusPresentation[item.status]
 
           return (
             <Card key={item.id}>
@@ -59,8 +64,8 @@ export function SettingsPage({ readiness }: { readiness: readonly DependencyRead
                 <CardTitle>{item.label}</CardTitle>
                 <CardDescription>{item.detail}</CardDescription>
                 <CardAction>
-                  <Badge variant={statusVariant(item.status)}>
-                    <StatusIcon status={item.status} />
+                  <Badge variant={variant}>
+                    <StatusIcon data-icon="inline-start" aria-hidden="true" />
                     {item.status}
                   </Badge>
                 </CardAction>

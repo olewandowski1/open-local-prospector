@@ -1,5 +1,3 @@
-import { loadEnvConfig } from "@next/env"
-
 import { loadLocalApplicationConfig } from "@/features/local-application/configuration"
 import {
   LocalSetupError,
@@ -7,7 +5,6 @@ import {
 } from "@/features/local-application/setup/prepare-local-application"
 
 try {
-  loadEnvConfig(process.cwd())
   const result = prepareLocalApplication(loadLocalApplicationConfig())
   process.stdout.write(
     `${[

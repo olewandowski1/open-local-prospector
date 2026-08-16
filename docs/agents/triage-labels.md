@@ -13,3 +13,5 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 When a skill mentions a role, use the corresponding label string from this table.
 
 Edit the right-hand column to match whatever vocabulary you actually use.
+
+Local Markdown execution adds two states after triage: `claimed` means an agent is actively implementing the issue, and `resolved` means all acceptance items pass and an `## Answer` records the outcome.

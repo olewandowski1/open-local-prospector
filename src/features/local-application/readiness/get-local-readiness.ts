@@ -1,6 +1,7 @@
 import { constants } from "node:fs"
 import { access, stat, statfs } from "node:fs/promises"
 
+import { Context, Effect, Either, Layer } from "effect"
 import { chromium } from "playwright"
 
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/features/local-application/infrastructure/database/local-database"
 
 export type ReadinessStatus = "Ready" | "Missing" | "Unreachable" | "Unsupported Version"
+export type PathState = "present" | "missing" | "unreachable"
 
 export type DependencyReadiness = Readonly<{
   id: "sqlite" | "brave-search" | "playwright" | "disk"
@@ -21,40 +23,67 @@ export type DependencyReadiness = Readonly<{
   detail: string
 }>
 
-export type ReadinessDependencies = Readonly<{
-  inspectDatabase(path: string): DatabaseHealth
-  pathExists(path: string): Promise<boolean>
-  pathIsWritable(path: string): Promise<boolean>
-  availableBytes(path: string): Promise<number>
-  chromiumExecutablePath(): string
-  braveSearchIsConfigured(): boolean
-}>
-
-export async function getLocalReadiness(
-  config: LocalApplicationConfig,
-  dependencies: ReadinessDependencies = localReadinessDependencies,
-): Promise<readonly DependencyReadiness[]> {
-  return Promise.all([
-    getDatabaseReadiness(config.databasePath, dependencies),
-    getBraveReadiness(dependencies),
-    getPlaywrightReadiness(dependencies),
-    getDiskReadiness(config.artifactsPath, dependencies),
-  ])
+export interface ReadinessProbeService {
+  readonly inspectDatabase: (path: string) => Effect.Effect<DatabaseHealth, unknown>
+  readonly pathState: (path: string) => Effect.Effect<PathState>
+  readonly pathIsWritable: (path: string) => Effect.Effect<boolean>
+  readonly availableBytes: (path: string) => Effect.Effect<number, unknown>
+  readonly chromiumExecutablePath: Effect.Effect<string, unknown>
+  readonly braveSearchIsConfigured: Effect.Effect<boolean>
 }
 
-async function getDatabaseReadiness(
-  databasePath: string,
-  dependencies: ReadinessDependencies,
-): Promise<DependencyReadiness> {
-  if (!(await dependencies.pathExists(databasePath))) {
-    return dependency("sqlite", "SQLite", "Missing", 'Run "pnpm run setup" to create the database.')
-  }
+export class ReadinessProbe extends Context.Tag("LocalApplication/ReadinessProbe")<
+  ReadinessProbe,
+  ReadinessProbeService
+>() {}
 
-  try {
-    const health = dependencies.inspectDatabase(databasePath)
+export const getLocalReadiness = (config: LocalApplicationConfig) =>
+  Effect.gen(function* () {
+    const probe = yield* ReadinessProbe
+    return yield* Effect.all([
+      getDatabaseReadiness(config.databasePath, probe),
+      getBraveReadiness(probe),
+      getPlaywrightReadiness(probe),
+      getDiskReadiness(config.artifactsPath, probe),
+    ])
+  })
+
+function getDatabaseReadiness(
+  databasePath: string,
+  probe: ReadinessProbeService,
+): Effect.Effect<DependencyReadiness> {
+  return Effect.gen(function* () {
+    const state = yield* probe.pathState(databasePath)
+    if (state === "missing") {
+      return dependency(
+        "sqlite",
+        "SQLite",
+        "Missing",
+        'Run "pnpm run setup" to create the database.',
+      )
+    }
+    if (state === "unreachable") {
+      return dependency(
+        "sqlite",
+        "SQLite",
+        "Unreachable",
+        "The configured database path cannot be accessed.",
+      )
+    }
+
+    const inspected = yield* Effect.either(probe.inspectDatabase(databasePath))
+    if (Either.isLeft(inspected)) {
+      return dependency(
+        "sqlite",
+        "SQLite",
+        "Unreachable",
+        "The configured database could not be opened.",
+      )
+    }
+
+    const health = inspected.right
     const correctlyConfigured =
       health.journalMode === "wal" && health.foreignKeys && health.busyTimeoutMilliseconds >= 5_000
-
     return correctlyConfigured
       ? dependency("sqlite", "SQLite", "Ready", "WAL, foreign keys, and busy timeout enabled.")
       : dependency(
@@ -63,78 +92,108 @@ async function getDatabaseReadiness(
           "Unsupported Version",
           'The database settings are incompatible. Run "pnpm run setup" again.',
         )
-  } catch {
-    return dependency(
-      "sqlite",
-      "SQLite",
-      "Unreachable",
-      "The configured database could not be opened.",
-    )
-  }
+  })
 }
 
-function getBraveReadiness(dependencies: ReadinessDependencies): DependencyReadiness {
-  return dependencies.braveSearchIsConfigured()
-    ? dependency("brave-search", "Brave Search", "Ready", "A server-side API key is configured.")
-    : dependency(
-        "brave-search",
-        "Brave Search",
-        "Missing",
-        "Add BRAVE_SEARCH_API_KEY to .env.local.",
-      )
+function getBraveReadiness(probe: ReadinessProbeService): Effect.Effect<DependencyReadiness> {
+  return Effect.map(probe.braveSearchIsConfigured, (configured) =>
+    configured
+      ? dependency("brave-search", "Brave Search", "Ready", "A server-side API key is configured.")
+      : dependency(
+          "brave-search",
+          "Brave Search",
+          "Missing",
+          "Add BRAVE_SEARCH_API_KEY to .env.local.",
+        ),
+  )
 }
 
-async function getPlaywrightReadiness(
-  dependencies: ReadinessDependencies,
-): Promise<DependencyReadiness> {
-  const executablePath = dependencies.chromiumExecutablePath()
-  return (await dependencies.pathExists(executablePath))
-    ? dependency("playwright", "Playwright Chromium", "Ready", "Compatible browser installed.")
-    : dependency(
+function getPlaywrightReadiness(probe: ReadinessProbeService): Effect.Effect<DependencyReadiness> {
+  return Effect.gen(function* () {
+    const executable = yield* Effect.either(probe.chromiumExecutablePath)
+    if (Either.isLeft(executable)) {
+      return dependency(
         "playwright",
         "Playwright Chromium",
-        "Missing",
-        'Run "pnpm run setup" to install the compatible browser.',
+        "Unreachable",
+        "The compatible browser location could not be determined.",
       )
+    }
+
+    const state = yield* probe.pathState(executable.right)
+    if (state === "present") {
+      return dependency(
+        "playwright",
+        "Playwright Chromium",
+        "Ready",
+        "Compatible browser installed.",
+      )
+    }
+    return state === "missing"
+      ? dependency(
+          "playwright",
+          "Playwright Chromium",
+          "Missing",
+          'Run "pnpm run setup" to install the compatible browser.',
+        )
+      : dependency(
+          "playwright",
+          "Playwright Chromium",
+          "Unreachable",
+          "The compatible browser path cannot be accessed.",
+        )
+  })
 }
 
-async function getDiskReadiness(
-  artifactsPath: string,
-  dependencies: ReadinessDependencies,
-): Promise<DependencyReadiness> {
-  if (!(await dependencies.pathExists(artifactsPath))) {
-    return dependency(
-      "disk",
-      "Artifact storage",
-      "Missing",
-      'Run "pnpm run setup" to create the artifact directory.',
-    )
-  }
+const MINIMUM_ARTIFACT_BYTES = 1024 ** 3
 
-  try {
-    if (!(await dependencies.pathIsWritable(artifactsPath))) {
+function getDiskReadiness(
+  artifactsPath: string,
+  probe: ReadinessProbeService,
+): Effect.Effect<DependencyReadiness> {
+  return Effect.gen(function* () {
+    const state = yield* probe.pathState(artifactsPath)
+    if (state === "missing") {
+      return dependency(
+        "disk",
+        "Artifact storage",
+        "Missing",
+        'Run "pnpm run setup" to create the artifact directory.',
+      )
+    }
+    if (state === "unreachable" || !(yield* probe.pathIsWritable(artifactsPath))) {
       return dependency(
         "disk",
         "Artifact storage",
         "Unreachable",
-        "The artifact directory is not writable.",
+        "The artifact directory is not writable or accessible.",
       )
     }
-    const availableBytes = await dependencies.availableBytes(artifactsPath)
+
+    const capacity = yield* Effect.either(probe.availableBytes(artifactsPath))
+    if (Either.isLeft(capacity)) {
+      return dependency(
+        "disk",
+        "Artifact storage",
+        "Unreachable",
+        "Disk availability could not be determined.",
+      )
+    }
+    if (capacity.right < MINIMUM_ARTIFACT_BYTES) {
+      return dependency(
+        "disk",
+        "Artifact storage",
+        "Unreachable",
+        `At least 1 GiB is required; ${formatBytes(capacity.right)} is available.`,
+      )
+    }
     return dependency(
       "disk",
       "Artifact storage",
       "Ready",
-      `${formatBytes(availableBytes)} available locally.`,
+      `${formatBytes(capacity.right)} available locally.`,
     )
-  } catch {
-    return dependency(
-      "disk",
-      "Artifact storage",
-      "Unreachable",
-      "Disk availability could not be determined.",
-    )
-  }
+  })
 }
 
 function dependency(
@@ -151,20 +210,50 @@ function formatBytes(bytes: number): string {
   return `${gibibytes.toFixed(gibibytes >= 10 ? 0 : 1)} GiB`
 }
 
-const localReadinessDependencies: ReadinessDependencies = {
-  inspectDatabase: inspectLocalDatabase,
-  pathExists: async (path) =>
-    stat(path)
-      .then(() => true)
-      .catch(() => false),
-  pathIsWritable: async (path) =>
-    access(path, constants.W_OK)
-      .then(() => true)
-      .catch(() => false),
-  availableBytes: async (path) => {
-    const storage = await statfs(path)
-    return Number(storage.bavail) * Number(storage.bsize)
-  },
-  chromiumExecutablePath: () => chromium.executablePath(),
-  braveSearchIsConfigured: () => hasBraveSearchConfiguration(),
+function getPathState(path: string): Effect.Effect<PathState> {
+  return Effect.tryPromise({
+    try: () => stat(path),
+    catch: (error) => error,
+  }).pipe(
+    Effect.match({
+      onFailure: (error) =>
+        isNodeError(error) && error.code === "ENOENT" ? "missing" : "unreachable",
+      onSuccess: () => "present",
+    }),
+  )
 }
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error
+}
+
+export const ReadinessProbeLive = Layer.succeed(ReadinessProbe, {
+  inspectDatabase: (path) =>
+    Effect.try({
+      try: () => inspectLocalDatabase(path),
+      catch: (error) => error,
+    }),
+  pathState: getPathState,
+  pathIsWritable: (path) =>
+    Effect.promise(async () => {
+      try {
+        await access(path, constants.W_OK)
+        return true
+      } catch {
+        return false
+      }
+    }),
+  availableBytes: (path) =>
+    Effect.tryPromise({
+      try: async () => {
+        const storage = await statfs(path)
+        return Number(storage.bavail) * Number(storage.bsize)
+      },
+      catch: (error) => error,
+    }),
+  chromiumExecutablePath: Effect.try({
+    try: () => chromium.executablePath(),
+    catch: (error) => error,
+  }),
+  braveSearchIsConfigured: Effect.sync(() => hasBraveSearchConfiguration()),
+})
