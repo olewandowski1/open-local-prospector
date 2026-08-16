@@ -43,6 +43,13 @@
       "when": 1786883314325,
       "tag": "0005_grey_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1786884065115,
+      "tag": "0006_pale_bulldozer",
+      "breakpoints": true
     }
   ]
 }

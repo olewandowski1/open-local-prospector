@@ -59,6 +59,16 @@ describe("Search Brief", () => {
     ).toBe("Failure")
   })
 
+  it.each(["Skip", "IncludeWithoutReassessment", "Reassess"] as const)(
+    "accepts recent-business policy %s",
+    async (recentBusinessPolicy) => {
+      const result = await Effect.runPromise(
+        decodeSearchBrief({ ...validBrief, recentBusinessPolicy }),
+      )
+      expect(result.recentBusinessPolicy).toBe(recentBusinessPolicy)
+    },
+  )
+
   it("accepts a valid location outside Poland", async () => {
     const result = await Effect.runPromise(
       decodeSearchBrief({

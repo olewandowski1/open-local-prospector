@@ -5,15 +5,24 @@ import {
   makeDiscoveryTaskExecutor,
   makeSqliteDiscoveryRepository,
 } from "@/features/business-discovery"
+import {
+  makeIdentityTaskExecutor,
+  makeSqliteIdentityRepository,
+} from "@/features/business-identity"
 import { loadLocalApplicationConfig, migrateLocalDatabase } from "@/features/local-application"
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
 
 const localConfig = loadLocalApplicationConfig()
+const braveSearch = makeBraveSearchSource(process.env.BRAVE_SEARCH_API_KEY)
 const executeDiscovery = makeDiscoveryTaskExecutor(
-  makeBraveSearchSource(process.env.BRAVE_SEARCH_API_KEY),
+  braveSearch,
   makeSqliteDiscoveryRepository(localConfig.databasePath),
+)
+const executeIdentity = makeIdentityTaskExecutor(
+  braveSearch,
+  makeSqliteIdentityRepository(localConfig.databasePath),
 )
 
 const program = Effect.gen(function* () {
@@ -29,7 +38,7 @@ const program = Effect.gen(function* () {
   Effect.provide(
     Layer.merge(
       sqliteRunTaskRepositoryLive(loadLocalApplicationConfig().databasePath),
-      stageExecutorLive(executeDiscovery),
+      stageExecutorLive(executeDiscovery, executeIdentity),
     ),
   ),
 )

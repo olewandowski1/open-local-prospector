@@ -147,8 +147,11 @@ function readBusinesses(
 ): readonly BusinessProgress[] {
   const rows = database
     .prepare(
-      `select business_id, stage, status, attempt_count, failure from run_tasks
-       where run_id = ? and business_id is not null order by updated_at desc`,
+      `select t.business_id, t.stage, t.status, t.attempt_count, t.failure,
+       rb.status as identity_status, rb.exclusion_reason
+       from run_tasks t left join run_businesses rb
+        on rb.run_id = t.run_id and rb.discovered_business_id = t.business_id
+       where t.run_id = ? and t.business_id is not null order by t.updated_at desc`,
     )
     .all(runId) as Array<{
     business_id: string
@@ -156,15 +159,18 @@ function readBusinesses(
     status: string
     attempt_count: number
     failure: string | null
+    identity_status: string | null
+    exclusion_reason: string | null
   }>
   const businesses = new Map<string, BusinessProgress>()
   for (const row of rows) {
     const existing = businesses.get(row.business_id)
-    const failureReason = failureMessage(row.failure) ?? existing?.failureReason
+    const failureReason =
+      failureMessage(row.failure) ?? row.exclusion_reason ?? existing?.failureReason
     businesses.set(row.business_id, {
       id: row.business_id,
       currentStage: existing?.currentStage ?? row.stage,
-      status: existing?.status ?? row.status,
+      status: existing?.status ?? row.identity_status ?? row.status,
       retryCount: (existing?.retryCount ?? 0) + Math.max(0, row.attempt_count - 1),
       ...(failureReason ? { failureReason } : {}),
       sourceEvents:

@@ -13,6 +13,9 @@ export const SearchBriefDraftSchema = Schema.Struct({
   targetCount: Schema.Number.pipe(Schema.int(), Schema.between(5, 50)),
   mode: Schema.Literal("Quick", "Thorough"),
   runtime: RuntimeIdSchema,
+  recentBusinessPolicy: Schema.optional(
+    Schema.Literal("Skip", "IncludeWithoutReassessment", "Reassess"),
+  ),
 })
 
 export type SearchBriefDraft = typeof SearchBriefDraftSchema.Type

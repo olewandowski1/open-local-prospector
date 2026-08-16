@@ -8,7 +8,10 @@ import type { RunTask, TaskCheckpoint } from "@/features/run-execution/domain/ru
 
 type DiscoveryTaskExecutor = (task: RunTask) => Effect.Effect<TaskCheckpoint, TaskExecutionError>
 
-export const stageExecutorLive = (executeDiscovery: DiscoveryTaskExecutor) =>
+export const stageExecutorLive = (
+  executeDiscovery: DiscoveryTaskExecutor,
+  executeIdentity?: DiscoveryTaskExecutor,
+) =>
   Layer.succeed(StageExecutor, {
     execute: (task) => {
       if (task.stage === "RunPlanning") {
@@ -23,6 +26,9 @@ export const stageExecutorLive = (executeDiscovery: DiscoveryTaskExecutor) =>
       }
       if (task.stage === "DiscoverBusinesses") {
         return executeDiscovery(task)
+      }
+      if (task.stage === "CorroborateBusiness" && executeIdentity) {
+        return executeIdentity(task)
       }
       return Effect.fail(
         new TaskExecutionError({

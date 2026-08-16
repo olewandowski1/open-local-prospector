@@ -46,6 +46,7 @@ type DraftState = Readonly<{
   targetCount: string
   mode: "Quick" | "Thorough"
   runtime: RuntimeId | ""
+  recentBusinessPolicy: "Skip" | "IncludeWithoutReassessment" | "Reassess"
 }>
 
 export function SearchBriefPage({
@@ -72,6 +73,7 @@ export function SearchBriefPage({
     targetCount: String(defaults?.targetCount ?? 10),
     mode: defaults?.mode ?? "Quick",
     runtime: preferredRuntime ?? "",
+    recentBusinessPolicy: "Skip",
   })
   const [preflight, setPreflight] = useState<SearchBriefPreflight>()
   const [selectedAreaId, setSelectedAreaId] = useState("")
@@ -104,6 +106,7 @@ export function SearchBriefPage({
     targetCount: Number(draft.targetCount),
     mode: draft.mode,
     runtime: draft.runtime,
+    recentBusinessPolicy: draft.recentBusinessPolicy,
   })
 
   const checkPreflight = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -296,6 +299,47 @@ export function SearchBriefPage({
                       ))}
                     </RadioGroup>
                   </FieldSet>
+
+                  <Field>
+                    <FieldLabel htmlFor="recent-business-policy">
+                      Recently assessed businesses
+                    </FieldLabel>
+                    <Select
+                      items={[
+                        { label: "Skip by default", value: "Skip" },
+                        {
+                          label: "Include existing assessment",
+                          value: "IncludeWithoutReassessment",
+                        },
+                        { label: "Explicitly reassess", value: "Reassess" },
+                      ]}
+                      value={draft.recentBusinessPolicy}
+                      onValueChange={(value) =>
+                        value &&
+                        invalidate({
+                          recentBusinessPolicy: value as DraftState["recentBusinessPolicy"],
+                        })
+                      }
+                    >
+                      <SelectTrigger
+                        id="recent-business-policy"
+                        aria-label="Recently assessed businesses"
+                        className="w-full"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Skip">Skip by default</SelectItem>
+                        <SelectItem value="IncludeWithoutReassessment">
+                          Include existing assessment
+                        </SelectItem>
+                        <SelectItem value="Reassess">Explicitly reassess</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Reassessment is always an explicit choice and never overwrites history.
+                    </FieldDescription>
+                  </Field>
 
                   <Field>
                     <FieldLabel htmlFor="runtime">Subscription runtime</FieldLabel>

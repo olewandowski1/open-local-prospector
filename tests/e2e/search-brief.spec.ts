@@ -59,6 +59,8 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
   await page.getByRole("option", { name: "Custom category" }).click()
   await page.getByLabel("Custom category").fill("Independent climbing gyms")
   await page.getByText("Thorough", { exact: true }).click()
+  await page.getByRole("combobox", { name: "Recently assessed businesses" }).click()
+  await page.getByRole("option", { name: "Include existing assessment" }).click()
   await Promise.all([
     page.waitForRequest("**/api/prospecting-runs/preflight"),
     preflightButton.click(),
@@ -69,6 +71,7 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
     targetCount: 50,
     category: "Independent climbing gyms",
     mode: "Thorough",
+    recentBusinessPolicy: "IncludeWithoutReassessment",
   })
   await expect(page.getByText("Select the intended Search Area explicitly.")).toBeVisible()
   await expect(page.getByRole("button", { name: "Confirm and create run" })).toBeDisabled()
