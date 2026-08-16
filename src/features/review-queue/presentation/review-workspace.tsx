@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -50,6 +50,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     setSelectedId(id)
     localStorage.setItem("review-selection", id)
   }
+  const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(24rem,1.2fr)]">
       <Card>
@@ -71,6 +72,20 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
               </SelectGroup>
             </SelectContent>
           </Select>
+          <div className="flex gap-2">
+            <a
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href={`/api/export?format=csv${exportQuery}`}
+            >
+              Export CSV
+            </a>
+            <a
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              href={`/api/export?format=json${exportQuery}`}
+            >
+              Export JSON
+            </a>
+          </div>
         </CardHeader>
         <CardContent>
           <ul className="flex flex-col gap-2">
@@ -112,6 +127,17 @@ function CandidateDetail({ candidate }: { candidate: QueueCandidate }) {
     })
     const result = (await response.json()) as { error?: string }
     setMessage(response.ok ? "Saved. Refreshing…" : (result.error ?? "Could not save."))
+    if (response.ok) location.reload()
+  }
+  async function suppress(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const reason = String(new FormData(event.currentTarget).get("reason") ?? "")
+    const response = await fetch(`/api/review/${candidate.id}/suppress`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason }),
+    })
+    setMessage(response.ok ? "Suppressed globally. Refreshing…" : "Suppression failed.")
     if (response.ok) location.reload()
   }
   return (
@@ -318,6 +344,20 @@ function CandidateDetail({ candidate }: { candidate: QueueCandidate }) {
             Original machine assessment remains immutable.
           </p>
         </section>
+        <Separator />
+        <form className="flex flex-col gap-3" onSubmit={suppress}>
+          <Field>
+            <FieldLabel htmlFor="suppressionReason">Do not contact reason</FieldLabel>
+            <Input id="suppressionReason" name="reason" required />
+          </Field>
+          <Button type="submit" variant="destructive">
+            Suppress globally
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Prevents future recommendation, reassessment for outreach, and export. It does not
+            contact anyone.
+          </p>
+        </form>
       </CardContent>
     </Card>
   )

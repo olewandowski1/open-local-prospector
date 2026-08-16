@@ -227,14 +227,23 @@ function commitEvaluation(
       previousAssessment !== null &&
       previousAssessment >= input.committedAt.getTime() - 30 * 24 * 60 * 60 * 1_000
     const policy = input.searchBrief.recentBusinessPolicy ?? "Skip"
+    const suppressed = canonicalBusinessId
+      ? Boolean(
+          database
+            .prepare("select 1 from suppression_entries where canonical_business_id = ?")
+            .get(canonicalBusinessId),
+        )
+      : false
     const status: CommittedIdentity["status"] =
       input.evaluation.status !== "Eligible"
         ? input.evaluation.status
-        : recentlyAssessed && policy === "Skip"
-          ? "SkippedRecent"
-          : recentlyAssessed && policy === "IncludeWithoutReassessment"
-            ? "IncludedRecent"
-            : "Eligible"
+        : suppressed
+          ? "Excluded"
+          : recentlyAssessed && policy === "Skip"
+            ? "SkippedRecent"
+            : recentlyAssessed && policy === "IncludeWithoutReassessment"
+              ? "IncludedRecent"
+              : "Eligible"
     const runBusinessId = upsertRunBusiness(database, input, canonicalBusinessId, status)
     replacePresences(database, runBusinessId, canonicalBusinessId, input.evaluation)
     if (canonicalBusinessId) {

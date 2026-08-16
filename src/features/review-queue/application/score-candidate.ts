@@ -67,11 +67,15 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         localDecisionLikelihood: row.decision_scope === "Local" ? 1 : 0,
         apparentCommercialValue: row.apparent_commercial_value,
       })
+      const suppressed = db
+        .prepare("select 1 from suppression_entries where canonical_business_id=?")
+        .get(row.canonical_business_id)
       const qualified =
         breakdown.total >= REVIEW_QUEUE_THRESHOLD &&
         row.opportunities > 0 &&
         row.observations > 0 &&
-        Boolean(row.has_contact)
+        Boolean(row.has_contact) &&
+        !suppressed
       const id = crypto.randomUUID()
       const now = Date.now()
       db.prepare(

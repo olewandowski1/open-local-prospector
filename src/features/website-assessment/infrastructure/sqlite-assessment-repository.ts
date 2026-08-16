@@ -86,6 +86,10 @@ function loadTarget(
     where wi.id = ? and wi.run_id = ?`)
     .get(inspectionId, runId) as TargetRow | undefined
   if (!row) throw new Error("assessment target missing")
+  const suppressed = db
+    .prepare("select 1 from suppression_entries where canonical_business_id = ?")
+    .get(row.canonical_business_id)
+  if (suppressed) throw new Error("business is globally suppressed")
   const brief = JSON.parse(row.search_brief) as {
     category: string
     runtime: AssessmentTarget["runtimeId"]

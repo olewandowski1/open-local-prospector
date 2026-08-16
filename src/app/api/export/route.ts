@@ -1,0 +1,24 @@
+import { NextResponse } from "next/server"
+import { loadLocalApplicationConfig } from "@/features/local-application"
+import { exportCandidates } from "@/features/review-queue/application/export-candidates"
+
+export function GET(request: Request) {
+  try {
+    const url = new URL(request.url)
+    const format = url.searchParams.get("format") === "json" ? "json" : "csv"
+    const result = exportCandidates(loadLocalApplicationConfig().databasePath, {
+      format,
+      statuses: url.searchParams.getAll("status"),
+      includeNamedProfessionalContacts:
+        url.searchParams.get("includeNamedProfessionalContacts") === "true",
+    })
+    return new NextResponse(result.body, {
+      headers: {
+        "content-type": result.contentType,
+        "content-disposition": `attachment; filename="${result.filename}"`,
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: "Export failed safely." }, { status: 500 })
+  }
+}

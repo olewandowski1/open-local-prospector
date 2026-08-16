@@ -64,3 +64,11 @@ export const candidateCorrections = sqliteTable(
   },
   (table) => [index("candidate_corrections_history_idx").on(table.scoreId, table.createdAt)],
 )
+
+export const suppressionEntries = sqliteTable("suppression_entries", {
+  canonicalBusinessId: text("canonical_business_id")
+    .primaryKey()
+    .references(() => canonicalBusinesses.id, { onDelete: "cascade" }),
+  reason: text().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+})
