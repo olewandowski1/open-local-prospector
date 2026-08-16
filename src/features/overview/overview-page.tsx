@@ -1,7 +1,8 @@
 import { CircleCheck, Clock3, Download, Globe2, MapPin, Play, Plus } from "lucide-react"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -31,10 +32,10 @@ export function OverviewPage() {
             Review promising local businesses or start a focused scan.
           </p>
         </div>
-        <Button disabled>
+        <Link href="/runs/new" className={buttonVariants()}>
           <Plus data-icon="inline-start" aria-hidden="true" />
           New prospecting run
-        </Button>
+        </Link>
       </div>
 
       <section
@@ -147,10 +148,10 @@ export function OverviewPage() {
               Choose a Polish location, category, depth, and AI runtime. Public sources only.
             </p>
           </div>
-          <Button variant="outline" disabled>
+          <Link href="/runs/new" className={buttonVariants({ variant: "outline" })}>
             <Clock3 data-icon="inline-start" aria-hidden="true" />
             Start quick scan
-          </Button>
+          </Link>
         </CardContent>
       </Card>
     </main>

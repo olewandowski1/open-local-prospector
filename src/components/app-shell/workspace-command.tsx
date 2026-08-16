@@ -71,9 +71,9 @@ export function WorkspaceCommand({
             })}
           </CommandGroup>
           <CommandGroup heading="Actions">
-            <CommandItem disabled>
+            <CommandItem onSelect={() => navigate("/runs/new")}>
               <Plus aria-hidden="true" />
-              <span>Start a new run · Coming soon</span>
+              <span>Start a new run</span>
             </CommandItem>
           </CommandGroup>
         </CommandList>

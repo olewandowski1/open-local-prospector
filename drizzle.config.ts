@@ -5,6 +5,7 @@ export default defineConfig({
   schema: [
     "./src/features/local-application/infrastructure/database/schema.ts",
     "./src/features/runtime-settings/infrastructure/schema.ts",
+    "./src/features/prospecting-runs/infrastructure/schema.ts",
   ],
   out: "./drizzle",
   dbCredentials: {

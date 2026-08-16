@@ -6,7 +6,7 @@ export const RuntimeIdSchema = Schema.Literal("codex", "claude", "opencode")
 
 export type RuntimeId = typeof RuntimeIdSchema.Type
 
-export const SearchBriefSchema = Schema.Struct({
+export const SearchBriefDraftSchema = Schema.Struct({
   location: TrimmedNonEmptyString,
   radiusKm: Schema.optional(Schema.Number.pipe(Schema.nonNegative())),
   category: TrimmedNonEmptyString,
@@ -15,6 +15,24 @@ export const SearchBriefSchema = Schema.Struct({
   runtime: RuntimeIdSchema,
 })
 
+export type SearchBriefDraft = typeof SearchBriefDraftSchema.Type
+
+export const SearchAreaSchema = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  displayName: TrimmedNonEmptyString,
+  latitude: Schema.Number.pipe(Schema.between(-90, 90)),
+  longitude: Schema.Number.pipe(Schema.between(-180, 180)),
+  countryCode: Schema.String.pipe(Schema.uppercased(), Schema.length(2)),
+})
+
+export type SearchArea = typeof SearchAreaSchema.Type
+
+export const SearchBriefSchema = Schema.extend(
+  SearchBriefDraftSchema,
+  Schema.Struct({ searchArea: SearchAreaSchema }),
+)
+
 export type SearchBrief = typeof SearchBriefSchema.Type
 
+export const decodeSearchBriefDraft = Schema.decodeUnknown(SearchBriefDraftSchema)
 export const decodeSearchBrief = Schema.decodeUnknown(SearchBriefSchema)

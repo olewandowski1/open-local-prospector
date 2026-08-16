@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect"
+import { Effect, Layer, Option } from "effect"
 
 import {
   type PendingProspectingRun,
@@ -10,16 +10,31 @@ export const makeInMemoryProspectingRunRepository = () => {
   return {
     runs,
     layer: Layer.succeed(ProspectingRunRepositoryTag, {
-      createPending: (searchBrief) =>
+      createPending: (searchBrief, requestId) =>
         Effect.sync(() => {
+          const existing = runs.find((run) => run.requestId === requestId)
+          if (existing) return existing
           const run: PendingProspectingRun = {
             id: crypto.randomUUID(),
+            requestId,
             searchBrief,
             state: "Pending",
+            createdAt: new Date(),
           }
           runs.push(run)
           return run
         }),
+      getDefaults: Effect.sync(() => {
+        const latest = runs.at(-1)?.searchBrief
+        return latest
+          ? Option.some({
+              radiusKm: latest.radiusKm,
+              category: latest.category,
+              targetCount: latest.targetCount,
+              mode: latest.mode,
+            })
+          : Option.none()
+      }),
     }),
   }
 }

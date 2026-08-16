@@ -1,7 +1,10 @@
 import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 
-import { decodeSearchBrief } from "@/features/prospecting-runs/domain/search-brief"
+import {
+  decodeSearchBrief,
+  decodeSearchBriefDraft,
+} from "@/features/prospecting-runs/domain/search-brief"
 
 const validBrief = {
   location: "Kraków",
@@ -9,6 +12,13 @@ const validBrief = {
   targetCount: 10,
   mode: "Quick",
   runtime: "codex",
+  searchArea: {
+    id: "relation:276892",
+    displayName: "Kraków, województwo małopolskie, Polska",
+    latitude: 50.0614,
+    longitude: 19.9366,
+    countryCode: "PL",
+  },
 }
 
 describe("Search Brief", () => {
@@ -47,5 +57,31 @@ describe("Search Brief", () => {
       (await Effect.runPromiseExit(decodeSearchBrief({ ...validBrief, runtime: "openrouter" })))
         ._tag,
     ).toBe("Failure")
+  })
+
+  it("accepts a valid location outside Poland", async () => {
+    const result = await Effect.runPromise(
+      decodeSearchBrief({
+        ...validBrief,
+        location: "Berlin, Germany",
+        searchArea: {
+          id: "relation:62422",
+          displayName: "Berlin, Deutschland",
+          latitude: 52.517,
+          longitude: 13.3889,
+          countryCode: "DE",
+        },
+      }),
+    )
+
+    expect(result.searchArea.countryCode).toBe("DE")
+  })
+
+  it("decodes an unconfirmed draft without a Search Area", async () => {
+    const { searchArea: _searchArea, ...draft } = validBrief
+    const result = await Effect.runPromise(decodeSearchBriefDraft(draft))
+
+    expect(result.location).toBe("Kraków")
+    expect("searchArea" in result).toBe(false)
   })
 })

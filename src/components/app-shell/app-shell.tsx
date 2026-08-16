@@ -67,7 +67,8 @@ function NavigationGroup({ label, items }: { label: string; items: readonly Navi
 export function AppShell({ children }: { children: ReactNode }) {
   const command = useWorkspaceCommand()
   const pathname = usePathname()
-  const currentPage = pathname === "/settings" ? "Settings" : "Overview"
+  const currentPage =
+    pathname === "/settings" ? "Settings" : pathname === "/runs/new" ? "New run" : "Overview"
 
   return (
     <SidebarProvider defaultOpen className="min-h-svh">

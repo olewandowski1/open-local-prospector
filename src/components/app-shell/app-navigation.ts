@@ -10,7 +10,7 @@ export type NavigationItem = Readonly<{
 
 export const primaryNavigation: readonly NavigationItem[] = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Runs", icon: FileSearch },
+  { label: "New run", href: "/runs/new", icon: FileSearch },
   { label: "Review queue", icon: ListChecks },
   { label: "Businesses", icon: Building2 },
 ]

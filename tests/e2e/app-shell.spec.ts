@@ -9,7 +9,10 @@ test("renders the prospecting overview", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Prospecting summary" })).toContainText(
     "Businesses found",
   )
-  await expect(page.getByRole("button", { name: "New prospecting run" })).toBeDisabled()
+  await expect(page.getByRole("link", { name: "New prospecting run" })).toHaveAttribute(
+    "href",
+    "/runs/new",
+  )
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
@@ -24,10 +27,7 @@ test("opens and closes the command palette", async ({ page, isMobile }) => {
     await page.getByRole("button", { name: /Search/ }).click()
   }
   await expect(page.getByRole("combobox", { name: "Search workspace" })).toBeFocused()
-  await expect(page.getByRole("option", { name: "Start a new run · Coming soon" })).toHaveAttribute(
-    "data-disabled",
-    "true",
-  )
+  await expect(page.getByRole("option", { name: "Start a new run" })).toBeVisible()
   await page.keyboard.press("Escape")
   await expect(page.getByRole("combobox", { name: "Search workspace" })).toBeHidden()
 })

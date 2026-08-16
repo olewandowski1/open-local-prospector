@@ -15,6 +15,13 @@
       "when": 1786879863686,
       "tag": "0001_runtime_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786880678322,
+      "tag": "0002_prospecting_runs",
+      "breakpoints": true
     }
   ]
 }
