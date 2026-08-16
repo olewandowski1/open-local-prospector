@@ -111,6 +111,11 @@ function safeRuntimeEnvironment(
     "TEMP",
     "TMP",
     "LANG",
+    "OPENCODE_PERMISSION",
+    "OPENCODE_DISABLE_DEFAULT_PLUGINS",
+    "OPENCODE_DISABLE_CLAUDE_CODE",
+    "OPENCODE_DISABLE_LSP_DOWNLOAD",
+    "OPENCODE_DISABLE_MODELS_FETCH",
   ] as const
   const safe: NodeJS.ProcessEnv = { NODE_ENV: "production" }
   for (const key of allowed) if (environment[key] !== undefined) safe[key] = environment[key]

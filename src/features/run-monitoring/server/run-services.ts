@@ -1,6 +1,7 @@
 import { Effect } from "effect"
 
 import { loadLocalApplicationConfig } from "@/features/local-application"
+import type { RuntimeId } from "@/features/prospecting-runs"
 import {
   controlRun,
   getRun,
@@ -14,5 +15,5 @@ const layer = () => sqliteRunMonitoringLive(loadLocalApplicationConfig().databas
 export const listPersistedRuns = () => Effect.runPromise(listRuns.pipe(Effect.provide(layer())))
 export const getPersistedRun = (runId: string) =>
   Effect.runPromise(getRun(runId).pipe(Effect.provide(layer())))
-export const requestRunControl = (runId: string, control: RunControl) =>
-  Effect.runPromise(controlRun(runId, control).pipe(Effect.provide(layer())))
+export const requestRunControl = (runId: string, control: RunControl, runtime?: RuntimeId) =>
+  Effect.runPromise(controlRun(runId, control, runtime).pipe(Effect.provide(layer())))

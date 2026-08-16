@@ -22,9 +22,11 @@ import {
 export function makeCodexAssessmentRuntime(
   executable: string,
   runProcess: RuntimeProcess = executeRuntimeProcess,
+  version?: string,
 ): AssessmentRuntime {
   return {
     id: "codex",
+    ...(version ? { version } : {}),
     assess: (evidence) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({

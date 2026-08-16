@@ -80,7 +80,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Architecture decisions](docs/adr)
 - [Implementation plans](plans/README.md)
 
-Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Brave Web Search discovery and identity-evidence lookup use only its official API and do not scrape consumer result pages. Codex assessment uses a direct, bounded, no-shell CLI adapter and persists only schema-validated, cited output; Claude Code and OpenCode currently support readiness detection and local selection, with assessment adapters still planned. Do not treat remaining PRD acceptance criteria as current behavior.
+Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Brave Web Search discovery and identity-evidence lookup use only its official API and do not scrape consumer result pages. Codex, Claude Code, and OpenCode assessment adapters launch subscription CLIs directly with bounded, no-shell execution and persist only schema-validated, cited output. No adapter falls back to a usage-based API or another provider.
 
 ## License
 

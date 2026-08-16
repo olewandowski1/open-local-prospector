@@ -14,10 +14,12 @@ import { makeScoreCandidateTaskExecutor } from "@/features/review-queue"
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
-import { resolveRuntimeExecutable } from "@/features/runtime-settings"
+import { executeRuntimeCommand, resolveRuntimeExecutable } from "@/features/runtime-settings"
 import {
   makeAssessmentTaskExecutor,
+  makeClaudeAssessmentRuntime,
   makeCodexAssessmentRuntime,
+  makeOpenCodeAssessmentRuntime,
   makeSqliteAssessmentRepository,
 } from "@/features/website-assessment"
 import {
@@ -47,9 +49,37 @@ const program = Effect.gen(function* () {
   const worker = loadWorkerConfiguration()
   yield* Effect.try(() => migrateLocalDatabase(localConfig.databasePath))
   const codexExecutable = yield* resolveRuntimeExecutable("codex")
-  const assessmentRuntimes = Option.isSome(codexExecutable)
-    ? { codex: makeCodexAssessmentRuntime(codexExecutable.value) }
-    : {}
+  const claudeExecutable = yield* resolveRuntimeExecutable("claude")
+  const opencodeExecutable = yield* resolveRuntimeExecutable("opencode")
+  const assessmentRuntimes = {
+    ...(Option.isSome(codexExecutable)
+      ? {
+          codex: makeCodexAssessmentRuntime(
+            codexExecutable.value,
+            undefined,
+            yield* runtimeVersion(codexExecutable.value),
+          ),
+        }
+      : {}),
+    ...(Option.isSome(claudeExecutable)
+      ? {
+          claude: makeClaudeAssessmentRuntime(
+            claudeExecutable.value,
+            undefined,
+            yield* runtimeVersion(claudeExecutable.value),
+          ),
+        }
+      : {}),
+    ...(Option.isSome(opencodeExecutable)
+      ? {
+          opencode: makeOpenCodeAssessmentRuntime(
+            opencodeExecutable.value,
+            undefined,
+            yield* runtimeVersion(opencodeExecutable.value),
+          ),
+        }
+      : {}),
+  }
   const executeAssessment = makeAssessmentTaskExecutor(
     makeSqliteAssessmentRepository(localConfig.databasePath),
     assessmentRuntimes,
@@ -76,3 +106,10 @@ const program = Effect.gen(function* () {
 })
 
 await Effect.runPromise(program)
+
+function runtimeVersion(executable: string) {
+  return executeRuntimeCommand(executable, ["--version"]).pipe(
+    Effect.map((result) => result.stdout.trim().slice(0, 200) || "unknown"),
+    Effect.catchAll(() => Effect.succeed("unknown")),
+  )
+}

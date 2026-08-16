@@ -46,6 +46,7 @@ export class AssessmentRuntimeError extends Data.TaggedError("AssessmentRuntimeE
 
 export interface AssessmentRuntime {
   readonly id: "codex" | "claude" | "opencode"
+  readonly version?: string
   readonly assess: (
     evidence: AssessmentEvidenceEnvelope,
   ) => Effect.Effect<AssessmentOutput, AssessmentRuntimeError>

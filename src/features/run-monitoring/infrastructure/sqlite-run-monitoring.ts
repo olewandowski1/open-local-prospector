@@ -1,6 +1,6 @@
 import Database from "better-sqlite3"
 import { Effect, Layer } from "effect"
-import type { SearchBrief } from "@/features/prospecting-runs"
+import type { RuntimeId, SearchBrief } from "@/features/prospecting-runs"
 
 import {
   type RunControl,
@@ -46,8 +46,8 @@ export const sqliteRunMonitoringLive = (databasePath: string) =>
       get: (runId) => readEffect(databasePath, "read", (database) => get(database, runId)),
     }),
     Layer.succeed(RunControlRepository, {
-      request: (runId, control) =>
-        writeEffect(databasePath, (database) => requestControl(database, runId, control)),
+      request: (runId, control, runtime) =>
+        writeEffect(databasePath, (database) => requestControl(database, runId, control, runtime)),
     }),
   )
 
@@ -229,7 +229,12 @@ function readTechnicalLog(
   ].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
 }
 
-function requestControl(database: Database.Database, runId: string, control: RunControl): void {
+function requestControl(
+  database: Database.Database,
+  runId: string,
+  control: RunControl,
+  runtime?: RuntimeId,
+): void {
   database.transaction(() => {
     const run = database
       .prepare("select state, requested_control from prospecting_runs where id = ?")
@@ -237,9 +242,35 @@ function requestControl(database: Database.Database, runId: string, control: Run
     if (!run) throw new Error("run not found")
     const now = Date.now()
     if (control === "Pause") pause(database, runId, run.state, now)
-    if (control === "Resume") resume(database, runId, run.state, now)
+    if (control === "Resume") {
+      if (runtime) changeRuntime(database, runId, runtime, now)
+      resume(database, runId, run.state, now)
+    }
     if (control === "Cancel") cancel(database, runId, run.state, now)
   })()
+}
+
+function changeRuntime(
+  database: Database.Database,
+  runId: string,
+  runtime: RuntimeId,
+  now: number,
+): void {
+  const raw = database
+    .prepare("select search_brief from prospecting_runs where id=?")
+    .pluck()
+    .get(runId)
+  if (typeof raw !== "string") throw new Error("run not found")
+  const brief = JSON.parse(raw) as SearchBrief
+  if (brief.runtime === runtime) return
+  database
+    .prepare("update prospecting_runs set search_brief=? where id=?")
+    .run(JSON.stringify({ ...brief, runtime }), runId)
+  database
+    .prepare(
+      `insert into technical_run_events (id,run_id,kind,message,details,schema_version,created_at) values (?,?,'RuntimeChanged','The selected subscription runtime changed during explicit resume.',?,1,?)`,
+    )
+    .run(crypto.randomUUID(), runId, JSON.stringify({ from: brief.runtime, to: runtime }), now)
 }
 
 function pause(database: Database.Database, runId: string, fromState: string, now: number): void {

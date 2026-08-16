@@ -33,7 +33,7 @@ export function makeAssessmentTaskExecutor(
         .assess(target.evidence)
         .pipe(Effect.mapError((error) => failure(error.classification, error.code, error.message)))
       const assessmentId = yield* repository
-        .commit(target, output)
+        .commit(target, output, runtime.version)
         .pipe(
           Effect.mapError(() =>
             failure(
