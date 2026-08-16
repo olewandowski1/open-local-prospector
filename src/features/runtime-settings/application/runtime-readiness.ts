@@ -74,7 +74,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     },
     installInstruction: "Run: npm install -g @openai/codex, then: codex login",
     loginInstruction: "Run in your terminal: codex login",
-    updateInstruction: "Update Codex CLI with its official installer.",
+    updateInstruction: "Run: npm update -g @openai/codex",
   },
   claude: {
     id: "claude",
@@ -99,7 +99,8 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     installInstruction:
       "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash. Then run: claude auth login",
     loginInstruction: "Run in your terminal: claude auth login",
-    updateInstruction: "Update Claude Code with its official installer.",
+    updateInstruction:
+      "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash",
   },
   opencode: {
     id: "opencode",
@@ -111,7 +112,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
       if (exitCode !== 0) return "unsupported"
       const match = `${stdout}\n${stderr}`.match(/(\d+)\s+credentials?/iu)
       if (!match) return "unsupported"
-      const hasOpenCodeSubscription = /OpenCode\s+(?:Go|Zen)/iu.test(stdout)
+      const hasOpenCodeSubscription = /OpenCode\s+Go/iu.test(stdout)
       return Number(match[1]) > 0 && hasOpenCodeSubscription ? "ready" : "logged-out"
     },
     installInstruction: "Run: npm install -g opencode-ai, then: opencode auth login",

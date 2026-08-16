@@ -144,3 +144,20 @@ it("rejects a status response containing an undocumented field", async () => {
 
   expect(result.status).toBe("Unsupported Version")
 })
+
+it("does not treat usage-billed OpenCode Zen credentials as a subscription", async () => {
+  let call = 0
+  const result = await runProbe("opencode", {
+    resolveExecutable: () => Effect.succeed(Option.some("/bin/opencode")),
+    execute: () => {
+      call += 1
+      return Effect.succeed(
+        call === 1
+          ? { exitCode: 0, stdout: versionOutput.opencode, stderr: "" }
+          : { exitCode: 0, stdout: "OpenCode Zen api\n1 credential", stderr: "" },
+      )
+    },
+  })
+
+  expect(result.status).toBe("Logged Out")
+})
