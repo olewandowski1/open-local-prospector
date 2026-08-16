@@ -187,6 +187,25 @@ function complete(
         insertTask(database, task.runId, nextTask, now)
       }
     }
+    if (checkpoint.completionState && (checkpoint.nextTasks?.length ?? 0) === 0) {
+      database
+        .prepare(
+          `update prospecting_runs set state = 'Completed', completion_state = ?, current_stage = ?,
+           updated_at = ?, version = version + 1 where id = ?`,
+        )
+        .run(checkpoint.completionState, task.stage, now.getTime(), task.runId)
+      transition(
+        database,
+        task.runId,
+        null,
+        null,
+        "Completed",
+        "RunSettled",
+        { state: "Completed", completion: checkpoint.completionState },
+        now,
+      )
+      return
+    }
     updateRunAfterSettledTask(database, task.runId, task.stage, now)
   })()
 }

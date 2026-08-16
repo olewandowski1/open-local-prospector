@@ -32,6 +32,7 @@ export type NewRunTask = Readonly<{
 export type TaskCheckpoint = Readonly<{
   value: Readonly<Record<string, unknown>>
   nextTasks?: readonly NewRunTask[]
+  completionState?: "Search Exhausted"
 }>
 
 export type TaskFailureClassification =
