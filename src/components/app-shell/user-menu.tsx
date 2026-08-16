@@ -1,6 +1,7 @@
 "use client"
 
 import { Settings } from "lucide-react"
+import Link from "next/link"
 import type { ReactElement } from "react"
 
 import {
@@ -18,9 +19,9 @@ export function UserMenu({ trigger }: { trigger: ReactElement }) {
       <DropdownMenuTrigger render={trigger} />
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem render={<Link href="/settings" />}>
             <Settings aria-hidden="true" />
-            Settings · Coming soon
+            Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

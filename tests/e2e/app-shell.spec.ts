@@ -47,3 +47,18 @@ test("collapses desktop navigation", async ({ page, isMobile }) => {
   await page.getByRole("button", { name: "Toggle Sidebar" }).click()
   await expect(page.getByText("Find businesses worth helping")).toBeHidden()
 })
+
+test("reports local dependency readiness without rendering secrets", async ({ page }) => {
+  await page.goto("/settings")
+
+  await expect(page.getByRole("heading", { name: "Local readiness" })).toBeVisible()
+  const readiness = page.getByRole("region", { name: "Local dependency readiness" })
+  await expect(readiness).toContainText("SQLite")
+  await expect(readiness).toContainText("Brave Search")
+  await expect(readiness).toContainText("Playwright Chromium")
+  await expect(readiness).toContainText("Artifact storage")
+  await expect(page.locator("body")).not.toContainText("BRAVE_SEARCH_API_KEY=")
+  if (process.env.BRAVE_SEARCH_API_KEY) {
+    await expect(page.locator("body")).not.toContainText(process.env.BRAVE_SEARCH_API_KEY)
+  }
+})

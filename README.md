@@ -2,13 +2,12 @@
 
 Open Local Prospector is a local-first application for finding independent businesses whose public online presence suggests a meaningful website opportunity. Poland is the initial focus. The application is designed for one local user and performs no outreach.
 
-The repository currently contains the product specification, architecture decisions, a responsive shadcn/7Ovr UI spike, the first Search Brief and Prospecting Run module, a separate worker composition root, and verification tooling. Brave Search discovery, SQLite durability, browser inspection, and provider runtime adapters remain planned MVP work.
+The repository contains the product specification, architecture decisions, a responsive shadcn/7Ovr UI spike, the first Search Brief and Prospecting Run module, durable local SQLite setup, dependency readiness diagnostics, a separate worker composition root, and verification tooling. Brave Search discovery, website inspection, and provider runtime adapters remain planned MVP work.
 
 ## Requirements
 
 - Node.js 22 or newer
 - pnpm 10.32.1, enabled through Corepack or installed directly
-- Chromium for end-to-end tests: `pnpm exec playwright install chromium`
 
 Docker, PostgreSQL, and usage-based AI credentials are not required.
 
@@ -16,8 +15,13 @@ Docker, PostgreSQL, and usage-based AI credentials are not required.
 
 ```powershell
 pnpm install
+pnpm run setup
 pnpm dev
 ```
+
+`pnpm run setup` creates or migrates the local SQLite database, prepares artifact storage, copies the non-secret `.env.local.example` template when needed, and installs the compatible Playwright Chromium build. It is safe to run repeatedly. Use the explicit `run`: `pnpm setup` is a reserved pnpm command and does not invoke project scripts.
+
+Local state is stored under `.local/` by default and is ignored by Git. Override `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in `.env.local` when needed. Add `BRAVE_SEARCH_API_KEY` there to make Brave Search configuration ready; its value remains server-side.
 
 The Next.js server binds to `127.0.0.1:4310` by default. It is intentionally not exposed to the local network.
 
@@ -72,7 +76,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Architecture decisions](docs/adr)
 - [Implementation plans](plans/README.md)
 
-`pnpm setup`, SQLite migrations, Playwright website inspection, Brave Search configuration, and Codex/Claude/OpenCode runtime readiness are specified but not implemented yet. Do not treat PRD acceptance criteria as current behavior.
+Playwright website inspection, Brave Search discovery, and Codex/Claude/OpenCode runtime readiness are specified but not implemented yet. Do not treat remaining PRD acceptance criteria as current behavior.
 
 ## License
 

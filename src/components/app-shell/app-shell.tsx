@@ -2,6 +2,7 @@
 
 import { Bell, MoreHorizontal, Search, Sparkles } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
 import {
@@ -31,6 +32,8 @@ import {
 } from "@/components/ui/sidebar"
 
 function NavigationGroup({ label, items }: { label: string; items: readonly NavigationItem[] }) {
+  const pathname = usePathname()
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -40,7 +43,7 @@ function NavigationGroup({ label, items }: { label: string; items: readonly Navi
             <SidebarMenuItem key={item.label}>
               {item.href ? (
                 <SidebarMenuButton
-                  isActive={item.active}
+                  isActive={pathname === item.href}
                   tooltip={item.label}
                   render={<Link href={item.href} />}
                 >
@@ -63,6 +66,8 @@ function NavigationGroup({ label, items }: { label: string; items: readonly Navi
 
 export function AppShell({ children }: { children: ReactNode }) {
   const command = useWorkspaceCommand()
+  const pathname = usePathname()
+  const currentPage = pathname === "/settings" ? "Settings" : "Overview"
 
   return (
     <SidebarProvider defaultOpen className="min-h-svh">
@@ -115,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="hidden items-center gap-2 text-xs sm:flex">
             <span className="text-muted-foreground">Workspace</span>
             <span className="text-muted-foreground">/</span>
-            <span className="font-medium">Overview</span>
+            <span className="font-medium">{currentPage}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Button

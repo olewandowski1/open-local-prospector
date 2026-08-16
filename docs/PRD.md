@@ -45,7 +45,7 @@ As Oliver, I want to see whether the local dependencies and provider runtimes ar
 
 **Acceptance Criteria**
 
-- `pnpm install`, `pnpm setup`, and `pnpm dev` are sufficient project commands for a documented local setup.
+- `pnpm install`, `pnpm run setup`, and `pnpm dev` are sufficient project commands for a documented local setup.
 - Docker is not required.
 - Setup creates or migrates the SQLite database, installs/checks Playwright Chromium, creates ignored local directories, and generates non-secret configuration templates.
 - Settings reports dependencies as Ready, Missing, Logged Out, Unreachable, or Unsupported Version.
@@ -311,7 +311,7 @@ Effect provides typed failures, services and Layers, bounded concurrency, interr
 ### Application Configuration
 
 - Node.js current LTS and pnpm.
-- `pnpm setup` prepares SQLite, migrations, Playwright, local directories, and configuration templates.
+- `pnpm run setup` prepares SQLite, migrations, Playwright, local directories, and configuration templates. The explicit `run` is required because `pnpm setup` is a reserved pnpm command.
 - `.env.local` holds Brave Search and optional future API keys and is ignored by version control.
 - Runtime choice, run defaults, concurrency, artifact path, and non-secret preferences are stored locally.
 - English UI; Polish Source Content remains verbatim, with an English assessment summary. Business names, addresses, contacts, and quoted evidence are never translated.

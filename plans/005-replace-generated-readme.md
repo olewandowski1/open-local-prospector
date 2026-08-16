@@ -22,7 +22,7 @@ The README is untouched create-next-app text. It sends contributors to the wrong
 - `README.md:8-14` recommends npm, yarn, pnpm, and bun; the project pins pnpm.
 - `README.md:19` points to `app/page.tsx`; the real path is `src/app/page.tsx`.
 - `README.md:32-34` recommends Vercel deployment.
-- `docs/PRD.md:48` promises `pnpm install`, `pnpm setup`, and `pnpm dev`; `pnpm setup` is not implemented yet, so it must be labeled planned rather than documented as working.
+- `docs/PRD.md:48` promises `pnpm install`, `pnpm run setup`, and `pnpm dev`; setup was not implemented when this plan was written, so it had to be labeled planned rather than documented as working.
 - `docs/PRD.md:344` chooses the MIT license, but no `LICENSE` file currently exists.
 
 ## Commands you will need
@@ -37,7 +37,7 @@ The README is untouched create-next-app text. It sends contributors to the wrong
 
 **In scope**: `README.md`, `LICENSE` (create), and no other files.
 
-**Out of scope**: implementing `pnpm setup`, adding runtime/database/browser dependencies, changing PRD/ADRs, deployment instructions, outreach guidance.
+**Out of scope**: implementing `pnpm run setup`, adding runtime/database/browser dependencies, changing PRD/ADRs, deployment instructions, outreach guidance.
 
 ## Git workflow
 

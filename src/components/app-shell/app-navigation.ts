@@ -9,7 +9,7 @@ export type NavigationItem = Readonly<{
 }>
 
 export const primaryNavigation: readonly NavigationItem[] = [
-  { label: "Overview", href: "/", icon: LayoutDashboard, active: true },
+  { label: "Overview", href: "/", icon: LayoutDashboard },
   { label: "Runs", icon: FileSearch },
   { label: "Review queue", icon: ListChecks },
   { label: "Businesses", icon: Building2 },
@@ -17,5 +17,5 @@ export const primaryNavigation: readonly NavigationItem[] = [
 
 export const secondaryNavigation: readonly NavigationItem[] = [
   { label: "Run history", icon: History },
-  { label: "Settings", icon: Settings },
+  { label: "Settings", href: "/settings", icon: Settings },
 ]
