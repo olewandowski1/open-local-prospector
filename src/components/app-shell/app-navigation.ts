@@ -12,7 +12,7 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
   { label: "Runs", href: "/runs", icon: FileSearch },
   { label: "New run", href: "/runs/new", icon: FileSearch },
-  { label: "Review queue", icon: ListChecks },
+  { label: "Review queue", href: "/review", icon: ListChecks },
   { label: "Businesses", icon: Building2 },
 ]
 

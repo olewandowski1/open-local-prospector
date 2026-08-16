@@ -10,6 +10,7 @@ import {
   makeSqliteIdentityRepository,
 } from "@/features/business-identity"
 import { loadLocalApplicationConfig, migrateLocalDatabase } from "@/features/local-application"
+import { makeScoreCandidateTaskExecutor } from "@/features/review-queue"
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
@@ -40,6 +41,7 @@ const executeInspection = makeInspectionTaskExecutor(
   makeSqliteInspectionRepository(localConfig.databasePath),
   localConfig.artifactsPath,
 )
+const executeScoring = makeScoreCandidateTaskExecutor(localConfig.databasePath)
 
 const program = Effect.gen(function* () {
   const worker = loadWorkerConfiguration()
@@ -65,6 +67,7 @@ const program = Effect.gen(function* () {
             executeIdentity,
             executeInspection,
             executeAssessment,
+            executeScoring,
           ),
         ),
       ),

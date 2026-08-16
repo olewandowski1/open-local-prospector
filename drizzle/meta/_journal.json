@@ -64,6 +64,13 @@
       "when": 1786885591592,
       "tag": "0008_warm_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786885905818,
+      "tag": "0009_faithful_thundra",
+      "breakpoints": true
     }
   ]
 }

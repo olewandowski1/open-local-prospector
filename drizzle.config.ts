@@ -12,6 +12,7 @@ export default defineConfig({
     "./src/features/business-identity/infrastructure/schema.ts",
     "./src/features/website-inspection/infrastructure/schema.ts",
     "./src/features/website-assessment/infrastructure/schema.ts",
+    "./src/features/review-queue/infrastructure/schema.ts",
   ],
   out: "./drizzle",
   dbCredentials: {
