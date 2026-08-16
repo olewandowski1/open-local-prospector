@@ -1,0 +1,7 @@
+# Use Effect for worker and server-domain execution
+
+The background worker and server-domain services will use pinned stable Effect v3 as their execution model. Effect services and Layers define the Brave Search, Playwright, provider-runtime, persistence, clock, and configuration dependencies. Effect Schema validates stage inputs and runtime outputs; typed errors distinguish transient, permanent, blocked, cancelled, and infrastructure failures. Effect scopes, interruption, schedules, timeouts, and bounded concurrency manage browser contexts, subprocesses, retries, cancellation, and parallel inspections without separate retry, concurrency, dependency-injection, or worker-logging libraries.
+
+Effect does not own durable workflow state. SQLite remains the source of truth for job claiming, leases, checkpoints, recovery, pause/cancel requests, and completed results. One claimed task is interpreted as an Effect program, and only committed SQLite state survives process termination. Experimental Effect workflow or cluster facilities are outside v1.
+
+The React presentation layer remains conventional Next.js code. Thin Route Handlers may execute server effects at a single boundary, while UI state and rendering do not adopt Effect abstractions. Drizzle and `better-sqlite3` remain the persistence implementation behind Effect-wrapped repositories. Effect v4 is currently beta, so v1 will not follow beta releases; migration will be evaluated deliberately after v4 becomes stable.
