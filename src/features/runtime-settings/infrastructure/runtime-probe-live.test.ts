@@ -1,0 +1,56 @@
+import { Effect, Either, Option } from "effect"
+import { describe, expect, it } from "vitest"
+
+import {
+  executeRuntimeCommand,
+  resolveRuntimeExecutable,
+} from "@/features/runtime-settings/infrastructure/runtime-probe-live"
+
+describe("runtime probe infrastructure", () => {
+  it("passes arguments literally without a shell", async () => {
+    const result = await Effect.runPromise(
+      executeRuntimeCommand(process.execPath, [
+        "-e",
+        "process.stdout.write(process.argv[1])",
+        "$(echo should-not-run)",
+      ]),
+    )
+
+    expect(result.stdout).toBe("$(echo should-not-run)")
+  })
+
+  it("bounds command output", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(
+        executeRuntimeCommand(process.execPath, [
+          "-e",
+          `process.stdout.write("x".repeat(${70 * 1024}))`,
+        ]),
+      ),
+    )
+
+    expect(Either.isLeft(result)).toBe(true)
+    if (Either.isLeft(result)) expect(result.left.reason).toBe("output-limit")
+  })
+
+  it("does not forward provider API credentials", async () => {
+    const result = await Effect.runPromise(
+      executeRuntimeCommand(
+        process.execPath,
+        ["-e", "process.stdout.write(process.env.OPENAI_API_KEY ?? 'absent')"],
+        { ...process.env, OPENAI_API_KEY: "secret-value" },
+      ),
+    )
+
+    expect(result.stdout).toBe("absent")
+  })
+
+  it("accepts an absolute application configuration override", async () => {
+    const executable = await resolveRuntimeExecutable("codex", {
+      PROSPECTOR_CODEX_EXECUTABLE: process.execPath,
+      NODE_ENV: "test",
+    }).pipe(Effect.runPromise)
+
+    expect(Option.getOrUndefined(executable)).toBe(process.execPath)
+  })
+})

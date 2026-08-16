@@ -57,8 +57,26 @@ test("reports local dependency readiness without rendering secrets", async ({ pa
   await expect(readiness).toContainText("Brave Search")
   await expect(readiness).toContainText("Playwright Chromium")
   await expect(readiness).toContainText("Artifact storage")
+  const runtimes = page.getByRole("region", { name: "Subscription runtimes" })
+  await expect(runtimes).toContainText("Codex CLI")
+  await expect(runtimes).toContainText("Claude Code")
+  await expect(runtimes).toContainText("OpenCode")
   await expect(page.locator("body")).not.toContainText("BRAVE_SEARCH_API_KEY=")
+  await expect(page.locator("body")).not.toContainText("accessToken")
   if (process.env.BRAVE_SEARCH_API_KEY) {
     await expect(page.locator("body")).not.toContainText(process.env.BRAVE_SEARCH_API_KEY)
   }
+})
+
+test("persists a ready runtime selection when a local subscription is available", async ({
+  page,
+}) => {
+  await page.goto("/settings")
+  const available = page.getByRole("button", { name: "Use runtime" })
+  test.skip((await available.count()) === 0, "No authenticated local runtime is available")
+
+  await available.first().click()
+  await expect(page.getByRole("button", { name: "Selected" })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole("button", { name: "Selected" })).toBeVisible()
 })
