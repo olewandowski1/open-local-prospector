@@ -67,11 +67,11 @@ No code tests. Perform commands and link/path checks exactly as documented.
 
 ## Done criteria
 
-- [ ] README distinguishes implemented prototype behavior from roadmap behavior.
-- [ ] Only pnpm commands are presented as supported.
-- [ ] Localhost privacy boundary and MCP workflow are clear.
-- [ ] Standard MIT `LICENSE` exists with operator-approved holder.
-- [ ] `pnpm check` exits 0.
+- [x] README distinguishes implemented prototype behavior from roadmap behavior.
+- [x] Only pnpm commands are presented as supported.
+- [x] Localhost privacy boundary and MCP workflow are clear.
+- [x] Standard MIT `LICENSE` exists with operator-approved holder.
+- [x] `pnpm check` exits 0.
 
 ## STOP conditions
 
@@ -82,4 +82,3 @@ No code tests. Perform commands and link/path checks exactly as documented.
 ## Maintenance notes
 
 Update “current status” whenever a vertical slice lands. Never turn roadmap acceptance criteria into setup instructions before the corresponding command works.
-

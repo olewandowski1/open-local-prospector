@@ -53,7 +53,7 @@ Add exact scripts: `typecheck: tsc --noEmit`, `test: vitest run`, `test:e2e: pla
 
 ### Step 2: Configure deterministic test runners
 
-Configure Vitest for Node tests and Playwright for Chromium, `baseURL` `http://127.0.0.1:3000`, retries disabled locally, trace on first retry, and a `webServer` using `pnpm dev`. Do not rely on an already-running server.
+Configure Vitest for Node tests and Playwright for Chromium, `baseURL` `http://127.0.0.1:4310`, retries disabled locally, trace on first retry, and a `webServer` using `pnpm dev`. Do not rely on an already-running server.
 
 **Verify**: `pnpm exec playwright test --list` → lists the app-shell tests without starting them.
 
@@ -70,19 +70,18 @@ The new tests are the test plan. Keep selectors role/name-based and avoid genera
 
 ## Done criteria
 
-- [ ] `pnpm check` exits 0.
-- [ ] `pnpm test:e2e` exits 0 on a clean port.
-- [ ] Both test files assert behavior, not only rendering.
-- [ ] No production dependency was added for test infrastructure.
-- [ ] Only in-scope files and the plan index changed.
+- [x] `pnpm check` exits 0.
+- [x] `pnpm test:e2e` exits 0 on a clean port.
+- [x] Both test files assert behavior, not only rendering.
+- [x] No production dependency was added for test infrastructure.
+- [x] Only in-scope files and the plan index changed.
 
 ## STOP conditions
 
-- Port 3000 cannot be isolated through Playwright's `webServer` configuration.
+- Port 4310 cannot be isolated through Playwright's `webServer` configuration.
 - Tests require changing product behavior or generated shadcn components.
 - The root commit is absent or there is more than one root commit.
 
 ## Maintenance notes
 
 Add domain tests beside new domain contracts and worker integration tests around real SQLite repositories. Do not replace those with browser-only coverage.
-

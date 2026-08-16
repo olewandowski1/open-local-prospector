@@ -1,6 +1,6 @@
 [mcp_servers.shadcn]
 command = "pnpm"
-args = ["dlx", "shadcn@latest", "mcp"]
+args = ["exec", "shadcn", "mcp"]
 startup_timeout_sec = 30
 tool_timeout_sec = 120
 enabled = true

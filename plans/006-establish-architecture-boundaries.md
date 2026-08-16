@@ -98,12 +98,12 @@ Add an architecture test or lint rules that fail when domain imports framework/i
 
 ## Done criteria
 
-- [ ] Target directories contain used code, not empty placeholders or barrel-file mazes.
-- [ ] Search Brief constraints match PRD Story 2.
-- [ ] No domain/application module imports Next, React, Playwright, SQLite, or child processes.
-- [ ] Web and worker each have one explicit Effect execution boundary.
-- [ ] `pnpm check`, focused tests, and `pnpm worker:check` exit 0.
-- [ ] No out-of-scope integration was implemented.
+- [x] Target directories contain used code, not empty placeholders or barrel-file mazes.
+- [x] Search Brief constraints match PRD Story 2.
+- [x] No domain/application module imports Next, React, Playwright, SQLite, or child processes.
+- [x] Web and worker each have one explicit Effect execution boundary.
+- [x] `pnpm check`, focused tests, and `pnpm worker:check` exit 0.
+- [x] No out-of-scope integration was implemented.
 
 ## STOP conditions
 
@@ -115,4 +115,3 @@ Add an architecture test or lint rules that fail when domain imports framework/i
 ## Maintenance notes
 
 Future SQLite, Brave, Playwright, and runtime adapters belong in infrastructure and are provided through application ports. SQLite—not Effect fibers—is the future durable workflow source of truth. Avoid generic `utils`, global service locators, and provider-specific types in domain/application layers.
-

@@ -65,10 +65,10 @@ This is configuration behavior: validate syntax, the resolved local binary, and 
 
 ## Done criteria
 
-- [ ] One exact shadcn dev dependency is lockfile-managed.
-- [ ] No project MCP configuration downloads `latest`.
-- [ ] Codex recognizes the MCP; Claude's one-time approval state is documented in the execution report.
-- [ ] `pnpm check` exits 0.
+- [x] One exact shadcn dev dependency is lockfile-managed.
+- [x] No project MCP configuration downloads `latest`.
+- [x] Codex recognizes the MCP; Claude's one-time approval state is documented in the execution report.
+- [x] `pnpm check` exits 0.
 
 ## STOP conditions
 
@@ -79,4 +79,3 @@ This is configuration behavior: validate syntax, the resolved local binary, and 
 ## Maintenance notes
 
 Upgrade shadcn deliberately through a reviewed dependency change; run registry/component smoke tests at the same time.
-

@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Open Local Prospector
 
-## Getting Started
+Open Local Prospector is a local-first application for finding independent businesses whose public online presence suggests a meaningful website opportunity. Poland is the initial focus. The application is designed for one local user and performs no outreach.
 
-First, run the development server:
+The repository currently contains the product specification, architecture decisions, a responsive shadcn/7Ovr UI spike, the first Search Brief and Prospecting Run module, a separate worker composition root, and verification tooling. Brave Search discovery, SQLite durability, browser inspection, and provider runtime adapters remain planned MVP work.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+## Requirements
+
+- Node.js 22 or newer
+- pnpm 10.32.1, enabled through Corepack or installed directly
+- Chromium for end-to-end tests: `pnpm exec playwright install chromium`
+
+Docker, PostgreSQL, and usage-based AI credentials are not required.
+
+## Local development
+
+```powershell
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The Next.js server binds to `127.0.0.1:4310` by default. It is intentionally not exposed to the local network.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+pnpm check          # Biome, TypeScript, unit tests, production build
+pnpm test:e2e       # Chromium desktop and mobile flows
+pnpm worker:check   # independent worker composition root
+```
 
-## Learn More
+Unit tests are colocated with source as `*.test.ts` or `*.test.tsx`. Cross-feature browser flows live in `tests/e2e`.
 
-To learn more about Next.js, take a look at the following resources:
+Biome owns formatting and linting:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+pnpm format
+pnpm check:biome
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Lefthook runs Biome on staged files before commits and typecheck/unit tests before pushes.
 
-## Deploy on Vercel
+## UI workflow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The UI uses Tailwind CSS, shadcn/ui with Base UI primitives, and selected 7Ovr registry blocks. 7Ovr is an accelerator rather than a second component system; installed blocks must be reviewed and adapted to canonical shadcn composition.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project-scoped shadcn MCP configuration is available for Codex, Claude Code, and OpenCode. It executes the lockfile-pinned CLI:
+
+```powershell
+pnpm exec shadcn mcp
+```
+
+Restart the coding client after changing MCP configuration. Claude Code requires one-time project approval.
+
+## Source architecture
+
+```text
+src/app/                         Next.js routes and composition
+src/components/app-shell/        shared Local Application shell
+src/components/ui/               generated shadcn primitives
+src/features/<feature>/          feature-owned implementation and colocated tests
+src/worker/                      independent worker composition root
+tests/e2e/                       cross-feature browser flows
+```
+
+A feature owns its domain rules, application execution, adapters, server integration, and presentation when those concerns exist. Internal folders are added only when they hide real complexity.
+
+## Product and architecture documents
+
+- [Domain language](CONTEXT.md)
+- [Product requirements](docs/PRD.md)
+- [Architecture decisions](docs/adr)
+- [Implementation plans](plans/README.md)
+
+`pnpm setup`, SQLite migrations, Playwright website inspection, Brave Search configuration, and Codex/Claude/OpenCode runtime readiness are specified but not implemented yet. Do not treat PRD acceptance criteria as current behavior.
+
+## License
+
+[MIT](LICENSE). Users remain responsible for provider subscription terms, public-source terms, privacy obligations, and applicable outreach law.

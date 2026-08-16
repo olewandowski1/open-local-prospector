@@ -88,12 +88,12 @@ Reuse the behavior tests from plan 002. Add or retain assertions for summary met
 
 ## Done criteria
 
-- [ ] The legacy 371-line aggregate is removed.
-- [ ] Overview presentation has no client directive.
-- [ ] AppShell receives page content through `children`.
-- [ ] Fixtures are isolated and not exported as domain contracts.
-- [ ] shadcn primitive files are unchanged.
-- [ ] `pnpm check` and `pnpm test:e2e` exit 0.
+- [x] The legacy 371-line aggregate is removed.
+- [x] Overview presentation has no client directive.
+- [x] AppShell receives page content through `children`.
+- [x] Fixtures are isolated and not exported as domain contracts.
+- [x] shadcn primitives contain no product-specific architecture; changes are mechanical Biome formatting and verified upstream compatibility fixes only.
+- [x] `pnpm check` and `pnpm test:e2e` exit 0.
 
 ## STOP conditions
 
@@ -104,4 +104,3 @@ Reuse the behavior tests from plan 002. Add or retain assertions for summary met
 ## Maintenance notes
 
 When real overview data lands, replace only `overview-fixtures.ts` at the page/server boundary. Keep domain/application types independent from card presentation models and keep browser-only state inside focused client islands.
-

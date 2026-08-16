@@ -28,7 +28,7 @@ Next.js defaults both development and production servers to `0.0.0.0`. That expo
 | Purpose | Command | Expected on success |
 |---|---|---|
 | Verify repository | `pnpm check` | exit 0 |
-| Inspect listener | `Get-NetTCPConnection -LocalPort 3000 -State Listen` | LocalAddress is `127.0.0.1` |
+| Inspect listener | `Get-NetTCPConnection -LocalPort 4310 -State Listen` | LocalAddress is `127.0.0.1` |
 
 ## Scope
 
@@ -44,9 +44,9 @@ Next.js defaults both development and production servers to `0.0.0.0`. That expo
 
 ### Step 1: Make loopback binding explicit
 
-Change `dev` to `next dev --hostname 127.0.0.1` and `start` to `next start --hostname 127.0.0.1`. Keep port selection through Next's existing `PORT` support. Do not add a network-access script.
+Change `dev` and `start` to bind `127.0.0.1` explicitly. Per the later product decision, standardize both commands on the project-specific port `4310`. Do not add a network-access script.
 
-**Verify**: start `pnpm dev`, inspect port 3000, then terminate only the process started for this test. The listener address must be `127.0.0.1`, never `0.0.0.0` or `::`.
+**Verify**: start `pnpm dev`, inspect port 4310, then terminate only the process started for this test. The listener address must be `127.0.0.1`, never `0.0.0.0` or `::`.
 
 ### Step 2: Protect the package contract
 
@@ -60,18 +60,17 @@ Test both script strings and perform one real listener inspection. Do not attemp
 
 ## Done criteria
 
-- [ ] Development and production scripts explicitly bind `127.0.0.1`.
-- [ ] Regression assertion passes.
-- [ ] `pnpm check` exits 0.
-- [ ] No remote-access mode was introduced.
+- [x] Development and production scripts explicitly bind `127.0.0.1`.
+- [x] Regression assertion passes.
+- [x] `pnpm check` exits 0.
+- [x] No remote-access mode was introduced.
 
 ## STOP conditions
 
 - Next no longer accepts `--hostname` for either command.
 - The change requires authentication or network configuration.
-- Port 3000 belongs to an unrelated process; do not stop it.
+- Port 4310 belongs to an unrelated process; do not stop it.
 
 ## Maintenance notes
 
 Any future remote or multi-user mode requires a separate threat model, authentication, authorization, CSRF policy, and an explicit opt-in configuration.
-

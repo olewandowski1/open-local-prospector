@@ -3,7 +3,7 @@
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": ["pnpm", "dlx", "shadcn@latest", "mcp"],
+      "command": ["pnpm", "exec", "shadcn", "mcp"],
       "enabled": true,
       "timeout": 30000
     }

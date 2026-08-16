@@ -407,3 +407,4 @@ V1 is complete only when Oliver can configure Brave Search and an authenticated 
 - [ADR 0008 — Untrusted Source Content](adr/0008-treat-all-source-content-as-untrusted-data.md)
 - [ADR 0009 — Host-native local runtime](adr/0009-host-native-local-runtime.md)
 - [ADR 0010 — Effect worker execution](adr/0010-effect-for-worker-execution.md)
+- [ADR 0011 — Feature-based source and colocated unit tests](adr/0011-feature-based-source-and-colocated-unit-tests.md)

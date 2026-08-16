@@ -64,11 +64,11 @@ No application tests are added. The safety test is inspection of the staged file
 
 ## Done criteria
 
-- [ ] Exactly one root commit exists on `main`.
-- [ ] `git status --short` is empty.
-- [ ] No ignored dependency, build, environment, database, artifact, or credential file is tracked.
-- [ ] No remote exists unless it predated this plan (which is a STOP condition).
-- [ ] Status row updated.
+- [x] Exactly one root commit exists on `main`.
+- [x] `git status --short` is empty.
+- [x] No ignored dependency, build, environment, database, artifact, or credential file is tracked.
+- [x] No remote exists unless it predated this plan (which is a STOP condition).
+- [x] Status row updated.
 
 ## STOP conditions
 
@@ -80,4 +80,3 @@ No application tests are added. The safety test is inspection of the staged file
 ## Maintenance notes
 
 The root commit produced here is the `<BASELINE_SHA>` used by later plans. Preserve it; do not squash it away while those plans remain active.
-
