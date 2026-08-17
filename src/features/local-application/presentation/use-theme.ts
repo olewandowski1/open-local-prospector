@@ -22,6 +22,9 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
  * server action.
  */
 export function writeThemePreference(preference: ThemePreference): void {
+  // The Cookie Store API is asynchronous, but the pre-paint resolver script reads this cookie
+  // synchronously; deferring the write reintroduces a flash of the previous theme.
+  // biome-ignore lint/suspicious/noDocumentCookie: must be written synchronously before paint
   document.cookie = `${THEME_COOKIE}=${preference};path=/;max-age=${THEME_COOKIE_MAX_AGE_SECONDS};samesite=lax`
   document.documentElement.classList.toggle("dark", resolveTheme(preference) === "dark")
 }
