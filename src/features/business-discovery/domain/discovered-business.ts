@@ -1,5 +1,6 @@
 export type DiscoverySearchRequest = Readonly<{
-  runtime: "codex" | "claude" | "opencode"
+  runtime: "codex" | "claude"
+  runtimeConfiguration?: Readonly<{ model: string; reasoningEffort: string }>
   query: string
   count: number
   offset: number

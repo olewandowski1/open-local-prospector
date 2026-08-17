@@ -31,9 +31,9 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
         dependencies: [
           { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
           { id: "playwright", label: "Playwright", status: "Ready", detail: "Ready" },
-          { id: "disk", label: "Artifact storage", status: "Ready", detail: "Ready" },
+          { id: "disk", label: "Artifact Storage", status: "Ready", detail: "Ready" },
         ],
-        runtime: { runtimeId: "codex", label: "Codex CLI", status: "Ready", detail: "Ready" },
+        runtime: { runtimeId: "codex", label: "Codex", status: "Ready", detail: "Ready" },
         estimate: {
           discoveryQueries: 13,
           likelyInspections: 125,
@@ -88,9 +88,9 @@ test("keeps confirmation disabled after failed preflight", async ({ page }) => {
         dependencies: [
           { id: "sqlite", label: "SQLite", status: "Ready", detail: "Ready" },
           { id: "playwright", label: "Playwright", status: "Missing", detail: "Missing" },
-          { id: "disk", label: "Artifact storage", status: "Ready", detail: "Ready" },
+          { id: "disk", label: "Artifact Storage", status: "Ready", detail: "Ready" },
         ],
-        runtime: { runtimeId: "codex", label: "Codex CLI", status: "Ready", detail: "Ready" },
+        runtime: { runtimeId: "codex", label: "Codex", status: "Ready", detail: "Ready" },
         estimate: {
           discoveryQueries: 3,
           likelyInspections: 8,

@@ -40,7 +40,6 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
             rubricVersion: existing.rubric_version,
             schemaVersion: 1,
           },
-          completionState: "Search Exhausted" as const,
         }
       const row = db
         .prepare(
@@ -103,8 +102,13 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         row.run_business_id,
       )
       db.prepare(
-        "update run_metrics set qualified_candidates=(select count(*) from candidate_scores where run_id=? and qualified=1),updated_at=?,version=version+1 where run_id=?",
-      ).run(task.runId, now, task.runId)
+        `update run_metrics set
+         qualified_candidates=(select count(*) from candidate_scores where run_id=? and qualified=1),
+         target_remaining=max(0,
+           (select json_extract(search_brief,'$.targetCount') from prospecting_runs where id=?) -
+           (select count(*) from candidate_scores where run_id=? and qualified=1)),
+         updated_at=?,version=version+1 where run_id=?`,
+      ).run(task.runId, task.runId, task.runId, now, task.runId)
       return {
         value: {
           scoreId: id,
@@ -113,7 +117,6 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
           rubricVersion: breakdown.rubricVersion,
           schemaVersion: 1,
         },
-        completionState: "Search Exhausted" as const,
       }
     })()
   } finally {

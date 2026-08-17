@@ -148,9 +148,10 @@ function readBusinesses(
   const rows = database
     .prepare(
       `select t.business_id, t.stage, t.status, t.attempt_count, t.failure,
-       rb.status as identity_status, rb.exclusion_reason
+       rb.status as identity_status, rb.exclusion_reason, db.name as business_name
        from run_tasks t left join run_businesses rb
         on rb.run_id = t.run_id and rb.discovered_business_id = t.business_id
+       left join discovered_businesses db on db.id = t.business_id
        where t.run_id = ? and t.business_id is not null order by t.updated_at desc`,
     )
     .all(runId) as Array<{
@@ -161,6 +162,7 @@ function readBusinesses(
     failure: string | null
     identity_status: string | null
     exclusion_reason: string | null
+    business_name: string | null
   }>
   const businesses = new Map<string, BusinessProgress>()
   for (const row of rows) {
@@ -169,6 +171,9 @@ function readBusinesses(
       failureMessage(row.failure) ?? row.exclusion_reason ?? existing?.failureReason
     businesses.set(row.business_id, {
       id: row.business_id,
+      ...((existing?.name ?? row.business_name)
+        ? { name: existing?.name ?? row.business_name ?? undefined }
+        : {}),
       currentStage: existing?.currentStage ?? row.stage,
       status: existing?.status ?? row.identity_status ?? row.status,
       retryCount: (existing?.retryCount ?? 0) + Math.max(0, row.attempt_count - 1),

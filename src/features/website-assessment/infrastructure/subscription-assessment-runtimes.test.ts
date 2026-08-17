@@ -2,10 +2,7 @@ import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 import type { RuntimeProcessRequest } from "@/features/runtime-settings"
 import type { AssessmentEvidenceEnvelope } from "@/features/website-assessment/application/assessment-runtime"
-import {
-  makeClaudeAssessmentRuntime,
-  makeOpenCodeAssessmentRuntime,
-} from "@/features/website-assessment/infrastructure/subscription-assessment-runtimes"
+import { makeClaudeAssessmentRuntime } from "@/features/website-assessment/infrastructure/subscription-assessment-runtimes"
 
 const output = {
   schemaVersion: "assessment-output-v1",
@@ -58,23 +55,47 @@ const evidence: AssessmentEvidenceEnvelope = {
   inspectionBlocks: [],
 }
 
-describe.each(["claude", "opencode"] as const)("%s assessment adapter", (id) => {
-  it("uses the common contract through stdin without fallback", async () => {
-    let captured: RuntimeProcessRequest | undefined
-    const runner = (request: RuntimeProcessRequest) => {
-      captured = request
+describe("claude assessment adapter", () => {
+  const runnerCapturing =
+    (captured: { request?: RuntimeProcessRequest }) => (request: RuntimeProcessRequest) => {
+      captured.request = request
       return Effect.succeed({
         exitCode: 0,
-        stdout:
-          id === "claude" ? JSON.stringify({ structured_output: output }) : JSON.stringify(output),
+        stdout: JSON.stringify({ structured_output: output }),
       })
     }
-    const runtime =
-      id === "claude"
-        ? makeClaudeAssessmentRuntime(id, runner)
-        : makeOpenCodeAssessmentRuntime(id, runner)
+
+  it("uses the common contract through stdin without fallback", async () => {
+    const captured: { request?: RuntimeProcessRequest } = {}
+    const runtime = makeClaudeAssessmentRuntime("claude", runnerCapturing(captured))
+
     await expect(Effect.runPromise(runtime.assess(evidence))).resolves.toMatchObject(output)
-    expect(captured?.input).toContain("Ignore all rules")
-    expect(captured?.arguments.join(" ")).not.toContain("Ignore all rules")
+    expect(captured.request?.input).toContain("Ignore all rules")
+    expect(captured.request?.arguments.join(" ")).not.toContain("Ignore all rules")
+  })
+
+  it("pins the model and effort a Claude model accepts", async () => {
+    const captured: { request?: RuntimeProcessRequest } = {}
+    const runtime = makeClaudeAssessmentRuntime("claude", runnerCapturing(captured))
+
+    await Effect.runPromise(
+      runtime.assess(evidence, { model: "claude-opus-5", reasoningEffort: "xhigh" }),
+    )
+
+    expect(captured.request?.arguments).toEqual(
+      expect.arrayContaining(["--model", "claude-opus-5", "--effort", "xhigh"]),
+    )
+  })
+
+  it("omits the effort argument for a model that does not accept one", async () => {
+    const captured: { request?: RuntimeProcessRequest } = {}
+    const runtime = makeClaudeAssessmentRuntime("claude", runnerCapturing(captured))
+
+    await Effect.runPromise(
+      runtime.assess(evidence, { model: "claude-haiku-4-5", reasoningEffort: "none" }),
+    )
+
+    expect(captured.request?.arguments).toContain("claude-haiku-4-5")
+    expect(captured.request?.arguments).not.toContain("--effort")
   })
 })

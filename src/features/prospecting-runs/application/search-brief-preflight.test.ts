@@ -24,7 +24,7 @@ const readyDependencies: readonly DependencyReadiness[] = [
 ]
 const readyRuntime: RuntimeReadiness = {
   runtimeId: "codex",
-  label: "Codex CLI",
+  label: "Codex",
   status: "Ready",
   detail: "Ready",
 }
@@ -34,6 +34,7 @@ const draft = {
   targetCount: 5,
   mode: "Quick",
   runtime: "codex",
+  runtimeConfiguration: { model: "gpt-5.6-sol", reasoningEffort: "medium" },
 }
 
 function run(searchAreas: readonly SearchArea[], dependencies = readyDependencies) {

@@ -27,7 +27,19 @@ import {
 } from "@/components/ui/select"
 import type { SearchBriefDefaults } from "@/features/prospecting-runs/application/prospecting-run"
 import type { SearchBriefPreflight } from "@/features/prospecting-runs/application/search-brief-preflight"
-import type { RuntimeId, RuntimeReadiness } from "@/features/runtime-settings"
+import {
+  defaultRuntimeExecutionConfiguration,
+  type RuntimeId,
+  RuntimeProviderIcon,
+  type RuntimeReadiness,
+  type RuntimeReasoningEffort,
+  resolveRuntimeConfiguration,
+  runtimeModelOptions,
+  runtimeReasoningEfforts,
+} from "@/features/runtime-settings/client"
+
+/** Keeps a label, its control, and its description reading as one field. */
+const fieldSpacing = "gap-1.5"
 
 const categoryPresets = [
   "Dental clinics",
@@ -46,6 +58,8 @@ type DraftState = Readonly<{
   targetCount: string
   mode: "Quick" | "Thorough"
   runtime: RuntimeId | ""
+  model: string
+  reasoningEffort: RuntimeReasoningEffort
   recentBusinessPolicy: "Skip" | "IncludeWithoutReassessment" | "Reassess"
 }>
 
@@ -65,6 +79,9 @@ export function SearchBriefPage({
   const preferredRuntime = readyRuntimes.some((runtime) => runtime.runtimeId === selectedRuntime)
     ? selectedRuntime
     : readyRuntimes[0]?.runtimeId
+  const preferredConfiguration = preferredRuntime
+    ? defaultRuntimeExecutionConfiguration(preferredRuntime)
+    : { model: "", reasoningEffort: "medium" as const }
   const [draft, setDraft] = useState<DraftState>({
     location: "",
     radiusKm: defaults?.radiusKm?.toString() ?? "",
@@ -73,6 +90,8 @@ export function SearchBriefPage({
     targetCount: String(defaults?.targetCount ?? 10),
     mode: defaults?.mode ?? "Quick",
     runtime: preferredRuntime ?? "",
+    model: preferredConfiguration.model,
+    reasoningEffort: preferredConfiguration.reasoningEffort,
     recentBusinessPolicy: "Skip",
   })
   const [preflight, setPreflight] = useState<SearchBriefPreflight>()
@@ -88,6 +107,7 @@ export function SearchBriefPage({
     [readyRuntimes],
   )
   const categoryItems = categoryPresets.map((category) => ({ label: category, value: category }))
+  const selectedEfforts = draft.runtime ? runtimeReasoningEfforts(draft.runtime, draft.model) : []
 
   const invalidate = (next: Partial<DraftState>) => {
     setDraft((current) => ({ ...current, ...next }))
@@ -106,6 +126,7 @@ export function SearchBriefPage({
     targetCount: Number(draft.targetCount),
     mode: draft.mode,
     runtime: draft.runtime,
+    runtimeConfiguration: { model: draft.model, reasoningEffort: draft.reasoningEffort },
     recentBusinessPolicy: draft.recentBusinessPolicy,
   })
 
@@ -175,15 +196,15 @@ export function SearchBriefPage({
               <AlertCircle aria-hidden="true" />
               <AlertTitle>No subscription runtime is ready</AlertTitle>
               <AlertDescription>
-                <Link href="/settings">Open Settings</Link> and follow the terminal instructions
-                before creating a run.
+                <Link href="/settings/subscription">Open Settings</Link> and follow the terminal
+                instructions before creating a run.
               </AlertDescription>
             </Alert>
           ) : null}
 
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Search scope</CardTitle>
+              <CardTitle>Search Scope</CardTitle>
               <CardDescription>
                 Poland is assumed when no country is provided. Add a country to search elsewhere.
               </CardDescription>
@@ -192,7 +213,7 @@ export function SearchBriefPage({
               <form onSubmit={checkPreflight}>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="location">City or municipality</FieldLabel>
+                    <FieldLabel htmlFor="location">City or Municipality</FieldLabel>
                     <Input
                       id="location"
                       name="location"
@@ -209,7 +230,7 @@ export function SearchBriefPage({
 
                   <div className="grid gap-5 sm:grid-cols-2">
                     <Field>
-                      <FieldLabel htmlFor="radius">Radius in kilometres (optional)</FieldLabel>
+                      <FieldLabel htmlFor="radius">Radius in Kilometres (Optional)</FieldLabel>
                       <Input
                         id="radius"
                         name="radius"
@@ -221,7 +242,7 @@ export function SearchBriefPage({
                       />
                     </Field>
                     <Field>
-                      <FieldLabel htmlFor="target">Target businesses</FieldLabel>
+                      <FieldLabel htmlFor="target">Target Businesses</FieldLabel>
                       <Input
                         id="target"
                         name="target"
@@ -238,7 +259,7 @@ export function SearchBriefPage({
                   </div>
 
                   <Field>
-                    <FieldLabel htmlFor="category">Business category</FieldLabel>
+                    <FieldLabel htmlFor="category">Business Category</FieldLabel>
                     <Select
                       items={categoryItems}
                       value={draft.categoryChoice}
@@ -262,7 +283,7 @@ export function SearchBriefPage({
                   </Field>
                   {draft.categoryChoice === "Custom category" ? (
                     <Field>
-                      <FieldLabel htmlFor="custom-category">Custom category</FieldLabel>
+                      <FieldLabel htmlFor="custom-category">Custom Category</FieldLabel>
                       <Input
                         id="custom-category"
                         value={draft.customCategory}
@@ -274,7 +295,7 @@ export function SearchBriefPage({
                   ) : null}
 
                   <FieldSet>
-                    <FieldLegend>Run mode</FieldLegend>
+                    <FieldLegend>Run Mode</FieldLegend>
                     <RadioGroup
                       value={draft.mode}
                       onValueChange={(value) =>
@@ -341,32 +362,143 @@ export function SearchBriefPage({
                     </FieldDescription>
                   </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="runtime">Subscription runtime</FieldLabel>
+                  <Field className={fieldSpacing}>
+                    <FieldLabel htmlFor="runtime">Subscription Runtime</FieldLabel>
                     <Select
                       items={runtimeItems}
                       value={draft.runtime}
                       onValueChange={(value) =>
-                        value && invalidate({ runtime: value as RuntimeId })
+                        value &&
+                        invalidate({
+                          runtime: value as RuntimeId,
+                          ...defaultRuntimeExecutionConfiguration(value as RuntimeId),
+                        })
                       }
                     >
                       <SelectTrigger
                         id="runtime"
-                        aria-label="Subscription runtime"
+                        aria-label="Subscription Runtime"
                         className="w-full"
                         disabled={!runtimeItems.length}
                       >
-                        <SelectValue placeholder="No ready runtime" />
+                        <SelectValue placeholder="No ready runtime">
+                          {(value: string | null) => {
+                            const runtime = readyRuntimes.find((item) => item.runtimeId === value)
+                            if (!runtime) return "No ready runtime"
+                            return (
+                              <>
+                                <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                                {runtime.label}
+                              </>
+                            )
+                          }}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {readyRuntimes.map((runtime) => (
                           <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
+                            <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
                             {runtime.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </Field>
+
+                  {draft.runtime ? (
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Field className={fieldSpacing}>
+                        <FieldLabel htmlFor="runtime-model">Model</FieldLabel>
+                        <Select
+                          items={runtimeModelOptions(draft.runtime).map((model) => ({
+                            label: model.label,
+                            value: model.value,
+                          }))}
+                          value={draft.model}
+                          onValueChange={(value) =>
+                            value &&
+                            draft.runtime &&
+                            invalidate(
+                              resolveRuntimeConfiguration(
+                                draft.runtime,
+                                value,
+                                draft.reasoningEffort,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger id="runtime-model" aria-label="Model" className="w-full">
+                            <SelectValue>
+                              {(value: string | null) => (
+                                <>
+                                  {draft.runtime ? (
+                                    <RuntimeProviderIcon runtimeId={draft.runtime} />
+                                  ) : null}
+                                  {runtimeModelOptions(draft.runtime as RuntimeId).find(
+                                    (model) => model.value === value,
+                                  )?.label ?? "Select a model"}
+                                </>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {runtimeModelOptions(draft.runtime).map((model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {draft.runtime ? (
+                                  <RuntimeProviderIcon runtimeId={draft.runtime} />
+                                ) : null}
+                                {model.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FieldDescription>
+                          {runtimeModelOptions(draft.runtime).find(
+                            (model) => model.value === draft.model,
+                          )?.detail ?? "The selected model ID is pinned for this run."}
+                        </FieldDescription>
+                      </Field>
+                      <Field className={fieldSpacing}>
+                        <FieldLabel htmlFor="reasoning-effort">Reasoning Effort</FieldLabel>
+                        {selectedEfforts.length === 0 ? (
+                          <div
+                            id="reasoning-effort"
+                            className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
+                          >
+                            Not applicable
+                          </div>
+                        ) : (
+                          <Select
+                            items={selectedEfforts.map((effort) => ({
+                              label: effort,
+                              value: effort,
+                            }))}
+                            value={draft.reasoningEffort}
+                            onValueChange={(value) =>
+                              value &&
+                              invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
+                            }
+                          >
+                            <SelectTrigger id="reasoning-effort" className="w-full capitalize">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedEfforts.map((effort) => (
+                                <SelectItem className="capitalize" key={effort} value={effort}>
+                                  {effort}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        <FieldDescription>
+                          {selectedEfforts.length === 0
+                            ? "This model does not accept a reasoning effort."
+                            : "Higher effort spends more subscription usage per run."}
+                        </FieldDescription>
+                      </Field>
+                    </div>
+                  ) : null}
 
                   <Button type="submit" disabled={!hydrated || busy || !draft.runtime}>
                     {busy ? (
@@ -385,7 +517,7 @@ export function SearchBriefPage({
         <aside aria-label="Run preflight" className="lg:pt-20">
           <Card className="lg:sticky lg:top-6">
             <CardHeader>
-              <CardTitle>Run preflight</CardTitle>
+              <CardTitle>Run Preflight</CardTitle>
               <CardDescription>
                 Nothing is persisted as a run until you confirm here.
               </CardDescription>
@@ -492,6 +624,12 @@ export function SearchBriefPage({
                       {preflight.estimate.duration}.
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">{preflight.estimate.note}</p>
+                    {preflight.draft.runtimeConfiguration ? (
+                      <p className="mt-2 text-xs font-medium">
+                        {preflight.runtime.label} · {preflight.draft.runtimeConfiguration.model} ·{" "}
+                        {preflight.draft.runtimeConfiguration.reasoningEffort} reasoning
+                      </p>
+                    ) : null}
                   </section>
 
                   {createdRun ? (
@@ -500,7 +638,7 @@ export function SearchBriefPage({
                       <AlertTitle>Pending run created</AlertTitle>
                       <AlertDescription>
                         Run {createdRun.id} is ready for the worker.{" "}
-                        <Link href={`/runs/${createdRun.id}`}>View progress</Link>.
+                        <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
                       </AlertDescription>
                     </Alert>
                   ) : (

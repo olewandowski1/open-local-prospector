@@ -1,5 +1,5 @@
 import { Data, type Effect } from "effect"
-
+import type { RuntimeExecutionConfiguration } from "@/features/runtime-settings"
 import type { AssessmentEvidenceEnvelope } from "@/features/website-assessment/application/assessment-runtime"
 import type { AssessmentOutput } from "@/features/website-assessment/domain/assessment-output"
 
@@ -9,7 +9,8 @@ export type AssessmentTarget = Readonly<{
   runBusinessId: string
   canonicalBusinessId: string
   inspectionId: string
-  runtimeId: "codex" | "claude" | "opencode"
+  runtimeId: "codex" | "claude"
+  runtimeConfiguration?: RuntimeExecutionConfiguration
   inspectionConfigurationVersion: string
   evidence: AssessmentEvidenceEnvelope
 }>

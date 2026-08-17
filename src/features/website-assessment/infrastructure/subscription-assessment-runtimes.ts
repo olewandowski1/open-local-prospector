@@ -6,6 +6,7 @@ import {
   executeRuntimeProcess,
   type RuntimeProcess,
   type RuntimeProcessResult,
+  supportsReasoningEffort,
 } from "@/features/runtime-settings"
 import {
   type AssessmentRuntime,
@@ -28,13 +29,17 @@ export function makeClaudeAssessmentRuntime(
     executable,
     runProcess,
     version,
-    (directory) => ({
+    (directory, configuration) => ({
       arguments: [
         "-p",
         "--output-format",
         "json",
         "--json-schema",
         JSON.stringify(assessmentOutputJsonSchema),
+        ...(configuration ? ["--model", configuration.model] : []),
+        ...(configuration && supportsReasoningEffort("claude", configuration.model)
+          ? ["--effort", configuration.reasoningEffort]
+          : []),
         "--tools",
         "",
         "--permission-mode",
@@ -51,46 +56,21 @@ export function makeClaudeAssessmentRuntime(
   )
 }
 
-export function makeOpenCodeAssessmentRuntime(
-  executable: string,
-  runProcess: RuntimeProcess = executeRuntimeProcess,
-  version?: string,
-): AssessmentRuntime {
-  return makeRuntime(
-    "opencode",
-    executable,
-    runProcess,
-    version,
-    (directory) => ({
-      arguments: ["run", "--format", "json", "--dir", directory],
-      cwd: directory,
-      environment: {
-        ...process.env,
-        OPENCODE_PERMISSION: JSON.stringify({ "*": "deny" }),
-        OPENCODE_DISABLE_DEFAULT_PLUGINS: "true",
-        OPENCODE_DISABLE_CLAUDE_CODE: "true",
-        OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
-        OPENCODE_DISABLE_MODELS_FETCH: "true",
-      },
-    }),
-    parseOpenCode,
-  )
-}
-
 function makeRuntime(
-  id: "claude" | "opencode",
+  id: "claude",
   executable: string,
   runProcess: RuntimeProcess,
   version: string | undefined,
   command: (
     directory: string,
+    configuration?: Readonly<{ model: string; reasoningEffort: string }>,
   ) => Pick<Parameters<RuntimeProcess>[0], "arguments" | "cwd" | "environment">,
   parse: (result: RuntimeProcessResult) => unknown,
 ): AssessmentRuntime {
   return {
     id,
     ...(version ? { version } : {}),
-    assess: (evidence) =>
+    assess: (evidence, configuration) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
           try: () => mkdtemp(join(tmpdir(), `open-local-prospector-${id}-`)),
@@ -102,7 +82,7 @@ function makeRuntime(
             const prompt = `${buildAssessmentPrompt(evidence)}\nThe required JSON Schema is trusted application configuration:\n${JSON.stringify(assessmentOutputJsonSchema)}`
             const result = yield* runProcess({
               executable,
-              ...command(directory),
+              ...command(directory, configuration),
               input: prompt,
             }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const raw = yield* Effect.try({
@@ -124,36 +104,6 @@ function parseClaude(result: RuntimeProcessResult): unknown {
   if (wrapper.structured_output) return wrapper.structured_output
   if (typeof wrapper.result === "string") return JSON.parse(wrapper.result)
   return wrapper
-}
-function parseOpenCode(result: RuntimeProcessResult): unknown {
-  try {
-    const direct = JSON.parse(result.stdout) as unknown
-    if (!Array.isArray(direct)) return direct
-  } catch {
-    /* event stream */
-  }
-  const lines = result.stdout.split(/\r?\n/u).filter(Boolean)
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    const event = JSON.parse(lines[index] ?? "{}") as Record<string, unknown>
-    const part =
-      typeof event.part === "object" && event.part
-        ? (event.part as Record<string, unknown>)
-        : undefined
-    const text =
-      typeof part?.text === "string"
-        ? part.text
-        : typeof event.text === "string"
-          ? event.text
-          : undefined
-    if (text) {
-      try {
-        return JSON.parse(text)
-      } catch {
-        /* continue */
-      }
-    }
-  }
-  throw new Error("no assessment event")
 }
 function transient(code: string, message: string) {
   return new AssessmentRuntimeError({ classification: "Transient", code, message })

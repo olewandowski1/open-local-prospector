@@ -149,7 +149,7 @@ function getDiskReadiness(
     if (state === "missing") {
       return dependency(
         "disk",
-        "Artifact storage",
+        "Artifact Storage",
         "Missing",
         'Run "pnpm run setup" to create the artifact directory.',
       )
@@ -157,7 +157,7 @@ function getDiskReadiness(
     if (state === "unreachable" || !(yield* probe.pathIsWritable(artifactsPath))) {
       return dependency(
         "disk",
-        "Artifact storage",
+        "Artifact Storage",
         "Unreachable",
         "The artifact directory is not writable or accessible.",
       )
@@ -167,7 +167,7 @@ function getDiskReadiness(
     if (Either.isLeft(capacity)) {
       return dependency(
         "disk",
-        "Artifact storage",
+        "Artifact Storage",
         "Unreachable",
         "Disk availability could not be determined.",
       )
@@ -175,14 +175,14 @@ function getDiskReadiness(
     if (capacity.right < MINIMUM_ARTIFACT_BYTES) {
       return dependency(
         "disk",
-        "Artifact storage",
+        "Artifact Storage",
         "Unreachable",
         `At least 1 GiB is required; ${formatBytes(capacity.right)} is available.`,
       )
     }
     return dependency(
       "disk",
-      "Artifact storage",
+      "Artifact Storage",
       "Ready",
       `${formatBytes(capacity.right)} available locally.`,
     )

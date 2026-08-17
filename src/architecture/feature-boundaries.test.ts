@@ -15,6 +15,10 @@ describe("feature dependency boundaries", () => {
           path: "src/features/overview/server/overview.ts",
           source: 'import type { RunSummary } from "@/features/prospecting-runs"',
         },
+        {
+          path: "src/features/overview/presentation/overview.tsx",
+          source: 'import { RuntimeIcon } from "@/features/runtime-settings/client"',
+        },
       ]),
     ).toEqual([])
   })

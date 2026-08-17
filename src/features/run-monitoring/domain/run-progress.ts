@@ -38,6 +38,8 @@ export type RunSummary = Readonly<{
 
 export type BusinessProgress = Readonly<{
   id: string
+  /** Discovered name, absent for runs checkpointed before names were recorded. */
+  name?: string
   currentStage: string
   status: string
   retryCount: number

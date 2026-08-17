@@ -6,11 +6,11 @@
   "tailwind": {
     "config": "",
     "css": "src/app/globals.css",
-    "baseColor": "neutral",
+    "baseColor": "taupe",
     "cssVariables": true,
     "prefix": ""
   },
-  "iconLibrary": "lucide",
+  "iconLibrary": "hugeicons",
   "rtl": false,
   "aliases": {
     "components": "@/components",
@@ -20,8 +20,9 @@
     "hooks": "@/hooks"
   },
   "menuColor": "default",
-  "menuAccent": "subtle",
+  "menuAccent": "bold",
   "registries": {
-    "@7ovr": "https://7ovr.com/r/{name}.json"
+    "@7ovr": "https://7ovr.com/r/{name}.json",
+    "@svgl": "https://svgl.app/r/{name}.json"
   }
 }

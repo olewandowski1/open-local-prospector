@@ -68,7 +68,7 @@ describe("business discovery workflow", () => {
       queries: 4,
       discoveries: 3,
       duplicates: 2,
-      target_remaining: 2,
+      target_remaining: 5,
     })
     expect(readScalar(database.path, "select count(*) from discovery_occurrences")).toBe(5)
     expect(
@@ -115,7 +115,7 @@ describe("business discovery workflow", () => {
     ).toEqual({
       queries: 3,
       discoveries: 5,
-      target_remaining: 0,
+      target_remaining: 5,
     })
   })
 

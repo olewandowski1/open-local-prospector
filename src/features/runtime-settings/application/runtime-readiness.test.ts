@@ -23,23 +23,16 @@ const readyAuthentication: Record<RuntimeId, RuntimeCommandResult> = {
     }),
     stderr: "",
   },
-  opencode: {
-    exitCode: 0,
-    stdout: "Credentials /private/path\nOpenCode Go oauth\n1 credential",
-    stderr: "",
-  },
 }
 
 const loggedOutAuthentication: Record<RuntimeId, RuntimeCommandResult> = {
   codex: { exitCode: 1, stdout: "Not logged in", stderr: "" },
   claude: { exitCode: 0, stdout: JSON.stringify({ loggedIn: false }), stderr: "" },
-  opencode: { exitCode: 0, stdout: "Credentials /private/path\n0 credentials", stderr: "" },
 }
 
 const versionOutput: Record<RuntimeId, string> = {
   codex: "codex-cli 0.99.0",
   claude: "2.4.1 (Claude Code)",
-  opencode: "1.2.3",
 }
 
 function runProbe(runtimeId: RuntimeId, service: RuntimeProbeService) {
@@ -80,7 +73,7 @@ function serviceFor(runtimeId: RuntimeId, state: RuntimeReadinessStatus): Runtim
   }
 }
 
-describe.each(["codex", "claude", "opencode"] as const)("%s runtime readiness", (runtimeId) => {
+describe.each(["codex", "claude"] as const)("%s runtime readiness", (runtimeId) => {
   it.each(["Ready", "Missing", "Logged Out", "Unreachable", "Unsupported Version"] as const)(
     "classifies %s deterministically",
     async (status) => {
@@ -107,7 +100,6 @@ describe.each(["codex", "claude", "opencode"] as const)("%s runtime readiness", 
     const expectedAuthenticationArguments = {
       codex: ["login", "status"],
       claude: ["auth", "status", "--json"],
-      opencode: ["auth", "list"],
     }[runtimeId]
     expect(execute).toHaveBeenNthCalledWith(1, `/bin/${runtimeId}`, ["--version"])
     expect(execute).toHaveBeenNthCalledWith(2, `/bin/${runtimeId}`, expectedAuthenticationArguments)
@@ -143,21 +135,4 @@ it("rejects a status response containing an undocumented field", async () => {
   })
 
   expect(result.status).toBe("Unsupported Version")
-})
-
-it("does not treat usage-billed OpenCode Zen credentials as a subscription", async () => {
-  let call = 0
-  const result = await runProbe("opencode", {
-    resolveExecutable: () => Effect.succeed(Option.some("/bin/opencode")),
-    execute: () => {
-      call += 1
-      return Effect.succeed(
-        call === 1
-          ? { exitCode: 0, stdout: versionOutput.opencode, stderr: "" }
-          : { exitCode: 0, stdout: "OpenCode Zen api\n1 credential", stderr: "" },
-      )
-    },
-  })
-
-  expect(result.status).toBe("Logged Out")
 })

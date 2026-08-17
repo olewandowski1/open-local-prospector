@@ -8,6 +8,15 @@ import {
 } from "@/features/website-assessment/infrastructure/codex-assessment-runtime"
 
 describe("Codex assessment adapter", () => {
+  it("pins the selected model and reasoning effort", () => {
+    const arguments_ = codexArguments("schema.json", "workspace", {
+      model: "gpt-5.6-sol",
+      reasoningEffort: "xhigh",
+    })
+    expect(arguments_).toContain("gpt-5.6-sol")
+    expect(arguments_).toContain('model_reasoning_effort="xhigh"')
+  })
+
   it("uses fixed non-interactive arguments and sends source through stdin", async () => {
     let captured:
       | Parameters<NonNullable<Parameters<typeof makeCodexAssessmentRuntime>[1]>>[0]

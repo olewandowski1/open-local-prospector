@@ -1,6 +1,6 @@
 import { Context, Data, Effect, Either, Option } from "effect"
 
-export const runtimeIds = ["codex", "claude", "opencode"] as const
+export const runtimeIds = ["codex", "claude"] as const
 export type RuntimeId = (typeof runtimeIds)[number]
 
 export function isRuntimeId(value: string): value is RuntimeId {
@@ -62,7 +62,7 @@ type RuntimeDefinition = Readonly<{
 const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
   codex: {
     id: "codex",
-    label: "Codex CLI",
+    label: "Codex",
     versionArguments: ["--version"],
     authenticationArguments: ["login", "status"],
     minimumVersion: [0, 1, 0],
@@ -78,7 +78,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
   },
   claude: {
     id: "claude",
-    label: "Claude Code",
+    label: "Claude",
     versionArguments: ["--version"],
     authenticationArguments: ["auth", "status", "--json"],
     minimumVersion: [1, 0, 0],
@@ -101,23 +101,6 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     loginInstruction: "Run in your terminal: claude auth login",
     updateInstruction:
       "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash",
-  },
-  opencode: {
-    id: "opencode",
-    label: "OpenCode",
-    versionArguments: ["--version"],
-    authenticationArguments: ["auth", "list"],
-    minimumVersion: [1, 0, 0],
-    parseAuthentication: ({ exitCode, stdout, stderr }) => {
-      if (exitCode !== 0) return "unsupported"
-      const match = `${stdout}\n${stderr}`.match(/(\d+)\s+credentials?/iu)
-      if (!match) return "unsupported"
-      const hasOpenCodeSubscription = /OpenCode\s+Go/iu.test(stdout)
-      return Number(match[1]) > 0 && hasOpenCodeSubscription ? "ready" : "logged-out"
-    },
-    installInstruction: "Run: npm install -g opencode-ai, then: opencode auth login",
-    loginInstruction: "Run in your terminal: opencode auth login",
-    updateInstruction: "Update OpenCode with: opencode upgrade",
   },
 }
 
@@ -183,7 +166,7 @@ export const getRuntimeReadiness = (runtimeId: RuntimeId) =>
 
 export const getAllRuntimeReadiness = Effect.all(
   runtimeIds.map((runtimeId) => getRuntimeReadiness(runtimeId)),
-  { concurrency: 3 },
+  { concurrency: 2 },
 )
 
 function readiness(

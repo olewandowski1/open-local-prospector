@@ -36,7 +36,12 @@ export function findFeatureBoundaryViolations(modules: readonly SourceModule[]) 
     for (const imported of moduleSpecifiers(module)) {
       const targetFeature = imported.match(/^@\/features\/([^/]+)(?:\/(.+))?$/)
 
-      if (importerFeature && targetFeature?.[1] !== importerFeature && targetFeature?.[2]) {
+      if (
+        importerFeature &&
+        targetFeature?.[1] !== importerFeature &&
+        targetFeature?.[2] &&
+        targetFeature[2] !== "client"
+      ) {
         violations.push({
           importer,
           imported,

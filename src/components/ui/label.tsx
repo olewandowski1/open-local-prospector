@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: The reusable primitive receives its association through forwarded props or nested controls.
+    // biome-ignore lint/a11y/noLabelWithoutControl: Consumers provide htmlFor or nest a form control.
     <label
       data-slot="label"
       className={cn(

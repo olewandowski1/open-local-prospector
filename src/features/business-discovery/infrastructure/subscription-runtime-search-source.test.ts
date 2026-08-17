@@ -18,7 +18,24 @@ const request: DiscoverySearchRequest = {
 }
 
 describe("subscription runtime web search", () => {
-  it.each(["codex", "claude", "opencode"] as const)(
+  it("passes the selected model and reasoning effort to Codex", async () => {
+    let captured: RuntimeProcessRequest | undefined
+    const runProcess: RuntimeProcess = (processRequest) => {
+      captured = processRequest
+      return Effect.succeed({ exitCode: 0, stdout: JSON.stringify({ results: [] }) })
+    }
+    await Effect.runPromise(
+      makeSubscriptionRuntimeSearchSource({ codex: "codex" }, runProcess).search({
+        ...request,
+        runtimeConfiguration: { model: "gpt-5.6-sol", reasoningEffort: "high" },
+      }),
+    )
+
+    expect(captured?.arguments).toContain("gpt-5.6-sol")
+    expect(captured?.arguments).toContain('model_reasoning_effort="high"')
+  })
+
+  it.each(["codex", "claude"] as const)(
     "uses only the selected %s runtime and keeps the query on stdin",
     async (runtime) => {
       let captured: RuntimeProcessRequest | undefined
@@ -45,11 +62,6 @@ describe("subscription runtime web search", () => {
       expect(captured?.arguments.join(" ")).not.toContain("INJECTION")
       expect(captured?.input).toContain("INJECTION")
       if (runtime === "claude") expect(captured?.arguments).toContain("WebSearch")
-      if (runtime === "opencode") {
-        expect(captured?.environment?.OPENCODE_PERMISSION).toBe(
-          JSON.stringify({ "*": "deny", websearch: "allow" }),
-        )
-      }
       if (runtime === "codex") expect(captured?.arguments).toContain('web_search="live"')
     },
   )

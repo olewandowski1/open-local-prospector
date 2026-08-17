@@ -112,9 +112,6 @@ function executableCandidates(
   const userDirectory = environment.USERPROFILE ?? environment.HOME
   if (userDirectory) {
     candidates.push(join(userDirectory, ".local", "bin", executableName))
-    if (runtimeId === "opencode") {
-      candidates.push(join(userDirectory, ".opencode", "bin", executableName))
-    }
   }
 
   if (runtimeId === "codex" && platform === "win32" && environment.APPDATA) {

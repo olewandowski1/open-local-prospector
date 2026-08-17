@@ -23,7 +23,7 @@ pnpm dev
 
 `pnpm run setup` creates or migrates the local SQLite database, prepares artifact storage, copies the non-secret `.env.local.example` template when needed, and installs the compatible Playwright Chromium build. It is safe to run repeatedly. Use the explicit `run`: `pnpm setup` is a reserved pnpm command and does not invoke project scripts.
 
-Local state is stored under `.local/` by default and is ignored by Git. Set `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in the terminal running setup when an override is needed, and mirror that non-secret path in `.env.local` for the web application. No search API key is required: discovery uses the web-search capability of the selected authenticated Codex, Claude Code, or OpenCode CLI.
+Local state is stored under `.local/` by default and is ignored by Git. Set `PROSPECTOR_DATABASE_PATH` or `PROSPECTOR_ARTIFACTS_PATH` in the terminal running setup when an override is needed, and mirror that non-secret path in `.env.local` for the web application. No search API key is required: discovery uses the web-search capability of the selected authenticated Codex or Claude Code CLI.
 
 Search Area interpretation uses the public OpenStreetMap Nominatim endpoint by default. It is user-triggered only (never autocomplete), limited to one request per second, cached locally for seven days, and identified with an application User-Agent. Review the [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/). Set `PROSPECTOR_GEOCODER_URL` in `.env.local` to switch to another compatible endpoint without changing application code.
 
@@ -52,7 +52,7 @@ Lefthook runs Biome on staged files before commits and typecheck/unit tests befo
 
 The UI uses Tailwind CSS, shadcn/ui with Base UI primitives, and selected 7Ovr registry blocks. 7Ovr is an accelerator rather than a second component system; installed blocks must be reviewed and adapted to canonical shadcn composition.
 
-Project-scoped shadcn MCP configuration is available for Codex, Claude Code, and OpenCode. It executes the lockfile-pinned CLI:
+Project-scoped shadcn MCP configuration is available for Codex and Claude Code. It executes the lockfile-pinned CLI:
 
 ```powershell
 pnpm exec shadcn mcp
@@ -81,7 +81,7 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Implementation plans](plans/README.md)
 - [MVP quality gate](docs/MVP-QUALITY-GATE.md)
 
-Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Discovery and identity-evidence lookup use only the selected subscription CLI's constrained web-search capability. Codex, Claude Code, and OpenCode adapters launch directly with bounded, no-shell execution and persist only schema-validated, public-source output. Search results and website content are always treated as untrusted text, never commands. No adapter falls back to a usage-based API or another provider.
+Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Discovery and identity-evidence lookup use only the selected subscription CLI's constrained web-search capability. Codex and Claude Code adapters launch directly with bounded, no-shell execution and persist only schema-validated, public-source output. Search results and website content are always treated as untrusted text, never commands. No adapter falls back to a usage-based API or another provider.
 
 ## License
 

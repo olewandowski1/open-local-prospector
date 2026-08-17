@@ -6,4 +6,4 @@ The local MVP gate is exercised by `pnpm check`, `pnpm worker:check`, and `pnpm 
 
 Durable task/restart tests prove committed checkpoints survive process restarts without repeating completed work. Run transitions, durations, attempts, sanitized failures, inspection blocks, runtime/schema versions, prompt/extraction/scoring/inspection versions, source timestamps, and assessment timestamps remain in SQLite. Runtime subprocess stderr, untrusted Source Content, provider credentials, and hidden reasoning are not persisted.
 
-The application uses loopback Next.js, a separate Effect worker, SQLite, public discovery/inspection sources, and authenticated Codex, Claude Code, or OpenCode subscription CLIs. It requires no Docker, cloud hosting, OpenRouter, or usage-based AI API credential. Export and review actions never initiate outreach.
+The application uses loopback Next.js, a separate Effect worker, SQLite, public discovery/inspection sources, and authenticated Codex or Claude Code subscription CLIs. It requires no Docker, cloud hosting, OpenRouter, or usage-based AI API credential. Export and review actions never initiate outreach.

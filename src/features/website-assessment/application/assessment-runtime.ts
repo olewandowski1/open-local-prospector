@@ -1,5 +1,5 @@
 import { Data, type Effect } from "effect"
-
+import type { RuntimeExecutionConfiguration } from "@/features/runtime-settings"
 import type { AssessmentOutput } from "@/features/website-assessment/domain/assessment-output"
 
 export type AssessmentEvidencePage = Readonly<{
@@ -45,10 +45,11 @@ export class AssessmentRuntimeError extends Data.TaggedError("AssessmentRuntimeE
 }> {}
 
 export interface AssessmentRuntime {
-  readonly id: "codex" | "claude" | "opencode"
+  readonly id: "codex" | "claude"
   readonly version?: string
   readonly assess: (
     evidence: AssessmentEvidenceEnvelope,
+    configuration?: RuntimeExecutionConfiguration,
   ) => Effect.Effect<AssessmentOutput, AssessmentRuntimeError>
 }
 

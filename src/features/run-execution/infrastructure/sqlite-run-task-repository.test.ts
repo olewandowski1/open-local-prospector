@@ -13,6 +13,63 @@ afterEach(() => {
 })
 
 describe("SQLite durable task repository", () => {
+  it("reopens a prematurely completed run that still has pending tasks", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "reopen-run")
+    const connection = new Database(database.path)
+    try {
+      connection
+        .prepare(
+          "update prospecting_runs set state='Completed', completion_state='Search Exhausted' where id=?",
+        )
+        .run(run.id)
+    } finally {
+      connection.close()
+    }
+
+    const repository = makeSqliteRunTaskRepository(database.path)
+    await Effect.runPromise(repository.recoverAbandoned(new Date()))
+
+    expect(
+      readRow(
+        database.path,
+        "select state, completion_state from prospecting_runs where id = ?",
+        run.id,
+      ),
+    ).toEqual({ state: "Running", completion_state: null })
+    expect(
+      Option.isSome(await Effect.runPromise(repository.claimNext("worker", new Date(), 10_000))),
+    ).toBe(true)
+  })
+
+  it("settles as target reached only after the last task completes", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "target-run")
+    const connection = new Database(database.path)
+    try {
+      connection.prepare("update run_metrics set target_remaining=0 where run_id=?").run(run.id)
+    } finally {
+      connection.close()
+    }
+    const repository = makeSqliteRunTaskRepository(database.path)
+    const task = requiredTask(
+      await Effect.runPromise(repository.claimNext("worker", new Date(), 10_000)),
+    )
+    await Effect.runPromise(
+      repository.complete(task, "worker", { value: { done: true } }, new Date()),
+    )
+
+    expect(
+      readRow(
+        database.path,
+        "select state, completion_state from prospecting_runs where id = ?",
+        run.id,
+      ),
+    ).toEqual({ state: "Completed", completion_state: "Target Reached" })
+  })
+
   it("recovers an abandoned lease without repeating a completed checkpoint", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)

@@ -24,7 +24,7 @@ export function makeCodexAssessmentRuntime(
   return {
     id: "codex",
     ...(version ? { version } : {}),
-    assess: (evidence) =>
+    assess: (evidence, configuration) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
           try: () => mkdtemp(join(tmpdir(), "open-local-prospector-assessment-")),
@@ -44,7 +44,7 @@ export function makeCodexAssessmentRuntime(
             })
             const result = yield* runProcess({
               executable,
-              arguments: codexArguments(schemaPath, directory),
+              arguments: codexArguments(schemaPath, directory, configuration),
               input: buildAssessmentPrompt(evidence),
               cwd: directory,
             }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
@@ -61,7 +61,11 @@ export function makeCodexAssessmentRuntime(
   }
 }
 
-export function codexArguments(schemaPath: string, directory: string): readonly string[] {
+export function codexArguments(
+  schemaPath: string,
+  directory: string,
+  configuration?: Readonly<{ model: string; reasoningEffort: string }>,
+): readonly string[] {
   return [
     "exec",
     "--ephemeral",
@@ -76,6 +80,14 @@ export function codexArguments(schemaPath: string, directory: string): readonly 
     directory,
     "--output-schema",
     schemaPath,
+    ...(configuration
+      ? [
+          "--model",
+          configuration.model,
+          "--config",
+          `model_reasoning_effort=${JSON.stringify(configuration.reasoningEffort)}`,
+        ]
+      : []),
     "-",
   ]
 }

@@ -1,3 +1,21 @@
+export {
+  defaultRuntimeExecutionConfiguration,
+  isRuntimeExecutionConfiguration,
+  type RuntimeExecutionConfiguration,
+  type RuntimeModelOption,
+  type RuntimeReasoningEffort,
+  resolveRuntimeConfiguration,
+  runtimeModelOptions,
+  runtimeReasoningEfforts,
+  supportsReasoningEffort,
+} from "@/features/runtime-settings/application/runtime-execution-configuration"
+export {
+  getSelectedRuntime,
+  getSelectedRuntimePreference,
+  type SelectedRuntimePreference,
+  setSelectedRuntime,
+  setSelectedRuntimePreference,
+} from "@/features/runtime-settings/application/runtime-preference"
 export type {
   RuntimeId,
   RuntimeReadiness,
@@ -20,3 +38,4 @@ export {
   type RuntimeProcessRequest,
   type RuntimeProcessResult,
 } from "@/features/runtime-settings/infrastructure/runtime-process"
+export { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"

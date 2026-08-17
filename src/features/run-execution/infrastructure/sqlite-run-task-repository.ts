@@ -82,6 +82,20 @@ function databaseEffect<A>(
 
 function recover(database: Database.Database, now: Date): number {
   return database.transaction(() => {
+    database
+      .prepare(
+        `update run_metrics set target_remaining=max(0,
+         (select json_extract(search_brief,'$.targetCount') from prospecting_runs where id=run_id) -
+         qualified_candidates), updated_at=?, version=version+1`,
+      )
+      .run(now.getTime())
+    database
+      .prepare(
+        `update prospecting_runs set completion_state='Search Exhausted', updated_at=?, version=version+1
+         where state='Completed' and completion_state='Target Reached'
+         and exists(select 1 from run_metrics where run_id=prospecting_runs.id and target_remaining>0)`,
+      )
+      .run(now.getTime())
     const abandoned = database
       .prepare(
         `select id, run_id from run_tasks
@@ -95,6 +109,20 @@ function recover(database: Database.Database, now: Date): number {
     for (const task of abandoned) {
       update.run(now.getTime(), now.getTime(), task.id)
       transition(database, task.run_id, task.id, "Leased", "Pending", "LeaseRecovered", {}, now)
+    }
+    const incorrectlySettled = database
+      .prepare(
+        `select distinct r.id from prospecting_runs r join run_tasks t on t.run_id = r.id
+         where r.state = 'Completed' and t.status in ('Pending', 'Leased')`,
+      )
+      .all() as readonly { id: string }[]
+    const reopen = database.prepare(
+      `update prospecting_runs set state = 'Running', completion_state = null,
+       updated_at = ?, version = version + 1 where id = ? and state = 'Completed'`,
+    )
+    for (const run of incorrectlySettled) {
+      reopen.run(now.getTime(), run.id)
+      transition(database, run.id, null, "Completed", "Running", "RunReopened", {}, now)
     }
     return abandoned.length
   })()
@@ -321,6 +349,11 @@ function updateRunAfterSettledTask(
   }
   if (counts.active > 0) return
 
+  const targetRemaining = database
+    .prepare("select target_remaining from run_metrics where run_id = ?")
+    .pluck()
+    .get(runId) as number | undefined
+
   const outcome =
     counts.infrastructure > 0
       ? { state: "Completed", completion: "Infrastructure Failed" }
@@ -330,7 +363,10 @@ function updateRunAfterSettledTask(
           ? { state: "Cancelled", completion: "Cancelled with Partial Results" }
           : counts.failed > 0
             ? { state: "Completed", completion: "Completed with Warnings" }
-            : { state: "Completed", completion: "Search Exhausted" }
+            : {
+                state: "Completed",
+                completion: targetRemaining === 0 ? "Target Reached" : "Search Exhausted",
+              }
   database
     .prepare(
       `update prospecting_runs set state = ?, completion_state = ?, current_stage = ?,

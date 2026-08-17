@@ -1,38 +1,44 @@
 "use client"
 
+import { MapPin } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  CORRECTION_TARGETS,
-  REJECTION_REASONS,
-  REVIEW_STATUSES,
-} from "@/features/review-queue/domain/review-policy"
+import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
+import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
+import { CandidateHistory } from "@/features/review-queue/presentation/candidate-history"
+import { CandidateList } from "@/features/review-queue/presentation/candidate-list"
+import { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
+import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
+import { cn } from "@/lib/utils"
+
+type DetailSection = "evidence" | "decision" | "history"
+
+const sections: readonly Readonly<{ value: DetailSection; label: string }>[] = [
+  { value: "evidence", label: "Evidence" },
+  { value: "decision", label: "Decision" },
+  { value: "history", label: "History" },
+]
 
 export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidate[] }) {
+  const router = useRouter()
   const [filter, setFilter] = useState("All")
   const [selectedId, setSelectedId] = useState(candidates[0]?.id ?? "")
+  const [section, setSection] = useState<DetailSection>("evidence")
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState("")
+
   useEffect(() => {
     const savedFilter = localStorage.getItem("review-filter")
     const savedSelection = localStorage.getItem("review-selection")
     if (savedFilter) setFilter(savedFilter)
-    if (savedSelection && candidates.some((item) => item.id === savedSelection))
+    if (savedSelection && candidates.some((item) => item.id === savedSelection)) {
       setSelectedId(savedSelection)
+    }
   }, [candidates])
+
   const visible = useMemo(
     () =>
       filter === "All"
@@ -41,324 +47,154 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     [candidates, filter],
   )
   const selected = candidates.find((candidate) => candidate.id === selectedId) ?? visible[0]
-  const persistFilter = (value: string | null) => {
-    const next = value ?? "All"
-    setFilter(next)
-    localStorage.setItem("review-filter", next)
+
+  const persistFilter = (value: string) => {
+    setFilter(value)
+    localStorage.setItem("review-filter", value)
   }
   const select = (id: string) => {
     setSelectedId(id)
     localStorage.setItem("review-selection", id)
   }
-  const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
-  return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(24rem,1.2fr)]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Ranked candidates</CardTitle>
-          <CardDescription>Selection and filter persist on this device.</CardDescription>
-          <Select value={filter} onValueChange={persistFilter}>
-            <SelectTrigger aria-label="Review status filter">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="All">All statuses</SelectItem>
-                {REVIEW_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <a
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-              href={`/api/export?format=csv${exportQuery}`}
-            >
-              Export CSV
-            </a>
-            <a
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-              href={`/api/export?format=json${exportQuery}`}
-            >
-              Export JSON
-            </a>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ul className="flex flex-col gap-2">
-            {visible.map((candidate) => (
-              <li key={candidate.id}>
-                <Button
-                  variant={selected?.id === candidate.id ? "secondary" : "ghost"}
-                  className="h-auto w-full justify-between"
-                  onClick={() => select(candidate.id)}
-                >
-                  <span className="text-left">
-                    <span className="block font-medium">{candidate.name}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {candidate.locality} · {candidate.primaryOpportunity}
-                    </span>
-                  </span>
-                  <span className="tabular-nums">{candidate.score}</span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-      {selected ? <CandidateDetail candidate={selected} /> : null}
-    </div>
-  )
-}
 
-function CandidateDetail({ candidate }: { candidate: QueueCandidate }) {
-  const [message, setMessage] = useState("")
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  /** Re-renders the server component that reads SQLite, rather than reloading the whole document. */
+  const refresh = () => router.refresh()
+
+  const post = async (
+    event: React.FormEvent<HTMLFormElement>,
+    path: string,
+    body: Record<string, unknown>,
+    success: string,
+  ) => {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const body = Object.fromEntries(form.entries())
-    const response = await fetch(`/api/review/${candidate.id}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    const result = (await response.json()) as { error?: string }
-    setMessage(response.ok ? "Saved. Refreshing…" : (result.error ?? "Could not save."))
-    if (response.ok) location.reload()
+    setBusy(true)
+    setMessage("")
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const result = (await response.json().catch(() => ({}))) as { error?: string }
+      if (!response.ok) {
+        setMessage(result.error ?? "Could not save.")
+        return
+      }
+      setMessage(success)
+      refresh()
+    } finally {
+      setBusy(false)
+    }
   }
-  async function suppress(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+
+  const submitForm = (event: React.FormEvent<HTMLFormElement>, success: string) => {
+    if (!selected) return
+    const body = Object.fromEntries(new FormData(event.currentTarget).entries())
+    void post(event, `/api/review/${selected.id}`, body, success)
+  }
+
+  const suppress = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!selected) return
     const reason = String(new FormData(event.currentTarget).get("reason") ?? "")
-    const response = await fetch(`/api/review/${candidate.id}/suppress`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ reason }),
-    })
-    setMessage(response.ok ? "Suppressed globally. Refreshing…" : "Suppression failed.")
-    if (response.ok) location.reload()
+    void post(
+      event,
+      `/api/review/${selected.id}/suppress`,
+      { reason },
+      "Suppressed for every future run.",
+    )
   }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{candidate.name}</CardTitle>
-        <CardDescription>
-          {candidate.locality} · score {candidate.score} · {candidate.rubricVersion}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <section>
-          <h2 className="font-medium">Score explanation</h2>
-          <p className="text-sm text-muted-foreground">
-            Severity {candidate.breakdown.severity}, confidence {candidate.breakdown.confidence},
-            contact {candidate.breakdown.contact}, local decision{" "}
-            {candidate.breakdown.localDecision}, commercial value{" "}
-            {candidate.breakdown.commercialValue}.
-          </p>
-        </section>
-        <Separator />
-        <section>
-          <h2 className="font-medium">Opportunities and evidence</h2>
-          <ul className="mt-2 flex flex-col gap-3">
-            {candidate.opportunities.map((opportunity) => (
-              <li key={`${opportunity.opportunityClass}-${opportunity.explanation}`}>
-                <Badge variant="secondary">
-                  {opportunity.opportunityClass} · severity {opportunity.severity}
-                </Badge>
-                <p className="mt-1 text-sm">{opportunity.explanation}</p>
-              </li>
-            ))}
-          </ul>
-          <ul className="mt-3 flex flex-col gap-2">
-            {candidate.observations.map((observation) => (
-              <li key={`${observation.sourceUrl}-${observation.statement}`} className="text-sm">
-                <Badge variant="outline">{observation.evidenceState}</Badge> {observation.statement}{" "}
-                <a
-                  className="underline"
-                  href={observation.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Source
-                </a>{" "}
-                <span className="text-muted-foreground">{observation.observedAt}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <Separator />
-        <section>
-          <h2 className="font-medium">Inspection and online presence</h2>
-          <p className="text-sm text-muted-foreground">
-            State: {candidate.inspectionState}; limitations:{" "}
-            {candidate.limitations.join(", ") || "none recorded"}
-          </p>
-          <p className="mt-2 text-sm">
-            Measurements: {candidate.measurements.join(" · ") || "none"}
-          </p>
-          <ul className="mt-2">
-            {candidate.presences.map((presence) => (
-              <li key={presence.url} className="text-sm">
-                {presence.type}:{" "}
-                <a className="underline" href={presence.url} target="_blank" rel="noreferrer">
-                  {presence.url}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <ul className="mt-2">
-            {candidate.contacts.map((contact) => (
-              <li key={`${contact.type}-${contact.value}`} className="text-sm">
-                {contact.type}: {contact.value} (
-                <a className="underline" href={contact.sourceUrl} target="_blank" rel="noreferrer">
-                  source
-                </a>
-                )
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Screenshots: {candidate.screenshots.join(", ") || "none"}
-          </p>
-        </section>
-        <Separator />
-        <form className="flex flex-col gap-3" onSubmit={submit}>
-          <input type="hidden" name="kind" value="review" />
-          <FieldGroup>
-            <Field>
-              <FieldLabel>Review status</FieldLabel>
-              <Select name="status" defaultValue={candidate.reviewStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {REVIEW_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="rejectionReason">
-                Rejection reason (required when rejected)
-              </FieldLabel>
-              <Select name="rejectionReason" defaultValue={candidate.rejectionReason}>
-                <SelectTrigger id="rejectionReason">
-                  <SelectValue placeholder="Choose a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {REJECTION_REASONS.map((reason) => (
-                      <SelectItem key={reason} value={reason}>
-                        {reason}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="rejectionNote">Rejection note</FieldLabel>
-              <Input
-                id="rejectionNote"
-                name="rejectionNote"
-                defaultValue={candidate.rejectionNote}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="privateNotes">Private review notes</FieldLabel>
-              <Textarea
-                id="privateNotes"
-                name="privateNotes"
-                defaultValue={candidate.privateNotes}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="followUpAt">Optional follow-up date</FieldLabel>
-              <Input
-                id="followUpAt"
-                name="followUpAt"
-                type="date"
-                defaultValue={candidate.followUpAt}
-              />
-            </Field>
-          </FieldGroup>
-          <Button type="submit">Save review</Button>
-        </form>
-        <Separator />
-        <form className="flex flex-col gap-3" onSubmit={submit}>
-          <input type="hidden" name="kind" value="correction" />
-          <FieldGroup>
-            <Field>
-              <FieldLabel>Correction target</FieldLabel>
-              <Select name="target" defaultValue="SupportingObservation">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {CORRECTION_TARGETS.map((target) => (
-                      <SelectItem key={target} value={target}>
-                        {target}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="correctedValue">Corrected value</FieldLabel>
-              <Textarea id="correctedValue" name="correctedValue" required />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="correctionNote">Reason</FieldLabel>
-              <Input id="correctionNote" name="note" />
-            </Field>
-          </FieldGroup>
-          <Button type="submit" variant="outline">
-            Add correction
-          </Button>
-        </form>
-        {message ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            {message}
-          </p>
-        ) : null}
-        <section>
-          <h2 className="font-medium">Correction history</h2>
-          <ul className="mt-2 flex flex-col gap-2">
-            {candidate.corrections.map((correction) => (
-              <li key={`${correction.createdAt}-${correction.target}`} className="text-sm">
-                <Badge variant="outline">{correction.target}</Badge> {correction.correctedValue}{" "}
-                <span className="text-muted-foreground">{correction.createdAt}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Original machine assessment remains immutable.
-          </p>
-        </section>
-        <Separator />
-        <form className="flex flex-col gap-3" onSubmit={suppress}>
-          <Field>
-            <FieldLabel htmlFor="suppressionReason">Do not contact reason</FieldLabel>
-            <Input id="suppressionReason" name="reason" required />
-          </Field>
-          <Button type="submit" variant="destructive">
-            Suppress globally
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Prevents future recommendation, reassessment for outreach, and export. It does not
-            contact anyone.
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="grid gap-4 lg:grid-cols-[minmax(16rem,0.7fr)_minmax(0,1.3fr)] lg:items-start">
+      <CandidateList
+        candidates={visible}
+        filter={filter}
+        selectedId={selected?.id}
+        onFilter={persistFilter}
+        onSelect={select}
+      />
+
+      {selected ? (
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{selected.name}</CardTitle>
+              <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="inline-flex items-center gap-1">
+                  <MapPin aria-hidden="true" className="size-3.5" />
+                  {selected.locality}
+                </span>
+                <span>·</span>
+                <span>{humanizeTerm(selected.primaryOpportunity)}</span>
+                <span>·</span>
+                <span>
+                  {selected.contactAvailable ? "Contact Route Available" : "No Contact Route"}
+                </span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CandidateStatusBadge status={selected.reviewStatus} />
+                <span className="text-sm text-muted-foreground">
+                  Score{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatScore(selected.score)}
+                  </span>
+                </span>
+              </div>
+
+              <fieldset className="flex items-center gap-0.5 rounded-lg border p-0.5">
+                <legend className="sr-only">Candidate Section</legend>
+                {sections.map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "relative cursor-pointer rounded-md px-2.5 py-1 text-sm transition-colors",
+                      "has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
+                      section === option.value
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="candidate-section"
+                      value={option.value}
+                      checked={section === option.value}
+                      onChange={() => setSection(option.value)}
+                      className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </fieldset>
+            </CardContent>
+          </Card>
+
+          {message ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {message}
+            </p>
+          ) : null}
+
+          {section === "evidence" ? <CandidateEvidence candidate={selected} /> : null}
+          {section === "decision" ? (
+            <CandidateDecision
+              candidate={selected}
+              busy={busy}
+              onSubmit={(event) => submitForm(event, "Review saved.")}
+            />
+          ) : null}
+          {section === "history" ? (
+            <CandidateHistory
+              candidate={selected}
+              busy={busy}
+              onCorrect={(event) => submitForm(event, "Correction added.")}
+              onSuppress={suppress}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }

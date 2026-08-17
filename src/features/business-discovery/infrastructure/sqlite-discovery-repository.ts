@@ -206,16 +206,10 @@ function recordPage(
     database
       .prepare(
         `update run_metrics set queries = queries + 1, discoveries = ?,
-         duplicates = duplicates + ?, target_remaining = ?, updated_at = ?, version = version + 1
+         duplicates = duplicates + ?, updated_at = ?, version = version + 1
          where run_id = ?`,
       )
-      .run(
-        progress.uniqueBusinesses,
-        duplicates,
-        Math.max(0, input.targetCount - progress.uniqueBusinesses),
-        input.recordedAt.getTime(),
-        input.runId,
-      )
+      .run(progress.uniqueBusinesses, duplicates, input.recordedAt.getTime(), input.runId)
     return { uniqueAdded, duplicates, progress }
   })()
 }

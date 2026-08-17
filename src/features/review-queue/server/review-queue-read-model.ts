@@ -200,3 +200,121 @@ export function getReviewQueue(): readonly QueueCandidate[] {
     db?.close()
   }
 }
+
+export type RecentCandidate = Readonly<{
+  id: string
+  name: string
+  locality: string
+  score: number
+  primaryOpportunity: string
+  reviewStatus: string
+  contactAvailable: boolean
+  scoredAt: string
+}>
+
+export type CandidateSummary = Readonly<{
+  qualified: number
+  unreviewed: number
+  shortlisted: number
+  topScore: number
+  /** Qualified candidates scored in the last seven days, and in the seven days before those. */
+  qualifiedThisWeek: number
+  qualifiedLastWeek: number
+}>
+
+type RecentRow = {
+  id: string
+  name: string
+  locality: string
+  total: number
+  opportunity_class: string
+  review_status: string | null
+  contact_available: number
+  scored_at: number
+}
+
+type SummaryRow = {
+  qualified: number
+  unreviewed: number
+  shortlisted: number
+  top_score: number
+  this_week: number
+  last_week: number
+}
+
+const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
+
+const RECENT_CANDIDATE_LIMIT = 8
+
+/**
+ * The most recently scored qualified candidates, newest first. Suppressed businesses never appear.
+ */
+export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): readonly RecentCandidate[] {
+  return readCandidates([], (database) =>
+    (
+      database
+        .prepare(
+          `select cs.id,cb.name,cb.locality,cs.total,cs.scored_at,wo.opportunity_class,crv.status review_status,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null order by cs.scored_at desc,cs.total desc,cs.id limit ?`,
+        )
+        .all(limit) as RecentRow[]
+    ).map((row) => ({
+      id: row.id,
+      name: row.name,
+      locality: row.locality,
+      score: row.total,
+      primaryOpportunity: row.opportunity_class,
+      reviewStatus: row.review_status ?? "Unreviewed",
+      contactAvailable: Boolean(row.contact_available),
+      scoredAt: new Date(row.scored_at).toISOString(),
+    })),
+  )
+}
+
+/**
+ * Aggregate counts over the same qualified, unsuppressed candidates the Review Queue exposes.
+ */
+export function getCandidateSummary(now = new Date()): CandidateSummary {
+  const weekAgo = now.getTime() - WEEK_IN_MILLISECONDS
+  const twoWeeksAgo = weekAgo - WEEK_IN_MILLISECONDS
+  return readCandidates(emptyCandidateSummary, (database) => {
+    const row = database
+      .prepare(
+        `select count(*) qualified,coalesce(sum(case when coalesce(crv.status,'Unreviewed')='Unreviewed' then 1 else 0 end),0) unreviewed,coalesce(sum(case when crv.status='Shortlisted' then 1 else 0 end),0) shortlisted,coalesce(max(cs.total),0) top_score,coalesce(sum(case when cs.scored_at>? then 1 else 0 end),0) this_week,coalesce(sum(case when cs.scored_at>? and cs.scored_at<=? then 1 else 0 end),0) last_week from candidate_scores cs left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null`,
+      )
+      .get(weekAgo, twoWeeksAgo, weekAgo) as SummaryRow | undefined
+    if (!row) return emptyCandidateSummary
+    return {
+      qualified: row.qualified,
+      unreviewed: row.unreviewed,
+      shortlisted: row.shortlisted,
+      topScore: row.top_score,
+      qualifiedThisWeek: row.this_week,
+      qualifiedLastWeek: row.last_week,
+    }
+  })
+}
+
+const emptyCandidateSummary: CandidateSummary = {
+  qualified: 0,
+  unreviewed: 0,
+  shortlisted: 0,
+  topScore: 0,
+  qualifiedThisWeek: 0,
+  qualifiedLastWeek: 0,
+}
+
+function readCandidates<T>(fallback: T, read: (database: Database.Database) => T): T {
+  let db: Database.Database | undefined
+  try {
+    const database = new Database(loadLocalApplicationConfig().databasePath, {
+      readonly: true,
+      fileMustExist: true,
+    })
+    db = database
+    return read(database)
+  } catch {
+    return fallback
+  } finally {
+    db?.close()
+  }
+}

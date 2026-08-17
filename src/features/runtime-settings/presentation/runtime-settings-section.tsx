@@ -1,4 +1,5 @@
-import { Terminal } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { Check, CircleAlert, CircleCheck, CircleSlash } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,13 +16,21 @@ import type {
   RuntimeReadiness,
   RuntimeReadinessStatus,
 } from "@/features/runtime-settings"
+import { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"
 
-const statusVariant: Record<RuntimeReadinessStatus, "secondary" | "outline" | "destructive"> = {
-  Ready: "secondary",
-  Missing: "outline",
-  "Logged Out": "outline",
-  Unreachable: "destructive",
-  "Unsupported Version": "destructive",
+/**
+ * Readiness is the one place this interface uses colour: a runtime is either usable or it is not,
+ * and that distinction is worth more than palette consistency.
+ */
+const statusPresentation: Record<
+  RuntimeReadinessStatus,
+  Readonly<{ variant: "success" | "destructive"; icon: LucideIcon }>
+> = {
+  Ready: { variant: "success", icon: CircleCheck },
+  Missing: { variant: "destructive", icon: CircleSlash },
+  "Logged Out": { variant: "destructive", icon: CircleSlash },
+  Unreachable: { variant: "destructive", icon: CircleAlert },
+  "Unsupported Version": { variant: "destructive", icon: CircleAlert },
 }
 
 export function RuntimeSettingsSection({
@@ -34,24 +43,17 @@ export function RuntimeSettingsSection({
   selectRuntime: (formData: FormData) => Promise<void>
 }) {
   return (
-    <section aria-labelledby="runtime-readiness-title" className="mt-8">
-      <div>
-        <h2 id="runtime-readiness-title" className="font-heading text-lg font-semibold">
-          Subscription runtimes
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Login remains in each provider&apos;s terminal. The application stores only your selected
-          runtime.
-        </p>
-      </div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+    <section aria-label="Subscription Runtimes">
+      <div className="grid gap-3 sm:grid-cols-2">
         {runtimes.map((runtime) => {
           const selected = runtime.runtimeId === selectedRuntime
+          const status = statusPresentation[runtime.status]
+          const StatusIcon = status.icon
           return (
             <Card key={runtime.runtimeId} size="sm">
               <CardHeader>
-                <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <Terminal aria-hidden="true" />
+                <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+                  <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
                 </div>
                 <CardTitle>{runtime.label}</CardTitle>
                 <CardDescription>
@@ -59,7 +61,10 @@ export function RuntimeSettingsSection({
                   {runtime.version ? ` Version ${runtime.version}.` : ""}
                 </CardDescription>
                 <CardAction>
-                  <Badge variant={statusVariant[runtime.status]}>{runtime.status}</Badge>
+                  <Badge variant={status.variant}>
+                    <StatusIcon data-icon="inline-start" aria-hidden="true" />
+                    {runtime.status}
+                  </Badge>
                 </CardAction>
               </CardHeader>
               <CardContent className="mt-auto grid gap-3">
@@ -73,11 +78,18 @@ export function RuntimeSettingsSection({
                   <Button
                     type="submit"
                     size="sm"
-                    variant={selected ? "secondary" : "outline"}
+                    variant={selected ? "outline" : "default"}
                     disabled={runtime.status !== "Ready" || selected}
-                    className="w-full"
+                    className={selected ? "w-full text-success disabled:opacity-100" : "w-full"}
                   >
-                    {selected ? "Selected" : "Use runtime"}
+                    {selected ? (
+                      <>
+                        <Check data-icon="inline-start" aria-hidden="true" />
+                        Selected
+                      </>
+                    ) : (
+                      "Use Runtime"
+                    )}
                   </Button>
                 </form>
               </CardContent>

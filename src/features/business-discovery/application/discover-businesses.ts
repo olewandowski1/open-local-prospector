@@ -13,7 +13,12 @@ export type DiscoveryPlan = Readonly<{
 }>
 
 export function planDiscoveryQueries(searchBrief: SearchBrief): DiscoveryPlan {
-  const location = searchBrief.searchArea.displayName
+  const locality =
+    searchBrief.searchArea.displayName.split(",")[0] ?? searchBrief.searchArea.displayName
+  const location =
+    searchBrief.radiusKm === undefined
+      ? locality
+      : `w promieniu ${searchBrief.radiusKm} km od ${locality}`
   const category = searchBrief.category
   const variations = [
     `${category} ${location}`,
@@ -69,6 +74,9 @@ export function makeDiscoveryTaskExecutor(
           const page = yield* source
             .search({
               runtime: searchBrief.runtime,
+              ...(searchBrief.runtimeConfiguration
+                ? { runtimeConfiguration: searchBrief.runtimeConfiguration }
+                : {}),
               query,
               count: RESULTS_PER_PAGE,
               offset,

@@ -32,6 +32,7 @@ const draft = {
   targetCount: 50,
   mode: "Thorough",
   runtime: "codex",
+  runtimeConfiguration: { model: "gpt-5.6-sol", reasoningEffort: "medium" },
 }
 
 function program(

@@ -93,6 +93,7 @@ function loadTarget(
   const brief = JSON.parse(row.search_brief) as {
     category: string
     runtime: AssessmentTarget["runtimeId"]
+    runtimeConfiguration?: AssessmentTarget["runtimeConfiguration"]
   }
   const pages = db
     .prepare("select * from inspection_pages where inspection_id = ? order by sequence, viewport")
@@ -114,6 +115,7 @@ function loadTarget(
     canonicalBusinessId: row.canonical_business_id,
     inspectionId,
     runtimeId: brief.runtime,
+    ...(brief.runtimeConfiguration ? { runtimeConfiguration: brief.runtimeConfiguration } : {}),
     inspectionConfigurationVersion: row.configuration_version,
     evidence: {
       envelopeVersion: "assessment-evidence-v1",
