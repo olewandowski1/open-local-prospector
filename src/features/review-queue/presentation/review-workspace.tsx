@@ -152,7 +152,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
   const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={filter} onValueChange={(value) => selectFilter(value ?? "All")}>
           <SelectTrigger size="sm" aria-label="Review Status Filter" className="w-[11rem]">
@@ -193,7 +193,10 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
           </EmptyContent>
         </Empty>
       ) : (
-        <CandidatesTable candidates={visible} selectedId={open?.id} onOpen={openCandidate} />
+        // The queue takes the height that is left and scrolls inside itself.
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <CandidatesTable candidates={visible} selectedId={open?.id} onOpen={openCandidate} />
+        </div>
       )}
 
       <CandidateSheet

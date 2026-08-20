@@ -15,7 +15,7 @@ import { getReviewQueue } from "@/features/review-queue/server/review-queue-read
 export function ReviewQueuePage() {
   const candidates = getReviewQueue()
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
+    <main className="flex h-[calc(100svh-var(--shell-header))] flex-col gap-6 overflow-hidden p-4 sm:p-6">
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight">Review Queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">

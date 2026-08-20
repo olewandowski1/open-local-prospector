@@ -88,7 +88,7 @@ const GENERIC_EMAIL_NAMES = new Set([
 ])
 
 export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluation {
-  const canonicalName = input.name.trim().slice(0, 500)
+  const canonicalName = businessNameWithoutPublisher(input.name, input.evidence)
   const normalizedName = normalizeWords(canonicalName)
   const locality = normalizeWords(input.searchAreaName.split(",")[0] ?? input.searchAreaName)
   const relevantEvidence = input.evidence.filter((evidence) => safePublicUrl(evidence.url))
@@ -214,6 +214,13 @@ export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluati
   }
 }
 
+/**
+ * The strongest identity a business has, so the same business found through four different directories
+ * becomes one candidate rather than four. A telephone in a country identifies a business on its own;
+ * including the name would split it again, because each directory titles the page differently.
+ *
+ * The name is the key of last resort, used only when no telephone and no confirmed website exist.
+ */
 function fingerprint(
   canonicalName: string,
   locality: string,
@@ -221,13 +228,60 @@ function fingerprint(
   contacts: readonly ContactRoute[],
   presences: readonly OnlinePresence[],
 ): string {
+  const country = countryCode.toUpperCase()
+  const telephone = contacts.find((contact) => contact.type === "BusinessTelephone")?.value
+  if (telephone) return `tel:${normalizeWords(telephone)}|${country}`
+
   const website = presences.find(
     (presence) => presence.type === "Website" && presence.associationState === "Confirmed",
   )
-  const strongestKey =
-    contacts.find((contact) => contact.type === "BusinessTelephone")?.value ??
-    (website ? new URL(website.url).hostname : locality)
-  return `${normalizeWords(canonicalName)}|${normalizeWords(strongestKey)}|${countryCode.toUpperCase()}`
+  if (website) return `web:${normalizeWords(new URL(website.url).hostname)}|${country}`
+
+  return `name:${normalizeWords(canonicalName)}|${normalizeWords(locality)}|${country}`
+}
+
+/**
+ * Search results are often titled "<Business> - <Publisher>", and the publisher is not part of the
+ * name. Only a trailing segment naming a site that actually published one of the results is removed,
+ * so a business whose own name contains a dash keeps it.
+ */
+export function businessNameWithoutPublisher(
+  name: string,
+  evidence: readonly IdentityInput["evidence"][number][],
+): string {
+  const trimmed = name.trim().slice(0, 500)
+  const publishers = new Set(
+    evidence.flatMap((item) => {
+      try {
+        const host = new URL(item.url).hostname.toLocaleLowerCase("en").replace(/^www\./u, "")
+        // Both the full host and its brand, so "Kwiatyyy.pl" and "Orły Florystyki" both match.
+        return [normalizeWords(host), normalizeWords(host.split(".")[0] ?? host)]
+      } catch {
+        return []
+      }
+    }),
+  )
+  for (const host of DIRECTORY_HOSTS) {
+    publishers.add(normalizeWords(host))
+    publishers.add(normalizeWords(host.split(".")[0] ?? host))
+  }
+
+  const segments = trimmed.split(/\s+[-|–—]\s+/u)
+  if (segments.length < 2) return trimmed
+  const tail = segments.at(-1) ?? ""
+  const normalizedTail = normalizeWords(tail)
+  if (normalizedTail === "") return trimmed
+  // A publisher suffix may carry a year or extra words, so a containment match either way counts.
+  const isPublisher = [...publishers].some(
+    (publisher) =>
+      publisher.length >= 4 &&
+      (normalizedTail === publisher ||
+        normalizedTail.startsWith(`${publisher} `) ||
+        normalizedTail.includes(publisher)),
+  )
+  if (!isPublisher) return trimmed
+  const kept = segments.slice(0, -1).join(" - ").trim()
+  return kept === "" ? trimmed : kept
 }
 
 function excluded(

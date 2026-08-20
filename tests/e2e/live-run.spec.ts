@@ -18,8 +18,10 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
   )
   await expect(preflight).toBeEnabled({ timeout: 30_000 })
 
-  await page.getByLabel("City or Municipality").fill("Krapkowice, Poland")
-  await page.getByLabel("Target Businesses").fill("5")
+  await page
+    .getByLabel("City or Municipality")
+    .fill(process.env.PROSPECTOR_LIVE_LOCATION ?? "Krapkowice, Poland")
+  await page.getByLabel("Target Businesses").fill(process.env.PROSPECTOR_LIVE_TARGET ?? "5")
   await preflight.click()
 
   // Base UI does not forward the group aria-label, but each area radio is named for its display name,

@@ -127,3 +127,30 @@ describe("subscription runtime web search", () => {
     expect(buildSearchPrompt(request)).toContain("Do not run commands")
   })
 })
+
+describe("search prompt discipline", () => {
+  const request = {
+    query: "kwiaciarnia Zdzieszowice",
+    country: "PL",
+    searchLanguage: "pl",
+    count: 5,
+    offset: 0,
+    runtime: "claude" as const,
+  }
+
+  it("asks for the trading name without the publisher that titled the page", () => {
+    const prompt = buildSearchPrompt(request)
+    expect(prompt).toContain("business's own trading name only")
+    expect(prompt).toContain("Strip any publisher, directory or website name")
+  })
+
+  it("rules out pages that list several businesses", () => {
+    expect(buildSearchPrompt(request)).toContain(
+      "A page listing several businesses is not a business",
+    )
+  })
+
+  it("asks for one item per business across sites", () => {
+    expect(buildSearchPrompt(request)).toContain("return it once")
+  })
+})
