@@ -1,7 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight, CircleCheck, CircleX, MapPin, RotateCcw } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -78,10 +78,8 @@ export function CandidateSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right" // The prefix has to match the primitive's own rule for the merge to replace rather than collide.
-        className="w-full gap-0 p-0 data-[side=right]:sm:max-w-2xl"
-      >
+      {/* The width prefix matches the primitive's own rule so the merge replaces rather than collides. */}
+      <SheetContent side="right" className="w-full gap-0 p-0 data-[side=right]:sm:max-w-2xl">
         {candidate ? (
           <>
             <SheetHeader className="gap-3 p-4">
@@ -309,6 +307,11 @@ function useKeyboardShortcuts({
   onPrevious: () => void
   onNext: () => void
 }) {
+  // The handlers are fresh closures on every render. Held in a ref, the window listener subscribes
+  // once per open panel instead of being torn down and rebuilt on each render.
+  const handlers = useRef({ onShortlist, onReject, onPrevious, onNext })
+  handlers.current = { onShortlist, onReject, onPrevious, onNext }
+
   useEffect(() => {
     if (!enabled) return
     const handle = (event: KeyboardEvent) => {
@@ -316,13 +319,14 @@ function useKeyboardShortcuts({
       const target = event.target as HTMLElement | null
       if (target?.closest("input,textarea,select,[contenteditable=true],[role=combobox]")) return
 
+      const current = handlers.current
       const actions: Readonly<Record<string, () => void>> = {
-        s: onShortlist,
-        r: onReject,
-        j: onNext,
-        k: onPrevious,
-        ArrowDown: onNext,
-        ArrowUp: onPrevious,
+        s: current.onShortlist,
+        r: current.onReject,
+        j: current.onNext,
+        k: current.onPrevious,
+        ArrowDown: current.onNext,
+        ArrowUp: current.onPrevious,
       }
       const action = actions[event.key] ?? actions[event.key.toLowerCase()]
       if (!action) return
@@ -331,5 +335,5 @@ function useKeyboardShortcuts({
     }
     window.addEventListener("keydown", handle)
     return () => window.removeEventListener("keydown", handle)
-  }, [enabled, onShortlist, onReject, onPrevious, onNext])
+  }, [enabled])
 }

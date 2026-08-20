@@ -30,8 +30,8 @@ import { CandidatesTable } from "@/features/review-queue/presentation/candidates
 import { ExportDialog } from "@/features/review-queue/presentation/export-dialog"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-const FILTER_STORAGE_KEY = "review-filter"
-const SELECTION_STORAGE_KEY = "review-selection"
+const FILTER_STORAGE_KEY = "v1:review-filter"
+const SELECTION_STORAGE_KEY = "v1:review-selection"
 
 export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidate[] }) {
   const router = useRouter()

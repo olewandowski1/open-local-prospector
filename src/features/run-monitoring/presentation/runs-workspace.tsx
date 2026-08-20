@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 type RunsView = "table" | "cards"
 
-const VIEW_STORAGE_KEY = "runs-view"
+const VIEW_STORAGE_KEY = "v1:runs-view"
 
 const views: readonly Readonly<{ value: RunsView; label: string; icon: typeof Rows3 }>[] = [
   { value: "table", label: "Table", icon: Rows3 },

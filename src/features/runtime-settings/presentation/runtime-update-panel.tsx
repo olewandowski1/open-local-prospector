@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils"
 type UpdateState = Readonly<Partial<Record<RuntimeId, RuntimeUpdateResult>>>
 
 /** The check spawns both CLIs and reaches the network, so it is paid for once per browser session. */
-const STATUS_CACHE_KEY = "runtime-update-status"
+const STATUS_CACHE_KEY = "v1:runtime-update-status"
 
 /** How long the idle check will wait before going ahead on a page that never falls quiet. */
 const IDLE_TIMEOUT_MILLISECONDS = 3_000

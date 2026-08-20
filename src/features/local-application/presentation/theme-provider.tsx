@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, type ReactNode, useContext } from "react"
+import { createContext, type ReactNode, use } from "react"
 
 import type { ThemePreference } from "@/features/local-application/application/theme-preference"
 
@@ -21,5 +21,5 @@ export function ThemeProvider({
 }
 
 export function useThemePreference(): ThemePreference {
-  return useContext(ThemePreferenceContext)
+  return use(ThemePreferenceContext)
 }
