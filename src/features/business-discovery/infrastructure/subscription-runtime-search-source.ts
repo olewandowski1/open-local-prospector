@@ -12,7 +12,11 @@ import {
   normalizeDiscoveryUrl,
 } from "@/features/business-discovery/domain/discovered-business"
 import type { RuntimeId, RuntimeProcess, RuntimeProcessResult } from "@/features/runtime-settings"
-import { executeRuntimeProcess, supportsReasoningEffort } from "@/features/runtime-settings"
+import {
+  EMPTY_MCP_CONFIG,
+  executeRuntimeProcess,
+  supportsReasoningEffort,
+} from "@/features/runtime-settings"
 
 const searchOutputJsonSchema = {
   type: "object",
@@ -146,7 +150,7 @@ function prepareCommand(request: DiscoverySearchRequest, directory: string) {
       "--safe-mode",
       "--strict-mcp-config",
       "--mcp-config",
-      "{}",
+      EMPTY_MCP_CONFIG,
     ],
     cwd: directory,
   })

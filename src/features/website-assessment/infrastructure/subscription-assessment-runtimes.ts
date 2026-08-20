@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Effect } from "effect"
 import {
+  EMPTY_MCP_CONFIG,
   executeRuntimeProcess,
   type RuntimeProcess,
   type RuntimeProcessResult,
@@ -48,7 +49,7 @@ export function makeClaudeAssessmentRuntime(
         "--safe-mode",
         "--strict-mcp-config",
         "--mcp-config",
-        "{}",
+        EMPTY_MCP_CONFIG,
       ],
       cwd: directory,
     }),

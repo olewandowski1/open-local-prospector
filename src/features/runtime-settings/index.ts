@@ -9,6 +9,7 @@ export {
   runtimeReasoningEfforts,
   supportsReasoningEffort,
 } from "@/features/runtime-settings/application/runtime-execution-configuration"
+export { EMPTY_MCP_CONFIG } from "@/features/runtime-settings/application/runtime-mcp-config"
 export {
   getSelectedRuntime,
   getSelectedRuntimePreference,
