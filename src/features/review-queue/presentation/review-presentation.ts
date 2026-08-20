@@ -63,7 +63,13 @@ export function groupPresences(presences: QueueCandidate["presences"]): readonly
   return [...groups.entries()].map(([type, urls]) => ({ type, urls }))
 }
 
-export type ReviewStatusVariant = "success" | "destructive" | "secondary" | "outline" | "ghost"
+export type ReviewStatusVariant =
+  | "success"
+  | "destructive"
+  | "warning"
+  | "info"
+  | "secondary"
+  | "outline"
 
 /**
  * Each review decision reads as its own outcome: a shortlisted candidate is progress, a rejected one
@@ -74,8 +80,8 @@ const statusVariants: Readonly<Record<string, ReviewStatusVariant>> = {
   Unreviewed: "outline",
   Shortlisted: "success",
   Rejected: "destructive",
-  Contacted: "secondary",
-  Archived: "ghost",
+  Contacted: "info",
+  Archived: "secondary",
 }
 
 export function reviewStatusVariant(status: string): ReviewStatusVariant {

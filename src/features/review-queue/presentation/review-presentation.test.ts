@@ -79,8 +79,8 @@ describe("review presentation", () => {
   it("gives every review decision its own outcome colour", () => {
     expect(reviewStatusVariant("Shortlisted")).toBe("success")
     expect(reviewStatusVariant("Rejected")).toBe("destructive")
-    expect(reviewStatusVariant("Contacted")).toBe("secondary")
-    expect(reviewStatusVariant("Archived")).toBe("ghost")
+    expect(reviewStatusVariant("Contacted")).toBe("info")
+    expect(reviewStatusVariant("Archived")).toBe("secondary")
   })
 
   it("keeps the starting state neutral rather than colouring it as a result", () => {
@@ -93,8 +93,8 @@ describe("review presentation", () => {
       Unreviewed: "outline",
       Shortlisted: "success",
       Rejected: "destructive",
-      Contacted: "secondary",
-      Archived: "ghost",
+      Contacted: "info",
+      Archived: "secondary",
     })
   })
 })

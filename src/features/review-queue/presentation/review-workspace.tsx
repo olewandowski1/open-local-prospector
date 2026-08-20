@@ -1,43 +1,58 @@
 "use client"
 
-import { MapPin } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
-import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
-import { CandidateHistory } from "@/features/review-queue/presentation/candidate-history"
-import { CandidateList } from "@/features/review-queue/presentation/candidate-list"
-import { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
-import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
+import { FilterX } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { REVIEW_STATUSES } from "@/features/review-queue/domain/review-policy"
+import {
+  CandidateSheet,
+  type QuickDecision,
+} from "@/features/review-queue/presentation/candidate-sheet"
+import { CandidatesTable } from "@/features/review-queue/presentation/candidates-table"
+import { ExportDialog } from "@/features/review-queue/presentation/export-dialog"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
-import { cn } from "@/lib/utils"
 
-type DetailSection = "evidence" | "decision" | "history"
-
-const sections: readonly Readonly<{ value: DetailSection; label: string }>[] = [
-  { value: "evidence", label: "Evidence" },
-  { value: "decision", label: "Decision" },
-  { value: "history", label: "History" },
-]
+const FILTER_STORAGE_KEY = "review-filter"
+const SELECTION_STORAGE_KEY = "review-selection"
 
 export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidate[] }) {
   const router = useRouter()
+  const requestedId = useSearchParams().get("candidate")
   const [filter, setFilter] = useState("All")
-  const [selectedId, setSelectedId] = useState(candidates[0]?.id ?? "")
-  const [section, setSection] = useState<DetailSection>("evidence")
+  const [openId, setOpenId] = useState<string>()
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState("")
 
   useEffect(() => {
-    const savedFilter = localStorage.getItem("review-filter")
-    const savedSelection = localStorage.getItem("review-selection")
-    if (savedFilter) setFilter(savedFilter)
-    if (savedSelection && candidates.some((item) => item.id === savedSelection)) {
-      setSelectedId(savedSelection)
-    }
-  }, [candidates])
+    const stored = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (stored) setFilter(stored)
+  }, [])
+
+  // A candidate named in the address opens straight away: arriving from a link is a deliberate choice.
+  useEffect(() => {
+    if (requestedId === null) return
+    if (!candidates.some((candidate) => candidate.id === requestedId)) return
+    setOpenId(requestedId)
+    // A saved filter could otherwise hide the very candidate the link was followed to reach.
+    setFilter("All")
+  }, [candidates, requestedId])
 
   const visible = useMemo(
     () =>
@@ -46,29 +61,30 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         : candidates.filter((candidate) => candidate.reviewStatus === filter),
     [candidates, filter],
   )
-  const selected = candidates.find((candidate) => candidate.id === selectedId) ?? visible[0]
 
-  const persistFilter = (value: string) => {
+  const index = openId ? visible.findIndex((candidate) => candidate.id === openId) : -1
+  const open = index >= 0 ? visible[index] : undefined
+
+  const selectFilter = (value: string) => {
     setFilter(value)
-    localStorage.setItem("review-filter", value)
+    localStorage.setItem(FILTER_STORAGE_KEY, value)
   }
-  const select = (id: string) => {
-    setSelectedId(id)
-    localStorage.setItem("review-selection", id)
+
+  const openCandidate = useCallback((id: string) => {
+    setOpenId(id)
+    localStorage.setItem(SELECTION_STORAGE_KEY, id)
+  }, [])
+
+  const step = (offset: number) => {
+    const next = visible[index + offset]
+    if (next) openCandidate(next.id)
   }
 
   /** Re-renders the server component that reads SQLite, rather than reloading the whole document. */
   const refresh = () => router.refresh()
 
-  const post = async (
-    event: React.FormEvent<HTMLFormElement>,
-    path: string,
-    body: Record<string, unknown>,
-    success: string,
-  ) => {
-    event.preventDefault()
+  const post = async (path: string, body: Record<string, unknown>): Promise<boolean> => {
     setBusy(true)
-    setMessage("")
     try {
       const response = await fetch(path, {
         method: "POST",
@@ -77,124 +93,126 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
       })
       const result = (await response.json().catch(() => ({}))) as { error?: string }
       if (!response.ok) {
-        setMessage(result.error ?? "Could not save.")
-        return
+        toast.error(result.error ?? "Could not save.")
+        return false
       }
-      setMessage(success)
       refresh()
+      return true
     } finally {
       setBusy(false)
     }
   }
 
+  /**
+   * Records one of the two decisions that dominate reviewing and moves on. The stored notes and
+   * follow-up date are sent back untouched because the write replaces every column it is given, so
+   * omitting them would quietly erase work done in the Decision tab.
+   */
+  const quickDecision = async (decision: QuickDecision) => {
+    if (!open) return
+    const nextCandidate = visible[index + 1]
+    const saved = await post(`/api/review/${open.id}`, {
+      kind: "review",
+      status: decision.status,
+      ...(decision.rejectionReason ? { rejectionReason: decision.rejectionReason } : {}),
+      ...(decision.rejectionNote ? { rejectionNote: decision.rejectionNote } : {}),
+      privateNotes: open.privateNotes,
+      followUpAt: open.followUpAt ?? null,
+    })
+    if (!saved) return
+
+    toast.success(`${open.name} marked ${decision.status}.`, {
+      description: nextCandidate ? `Moved on to ${nextCandidate.name}.` : "Last in the queue.",
+    })
+    // Advancing keeps a long queue moving; at the end the panel stays on the last candidate.
+    if (nextCandidate) openCandidate(nextCandidate.id)
+  }
+
   const submitForm = (event: React.FormEvent<HTMLFormElement>, success: string) => {
-    if (!selected) return
+    event.preventDefault()
+    if (!open) return
     const body = Object.fromEntries(new FormData(event.currentTarget).entries())
-    void post(event, `/api/review/${selected.id}`, body, success)
+    void post(`/api/review/${open.id}`, body).then((saved) => {
+      if (saved) toast.success(success)
+    })
   }
 
   const suppress = (event: React.FormEvent<HTMLFormElement>) => {
-    if (!selected) return
+    event.preventDefault()
+    if (!open) return
     const reason = String(new FormData(event.currentTarget).get("reason") ?? "")
-    void post(
-      event,
-      `/api/review/${selected.id}/suppress`,
-      { reason },
-      "Suppressed for every future run.",
-    )
+    void post(`/api/review/${open.id}/suppress`, { reason }).then((saved) => {
+      if (saved) {
+        toast.success(`${open.name} suppressed for every future run.`)
+        setOpenId(undefined)
+      }
+    })
   }
 
+  const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(16rem,0.7fr)_minmax(0,1.3fr)] lg:items-start">
-      <CandidateList
-        candidates={visible}
-        filter={filter}
-        selectedId={selected?.id}
-        onFilter={persistFilter}
-        onSelect={select}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Select value={filter} onValueChange={(value) => selectFilter(value ?? "All")}>
+          <SelectTrigger size="sm" aria-label="Review Status Filter" className="w-[11rem]">
+            <span className="text-muted-foreground">Status</span>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="All">All Statuses</SelectItem>
+              {REVIEW_STATUSES.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <ExportDialog statusFilter={filter} count={visible.length} exportQuery={exportQuery} />
+      </div>
+
+      {visible.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <FilterX />
+            </EmptyMedia>
+            <EmptyTitle>No Candidates With This Status</EmptyTitle>
+            <EmptyDescription>
+              The queue holds {candidates.length}{" "}
+              {candidates.length === 1 ? "candidate" : "candidates"}, none of them {filter}.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button variant="outline" size="sm" onClick={() => selectFilter("All")}>
+              Show All Statuses
+            </Button>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <CandidatesTable candidates={visible} selectedId={open?.id} onOpen={openCandidate} />
+      )}
+
+      <CandidateSheet
+        candidate={open}
+        position={index + 1}
+        total={visible.length}
+        busy={busy}
+        canPrevious={index > 0}
+        canNext={index >= 0 && index < visible.length - 1}
+        onOpenChange={(next) => {
+          if (!next) setOpenId(undefined)
+        }}
+        onPrevious={() => step(-1)}
+        onNext={() => step(1)}
+        onQuickDecision={(decision) => void quickDecision(decision)}
+        onSaveReview={(event) => submitForm(event, "Review saved.")}
+        onCorrect={(event) => submitForm(event, "Correction added.")}
+        onSuppress={suppress}
       />
-
-      {selected ? (
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{selected.name}</CardTitle>
-              <CardDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="inline-flex items-center gap-1">
-                  <MapPin aria-hidden="true" className="size-3.5" />
-                  {selected.locality}
-                </span>
-                <span>·</span>
-                <span>{humanizeTerm(selected.primaryOpportunity)}</span>
-                <span>·</span>
-                <span>
-                  {selected.contactAvailable ? "Contact Route Available" : "No Contact Route"}
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <CandidateStatusBadge status={selected.reviewStatus} />
-                <span className="text-sm text-muted-foreground">
-                  Score{" "}
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatScore(selected.score)}
-                  </span>
-                </span>
-              </div>
-
-              <fieldset className="flex items-center gap-0.5 rounded-lg border p-0.5">
-                <legend className="sr-only">Candidate Section</legend>
-                {sections.map((option) => (
-                  <label
-                    key={option.value}
-                    className={cn(
-                      "relative cursor-pointer rounded-md px-2.5 py-1 text-sm transition-colors",
-                      "has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
-                      section === option.value
-                        ? "bg-muted font-medium text-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="candidate-section"
-                      value={option.value}
-                      checked={section === option.value}
-                      onChange={() => setSection(option.value)}
-                      className="absolute inset-0 cursor-pointer appearance-none opacity-0"
-                    />
-                    {option.label}
-                  </label>
-                ))}
-              </fieldset>
-            </CardContent>
-          </Card>
-
-          {message ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {message}
-            </p>
-          ) : null}
-
-          {section === "evidence" ? <CandidateEvidence candidate={selected} /> : null}
-          {section === "decision" ? (
-            <CandidateDecision
-              candidate={selected}
-              busy={busy}
-              onSubmit={(event) => submitForm(event, "Review saved.")}
-            />
-          ) : null}
-          {section === "history" ? (
-            <CandidateHistory
-              candidate={selected}
-              busy={busy}
-              onCorrect={(event) => submitForm(event, "Correction added.")}
-              onSuppress={suppress}
-            />
-          ) : null}
-        </div>
-      ) : null}
     </div>
   )
 }

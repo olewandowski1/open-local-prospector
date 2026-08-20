@@ -4,6 +4,7 @@
  * value import from the main index would pull `better-sqlite3` and `node:child_process` into the
  * browser bundle.
  */
+export { REVIEW_QUEUE_THRESHOLD } from "@/features/review-queue/domain/opportunity-score"
 export { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 export type {
   CandidateSummary,
