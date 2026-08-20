@@ -13,6 +13,10 @@ test("reviews a candidate in a panel without leaving the queue", async ({ page }
 
   // Nothing is behind a tab: the decisions sit above the evidence, and the evidence is simply there.
   await expect(page.getByRole("button", { name: /Shortlist/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Mark Contacted" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Mark Archived" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Reset To Unreviewed" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "More Decisions" })).toHaveCount(0)
   await expect(page.getByRole("tab")).toHaveCount(0)
   await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 

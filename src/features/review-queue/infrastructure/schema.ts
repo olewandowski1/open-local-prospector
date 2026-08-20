@@ -66,9 +66,9 @@ export const candidateCorrections = sqliteTable(
 )
 
 export const suppressionEntries = sqliteTable("suppression_entries", {
-  canonicalBusinessId: text("canonical_business_id")
-    .primaryKey()
-    .references(() => canonicalBusinesses.id, { onDelete: "cascade" }),
+  identityFingerprint: text("identity_fingerprint").primaryKey(),
+  canonicalBusinessId: text("canonical_business_id"),
+  businessName: text("business_name").notNull(),
   reason: text().notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 })

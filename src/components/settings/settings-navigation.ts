@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { Palette, Settings2, Sparkles } from "lucide-react"
+import { Database, Palette, Settings2, Sparkles, Wrench } from "lucide-react"
 
 export type SettingsSection = Readonly<{
   label: string
@@ -26,6 +26,18 @@ export const settingsSections: readonly SettingsSection[] = [
     href: "/settings/subscription",
     description: "Provider runtimes this workspace can use.",
     icon: Sparkles,
+  },
+  {
+    label: "Data",
+    href: "/settings/data",
+    description: "Storage usage and suppressed businesses.",
+    icon: Database,
+  },
+  {
+    label: "Maintenance",
+    href: "/settings/maintenance",
+    description: "Back up, restore, compact or reset this workspace.",
+    icon: Wrench,
   },
 ]
 

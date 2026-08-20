@@ -67,7 +67,11 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         apparentCommercialValue: row.apparent_commercial_value,
       })
       const suppressed = db
-        .prepare("select 1 from suppression_entries where canonical_business_id=?")
+        .prepare(
+          `select 1 from suppression_entries se
+           join canonical_businesses cb on cb.identity_fingerprint=se.identity_fingerprint
+           where cb.id=?`,
+        )
         .get(row.canonical_business_id)
       const qualified =
         breakdown.total >= REVIEW_QUEUE_THRESHOLD &&

@@ -1,24 +1,18 @@
 "use client"
 
 import {
+  Archive,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
   CircleX,
-  Ellipsis,
   MapPin,
   RotateCcw,
+  Send,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
@@ -37,7 +31,6 @@ import { REJECTION_REASONS } from "@/features/review-queue/domain/review-policy"
 import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
 import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
 import { CandidateHistory } from "@/features/review-queue/presentation/candidate-history"
-import { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
 import type {
   QueueCandidate,
@@ -76,6 +69,7 @@ export function CandidateSheet({
   onSaveReview,
   onCorrect,
   onSuppress,
+  onDeleteBusiness,
 }: {
   candidate?: QueueCandidateSummary
   /** The evidence, which arrives after the panel opens. */
@@ -92,6 +86,7 @@ export function CandidateSheet({
   onSaveReview: (event: React.FormEvent<HTMLFormElement>) => void
   onCorrect: (event: React.FormEvent<HTMLFormElement>) => void
   onSuppress: (event: React.FormEvent<HTMLFormElement>) => void
+  onDeleteBusiness: (confirmation: string) => Promise<boolean>
 }) {
   const open = candidate !== undefined
 
@@ -102,7 +97,7 @@ export function CandidateSheet({
         {candidate ? (
           <>
             <SheetHeader className="gap-3 p-4">
-              <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 pr-8">
                 <div className="min-w-0">
                   <SheetTitle className="truncate">{candidate.name}</SheetTitle>
                   <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -116,7 +111,6 @@ export function CandidateSheet({
                     <span className="tabular-nums">Score {formatScore(candidate.score)}</span>
                   </SheetDescription>
                 </div>
-                <CandidateStatusBadge status={candidate.reviewStatus} />
               </div>
 
               {/* Keyed on the candidate so a half-written rejection never carries over to the next. */}
@@ -147,6 +141,7 @@ export function CandidateSheet({
                       busy={busy}
                       onCorrect={onCorrect}
                       onSuppress={onSuppress}
+                      onDeleteBusiness={onDeleteBusiness}
                     />
                   </>
                 )}
@@ -237,35 +232,33 @@ function CandidateDecisionBar({
           <Kbd className="ml-1">R</Kbd>
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="ghost" size="sm" disabled={busy} aria-label="More Decisions">
-                <Ellipsis aria-hidden="true" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="start">
-            <DropdownMenuGroup>
-              {secondaryStatuses.map((status) => (
-                <DropdownMenuItem
-                  key={status}
-                  onClick={() => onQuickDecision({ status })}
-                  disabled={busy || reviewStatus === status}
-                >
-                  Mark {status}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuItem
-                onClick={() => onQuickDecision({ status: "Unreviewed" })}
-                disabled={busy || reviewStatus === "Unreviewed"}
-              >
-                <RotateCcw data-icon="inline-start" aria-hidden="true" />
-                Reset To Unreviewed
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          variant="info"
+          size="sm"
+          disabled={busy || reviewStatus === secondaryStatuses[0]}
+          onClick={() => onQuickDecision({ status: secondaryStatuses[0] })}
+        >
+          <Send data-icon="inline-start" aria-hidden="true" />
+          Mark Contacted
+        </Button>
+        <Button
+          variant="warning"
+          size="sm"
+          disabled={busy || reviewStatus === secondaryStatuses[1]}
+          onClick={() => onQuickDecision({ status: secondaryStatuses[1] })}
+        >
+          <Archive data-icon="inline-start" aria-hidden="true" />
+          Mark Archived
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy || reviewStatus === "Unreviewed"}
+          onClick={() => onQuickDecision({ status: "Unreviewed" })}
+        >
+          <RotateCcw data-icon="inline-start" aria-hidden="true" />
+          Reset To Unreviewed
+        </Button>
       </div>
 
       {rejecting ? (

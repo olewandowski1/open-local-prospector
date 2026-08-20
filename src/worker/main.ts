@@ -26,6 +26,7 @@ import {
   makePlaywrightWebsiteInspector,
   makeSqliteInspectionRepository,
 } from "@/features/website-inspection"
+import { tryAcquireWorkspaceOperationLease } from "@/features/workspace-administration"
 
 const localConfig = loadLocalApplicationConfig()
 const executeInspection = makeInspectionTaskExecutor(
@@ -81,7 +82,9 @@ const program = Effect.gen(function* () {
     `Worker ready with concurrency ${worker.concurrency}; SQLite: ${localConfig.databasePath}`,
   )
   if (!process.argv.includes("--check")) {
-    yield* runWorker(`worker-${process.pid}-${crypto.randomUUID()}`, worker).pipe(
+    yield* runWorker(`worker-${process.pid}-${crypto.randomUUID()}`, worker, () =>
+      tryAcquireWorkspaceOperationLease(localConfig.databasePath),
+    ).pipe(
       Effect.provide(
         Layer.merge(
           sqliteRunTaskRepositoryLive(localConfig.databasePath),

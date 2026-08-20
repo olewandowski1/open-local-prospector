@@ -16,6 +16,18 @@ test("renders the persisted overview without sample data", async ({ page }) => {
   )
 })
 
+test("scrolls the overview inside the bounded app shell", async ({ page }) => {
+  await page.goto("/")
+  const overview = page.locator("main.app-scrollbar")
+
+  await expect(overview).toBeVisible()
+  expect(await overview.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
+    true,
+  )
+  await overview.evaluate((element) => element.scrollTo({ top: 160 }))
+  await expect.poll(() => overview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+})
+
 // These write the single stored runtime preference. `serial` orders them within a project, and
 // skipping mobile keeps the desktop and mobile projects from racing over the same database.
 test.describe
@@ -61,9 +73,9 @@ test.describe
       test.skip((await available.count()) === 0, "No authenticated local runtime is available")
 
       await available.first().click()
-      await expect(page.getByRole("button", { name: "Selected" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Active Runtime" })).toBeVisible()
       await page.reload()
-      await expect(page.getByRole("button", { name: "Selected" })).toBeVisible()
+      await expect(page.getByRole("button", { name: "Active Runtime" })).toBeVisible()
     })
   })
 
@@ -135,7 +147,7 @@ test("opens settings on the general section with a section list", async ({ page 
 
   await expect(page).toHaveURL(/\/settings\/general$/)
   const sections = page.getByRole("navigation", { name: "Settings sections" })
-  for (const section of ["General", "Appearance", "Subscription"]) {
+  for (const section of ["General", "Appearance", "Subscription", "Data", "Maintenance"]) {
     await expect(sections.getByRole("link", { name: section })).toBeVisible()
   }
   await expect(sections.getByRole("link", { name: "General" })).toHaveAttribute(
@@ -147,11 +159,12 @@ test("opens settings on the general section with a section list", async ({ page 
 test("reports local dependency readiness without rendering secrets", async ({ page }) => {
   await page.goto("/settings/general")
 
-  await expect(page.getByRole("heading", { name: "Local readiness" })).toBeVisible()
-  const readiness = page.getByRole("region", { name: "Local dependency readiness" })
-  await expect(readiness).toContainText("SQLite")
+  await expect(page.getByRole("heading", { name: "Local Readiness" })).toBeVisible()
+  const readiness = page.getByRole("list", { name: "Local Readiness Checklist" })
+  await expect(readiness).toContainText("SQLite Database")
   await expect(readiness).toContainText("Playwright Chromium")
-  await expect(readiness).toContainText("Artifact Storage")
+  await expect(readiness).toContainText("Storage Capacity")
+  await expect(readiness.getByText("Ready", { exact: true })).toHaveCount(3)
   await expect(page.locator("body")).not.toContainText("accessToken")
 
   await page.getByRole("link", { name: "Subscription" }).click()
@@ -171,7 +184,7 @@ test("persists the appearance choice on this device", async ({ page }) => {
   // Choosing a theme is a client action, so it retries until the bundle has attached. Selecting the
   // same theme twice means the same thing, so repeating the click is safe.
   await expect(async () => {
-    await page.getByRole("radio", { name: "Dark" }).click()
+    await page.getByRole("button", { name: "Dark", exact: true }).click()
     // Applied optimistically, then persisted to a cookie the server reads on the next render.
     await expect(page.locator("html")).toHaveClass(/dark/, { timeout: 2_000 })
   }).toPass({ timeout: 30_000 })
@@ -179,10 +192,13 @@ test("persists the appearance choice on this device", async ({ page }) => {
 
   await page.reload()
   await expect(page.locator("html")).toHaveClass(/dark/)
-  await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked()
+  await expect(page.getByRole("button", { name: "Dark", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 
   await expect(async () => {
-    await page.getByRole("radio", { name: "Light" }).click()
+    await page.getByRole("button", { name: "Light", exact: true }).click()
     await expect(page.locator("html")).not.toHaveClass(/dark/, { timeout: 2_000 })
   }).toPass({ timeout: 30_000 })
   await expect.poll(() => page.evaluate(() => document.cookie)).toContain("prospector-theme=light")

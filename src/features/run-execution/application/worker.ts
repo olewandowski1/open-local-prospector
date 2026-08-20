@@ -42,9 +42,17 @@ export const runWorkerCycle = (owner: string, configuration: WorkerConfiguration
     return claimed.length
   })
 
-export const runWorker = (owner: string, configuration: WorkerConfiguration) =>
+export const runWorker = (
+  owner: string,
+  configuration: WorkerConfiguration,
+  acquireOperationLease: () => (() => void) | undefined = () => () => undefined,
+) =>
   Effect.forever(
-    runWorkerCycle(owner, configuration).pipe(
+    Effect.acquireUseRelease(
+      Effect.sync(acquireOperationLease),
+      (release) => (release ? runWorkerCycle(owner, configuration) : Effect.succeed(0)),
+      (release) => Effect.sync(() => release?.()),
+    ).pipe(
       Effect.flatMap((claimed) =>
         claimed === 0 ? Effect.sleep(configuration.pollMilliseconds) : Effect.void,
       ),

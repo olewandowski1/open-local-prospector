@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 : "Workspace"
 
   return (
-    <SidebarProvider defaultOpen className="min-h-svh">
+    <SidebarProvider defaultOpen className="h-svh overflow-hidden">
       <Sidebar collapsible="offcanvas" className="app-sidebar-gradient">
         <SidebarHeader>
           <div className="flex h-10 items-center justify-between gap-2 px-2">
@@ -121,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="[--shell-header:2.75rem]">
+      <SidebarInset className="h-full min-h-0 overflow-hidden [--shell-header:2.75rem]">
         <header className="flex h-(--shell-header) shrink-0 items-center gap-3 border-b px-3 sm:px-4">
           <SidebarTrigger className="md:hidden" />
           <SidebarRestoreTrigger />
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
-        <div className={cn(workspaceWidth, "flex flex-1 flex-col")}>{children}</div>
+        <div className={cn(workspaceWidth, "flex min-h-0 flex-1 flex-col")}>{children}</div>
       </SidebarInset>
 
       <WorkspaceCommand open={command.open} onOpenChange={command.setOpen} />

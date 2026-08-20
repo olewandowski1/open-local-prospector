@@ -62,18 +62,22 @@ export default async function SubscriptionSettingsRoute() {
   await connection()
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="font-heading text-lg font-semibold">Subscription Runtimes</h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Login stays in each provider&apos;s own terminal. The application stores only which
-          runtime you selected, never a credential.
-        </p>
-      </div>
+    <div className="@container mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <section aria-labelledby="subscription-runtimes-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="subscription-runtimes-heading" className="font-heading text-lg font-semibold">
+            Subscription Runtimes
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Login stays in each provider&apos;s own terminal. The application stores only which
+            runtime you selected, never a credential.
+          </p>
+        </div>
 
-      <Suspense fallback={<RuntimeReadinessSkeleton />}>
-        <RuntimeReadinessCards />
-      </Suspense>
+        <Suspense fallback={<RuntimeReadinessSkeleton />}>
+          <RuntimeReadinessCards />
+        </Suspense>
+      </section>
     </div>
   )
 }

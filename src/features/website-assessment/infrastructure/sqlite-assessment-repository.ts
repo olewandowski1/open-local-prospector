@@ -87,7 +87,11 @@ function loadTarget(
     .get(inspectionId, runId) as TargetRow | undefined
   if (!row) throw new Error("assessment target missing")
   const suppressed = db
-    .prepare("select 1 from suppression_entries where canonical_business_id = ?")
+    .prepare(
+      `select 1 from suppression_entries se
+       join canonical_businesses cb on cb.identity_fingerprint = se.identity_fingerprint
+       where cb.id = ?`,
+    )
     .get(row.canonical_business_id)
   if (suppressed) throw new Error("business is globally suppressed")
   const brief = JSON.parse(row.search_brief) as {

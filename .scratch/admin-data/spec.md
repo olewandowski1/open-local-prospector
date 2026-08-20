@@ -18,7 +18,7 @@ and refusal when the workspace is busy.
 
 | Fact | Consequence for this work |
 | --- | --- |
-| `journal_mode = WAL` (verified) | A backup must never be a file copy. `-wal` and `-shm` hold committed data the main file does not. `vacuum into` produced a byte-complete, `integrity_check = ok` snapshot of the 1.1 MB database in **40 ms**. |
+| `journal_mode = WAL` (verified) | A database snapshot must never be a file copy. `-wal` and `-shm` hold committed data the main file does not. `vacuum into` produced a byte-complete, `integrity_check = ok` snapshot of the 1.1 MB database in **40 ms**. |
 | Artifacts are files under `.local/artifacts` (`PROSPECTOR_ARTIFACTS_PATH`) | Clearing rows without deleting these leaves orphans on disk that nothing references and nothing will ever remove. |
 | Schema is 29 tables, migrated by Drizzle | A reset must leave a **migrated, empty** database, not a missing file. Deleting the file and re-migrating is one way; `delete from` per table inside a transaction is the other. |
 | Settings already has an internal sidebar (General, Appearance, Subscription) | This becomes a fourth section rather than a new top-level page. |
@@ -46,11 +46,12 @@ is complete — 29 tables, all accounted for.
   per second and its usage policy asks callers to cache; throwing it away is antisocial as well as
   slow.
 
-**Needs your decision**
+**Kept standing instructions**
 
 - `suppression_entries` — "never show me this business again" is a deliberate, durable instruction,
-  not run output. My recommendation is that it **survives** a reset, with a separate, explicit way to
-  clear it, because a reset is about discarding results and a suppression is a standing preference.
+  not run output. It **survives** a reset, with a separate, explicit way to clear it. Suppressions use
+  the stable Business Identity fingerprint rather than a run-owned canonical row ID, so the same
+  business remains suppressed when rediscovered after a reset.
 
 **Not data**
 
@@ -65,8 +66,9 @@ is complete — 29 tables, all accounted for.
    and size, and row counts for the things an operator recognises — runs, candidates, decisions
    recorded. This is also what makes the two destructive actions legible: you see what you are about
    to copy or delete.
-2. **Download a backup.** One click produces a `vacuum into` snapshot and streams it as
-   `open-local-prospector-YYYY-MM-DD.sqlite`. Read-only, safe while the worker runs.
+2. **Download a backup.** One click produces an Application Backup containing a `vacuum into`
+   snapshot, artifacts, a manifest and an allowlisted non-secret configuration record. It streams as
+   `open-local-prospector-YYYY-MM-DD-HH-MM-SS.olp-backup.tgz`. Read-only, safe while the worker runs.
 3. **Reset the workspace.** Clears the 24 data tables and the artifacts directory, keeps preferences,
    leaves a migrated empty schema. Refuses while any run is non-terminal. Offers the backup inline in
    the confirmation, because the moment someone wants a reset is exactly the moment they should be
@@ -77,10 +79,9 @@ is complete — 29 tables, all accounted for.
 4. **Delete one run**, with its businesses, evidence and artifacts. In practice this is the action
    wanted most often — one bad run spoils a queue, and nuking everything to remove it is a poor
    trade.
-5. **Restore from a backup.** Completes the pair; without it a backup is only useful outside the
-   application. Higher risk than everything above: it replaces the live database, so it must verify
-   `integrity_check` and the migration state of the uploaded file *before* swapping, and keep the
-   displaced database aside rather than deleting it.
+5. **Restore from a backup.** Completes the pair. It validates archive paths and types, size bounds,
+   `integrity_check`, and migration compatibility *before* swapping. It restores both database and
+   artifacts and first keeps the displaced workspace as a complete recovery backup.
 6. **Suppression list.** Suppressing is currently a one-way door with no interface to see or undo it.
    Small, and it closes a gap the review flow opened.
 7. **Compact.** SQLite does not return freed pages after a large delete. One button running `vacuum`,
@@ -102,16 +103,18 @@ is complete — 29 tables, all accounted for.
   exists.
 - **Deleting artifacts is not transactional with SQLite.** Order matters: commit the row deletion
   first, then remove files. The reverse loses evidence that rows still point at.
-- **A backup taken mid-run** is internally consistent but describes a run that has since moved on.
-  Worth saying so on the screen rather than pretending a snapshot is a pause.
+- **A backup taken mid-run** has an internally consistent database snapshot, while filesystem
+  artifacts are copied immediately afterwards and the run may since have moved on. Worth saying so
+  on the screen rather than pretending a snapshot is a pause.
 - **`vacuum into` needs free disk** roughly equal to the database size. Cheap now at 1.1 MB; worth a
   clear error rather than a stack trace when it is not.
 
 ## Acceptance
 
 - The Data section reports figures that match the database, and says so in units a reader recognises.
-- A downloaded snapshot opens as a valid SQLite database, passes `integrity_check`, and contains the
-  same row counts as the source at the moment it was taken.
+- A downloaded Application Backup contains an SQLite snapshot that passes `integrity_check`, all
+  artifacts present during collection, a versioned manifest, and only allowlisted non-secret
+  configuration. Restoring it through the application restores both database and artifacts.
 - A reset with an active run is refused, and says which run is active.
 - After a reset: the 24 data tables are empty, the artifacts directory is empty, the runtime and brief
   preferences are unchanged, `__drizzle_migrations` is untouched, and Overview, Runs and Review Queue

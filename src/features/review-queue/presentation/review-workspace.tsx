@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { FilterX } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -43,6 +43,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
   const [filter, setFilter] = useState("All")
   const [openId, setOpenId] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
 
   useEffect(() => {
     const stored = localStorage.getItem(FILTER_STORAGE_KEY)
@@ -98,6 +99,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
 
   const post = async (path: string, body: Record<string, unknown>): Promise<boolean> => {
     setBusy(true)
+    setError(undefined)
     try {
       const response = await fetch(path, {
         method: "POST",
@@ -106,7 +108,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
       })
       const result = (await response.json().catch(() => ({}))) as { error?: string }
       if (!response.ok) {
-        toast.error(result.error ?? "Could not save.")
+        setError(result.error ?? "Could not save.")
         return false
       }
       refresh()
@@ -138,20 +140,15 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     })
     if (!saved) return
 
-    toast.success(`${open.name} marked ${decision.status}.`, {
-      description: nextCandidate ? `Moved on to ${nextCandidate.name}.` : "Last in the queue.",
-    })
     // Advancing keeps a long queue moving; at the end the panel stays on the last candidate.
     if (nextCandidate) openCandidate(nextCandidate.id)
   }
 
-  const submitForm = (event: React.FormEvent<HTMLFormElement>, success: string) => {
+  const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!open) return
     const body = Object.fromEntries(new FormData(event.currentTarget).entries())
-    void post(`/api/review/${open.id}`, body).then((saved) => {
-      if (saved) toast.success(success)
-    })
+    void post(`/api/review/${open.id}`, body)
   }
 
   const suppress = (event: React.FormEvent<HTMLFormElement>) => {
@@ -160,16 +157,51 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     const reason = String(new FormData(event.currentTarget).get("reason") ?? "")
     void post(`/api/review/${open.id}/suppress`, { reason }).then((saved) => {
       if (saved) {
-        toast.success(`${open.name} suppressed for every future run.`)
         setOpenId(undefined)
       }
     })
+  }
+
+  const deleteBusiness = async (confirmation: string) => {
+    if (!open) return false
+    setBusy(true)
+    setError(undefined)
+    try {
+      const response = await fetch(`/api/review/${encodeURIComponent(open.id)}/delete`, {
+        method: "DELETE",
+        headers: { "X-Workspace-Confirmation": confirmation },
+      })
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string
+        leftoverFiles?: number
+      }
+      if (!response.ok) throw new Error(body.error ?? "The business was not deleted.")
+      setOpenId(undefined)
+      if ((body.leftoverFiles ?? 0) > 0) {
+        setError(
+          `The business was deleted, but ${body.leftoverFiles} artifact ${body.leftoverFiles === 1 ? "file remains" : "files remain"} on disk. Check the Data cleanup tools.`,
+        )
+      }
+      refresh()
+      return true
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "The business was not deleted.")
+      return false
+    } finally {
+      setBusy(false)
+    }
   }
 
   const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Action Not Completed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Select value={filter} onValueChange={(value) => selectFilter(value ?? "All")}>
           <SelectTrigger size="sm" aria-label="Review Status Filter" className="w-[11rem]">
@@ -230,9 +262,10 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         onPrevious={() => step(-1)}
         onNext={() => step(1)}
         onQuickDecision={(decision) => void quickDecision(decision)}
-        onSaveReview={(event) => submitForm(event, "Review saved.")}
-        onCorrect={(event) => submitForm(event, "Correction added.")}
+        onSaveReview={submitForm}
+        onCorrect={submitForm}
         onSuppress={suppress}
+        onDeleteBusiness={deleteBusiness}
       />
     </div>
   )

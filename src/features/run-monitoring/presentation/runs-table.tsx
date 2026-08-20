@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { RunRow } from "@/features/run-monitoring/presentation/run-presentation"
+import { RunDeleteDialog } from "@/features/workspace-administration/client"
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -233,6 +234,13 @@ function RunActions({ run }: { run: RunRow }) {
       <IconLink label="Open Review Queue" href="/review">
         <Waypoints aria-hidden="true" />
       </IconLink>
+      {run.settled ? (
+        <RunDeleteDialog
+          runId={run.id}
+          runLabel={`${run.category} in ${run.location}`}
+          afterDelete="/runs"
+        />
+      ) : null}
     </div>
   )
 }

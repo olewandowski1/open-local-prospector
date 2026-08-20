@@ -4,7 +4,7 @@
 
 **Blocked by:** `01` for the figures, `03` and `04` for the deletions that make it worth having.
 
-**Status:** ready-for-agent
+**Status:** implemented and verified
 
 - [ ] Runs `vacuum` against the live database and reports both sizes, so the operator sees what it
       achieved rather than trusting it.

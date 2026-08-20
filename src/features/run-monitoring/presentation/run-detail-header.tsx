@@ -17,6 +17,7 @@ import {
 } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
 import { RuntimeProviderIcon } from "@/features/runtime-settings/client"
+import { RunDeleteDialog } from "@/features/workspace-administration/client"
 
 export function RunDetailHeader({
   run,
@@ -78,6 +79,12 @@ export function RunDetailHeader({
           <Button variant="info" size="sm" onClick={onRefresh} disabled={refreshing}>
             <RotateCcw data-icon="inline-start" aria-hidden="true" /> Refresh
           </Button>
+          {["Completed", "Cancelled"].includes(run.state) ? (
+            <RunDeleteDialog
+              runId={run.id}
+              runLabel={`${run.searchBrief.category} in ${run.searchBrief.searchArea.displayName}`}
+            />
+          ) : null}
         </div>
       </div>
 

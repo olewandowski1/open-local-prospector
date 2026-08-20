@@ -15,7 +15,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
+    <main className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden p-4 sm:p-6">
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight">Settings</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
@@ -24,7 +24,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
         <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">
           <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
             {settingsSections.map((section) => {
@@ -51,7 +51,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
 
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="app-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </main>
   )

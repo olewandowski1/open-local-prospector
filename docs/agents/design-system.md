@@ -97,5 +97,10 @@ mistake being made again.
   that is always present, or navigate the way a reader would at that width.
 - **The developer owns the dev server on `127.0.0.1:4310`.** Playwright attaches to it
   (`reuseExistingServer: true`). Do not start, stop or take the port.
+  - **Sanctioned destructive-workspace exception.** Backup/restore/reset/deletion round trips must
+    never touch the developer's workspace. `playwright.workspace.config.ts` is allowed to own a
+    single-worker production server on `127.0.0.1:4311` only when its database and artifacts both
+    resolve beneath `.scratch/workspace-e2e`. The spec must remain gated by
+    `PROSPECTOR_ISOLATED_WORKSPACE_TEST`, and the normal `pnpm test:e2e` run must skip it.
 - One dev server serves every worker, so a click or hover landing before hydration is a genuine
   no-op. Where a retry is needed, make it idempotent so it cannot mask a regression.

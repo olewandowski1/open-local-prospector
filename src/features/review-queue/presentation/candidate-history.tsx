@@ -1,5 +1,19 @@
 "use client"
 
+import { useState } from "react"
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { CORRECTION_TARGETS } from "@/features/review-queue/domain/review-policy"
 import {
@@ -28,12 +43,16 @@ export function CandidateHistory({
   busy,
   onCorrect,
   onSuppress,
+  onDeleteBusiness,
 }: {
   candidate: QueueCandidate
   busy: boolean
   onCorrect: (event: React.FormEvent<HTMLFormElement>) => void
   onSuppress: (event: React.FormEvent<HTMLFormElement>) => void
+  onDeleteBusiness: (confirmation: string) => Promise<boolean>
 }) {
+  const [confirmation, setConfirmation] = useState("")
+  const [deleteOpen, setDeleteOpen] = useState(false)
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -71,6 +90,56 @@ export function CandidateHistory({
           )}
         </CardContent>
       </Card>
+
+      <section className="flex flex-col gap-3">
+        <Separator />
+        <div>
+          <h2 className="font-heading font-medium">Delete Business</h2>
+          <p className="text-sm text-muted-foreground">
+            Remove this business, its assessments, notes and artifacts. A minimal suppression is
+            retained so it is not rediscovered.
+          </p>
+        </div>
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogTrigger render={<Button variant="destructive" />}>
+            Delete Business
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {candidate.name}</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes the stored business and its evidence. The suppression entry
+                is the only record kept.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Field className={fieldSpacing}>
+              <FieldLabel htmlFor={`delete-business-${candidate.id}`}>
+                Type DELETE To Confirm
+              </FieldLabel>
+              <Input
+                id={`delete-business-${candidate.id}`}
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                disabled={busy || confirmation !== "DELETE"}
+                onClick={() =>
+                  void onDeleteBusiness(confirmation).then(
+                    (deleted) => deleted && setDeleteOpen(false),
+                  )
+                }
+              >
+                Delete Business
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </section>
 
       <Card>
         <CardHeader>

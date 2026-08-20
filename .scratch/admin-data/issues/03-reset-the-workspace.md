@@ -5,7 +5,7 @@ gone, the operator's own choices kept, the schema still migrated.
 
 **Blocked by:** `02`, so the confirmation can offer a backup at the moment it is most wanted.
 
-**Status:** ready-for-agent
+**Status:** implemented and verified
 
 - [ ] Clears the 24 data tables listed in `spec.md`, in one transaction. A partial reset is worse than
       a refused one.
@@ -23,7 +23,7 @@ gone, the operator's own choices kept, the schema still migrated.
       to go, and is offered the `02` download in the same dialog.
 - [ ] Afterwards Overview, Runs and Review Queue each render their empty state rather than an error,
       and starting a new run works without a restart.
-- [ ] Whether `suppression_entries` survives follows the decision recorded in `spec.md`. **Open
-      question for Oliver** — recommendation there is that it survives, with its own way to clear it.
+- [ ] `suppression_entries` survives using the stable identity fingerprint recorded in `spec.md`,
+      with its own way to clear it.
 - [ ] A test resets a seeded database and asserts every data table is empty, every kept table is
       unchanged, and the artifacts directory is empty.

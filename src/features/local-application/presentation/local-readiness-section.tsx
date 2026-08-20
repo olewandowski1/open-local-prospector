@@ -1,12 +1,7 @@
 import type { LucideIcon } from "lucide-react"
-import { CheckCircle2, CircleAlert, CircleHelp, Database, FolderOpen } from "lucide-react"
+import { Check, CircleHelp, Database, FolderOpen, X } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type {
-  DependencyReadiness,
-  ReadinessStatus,
-} from "@/features/local-application/readiness/get-local-readiness"
+import type { DependencyReadiness } from "@/features/local-application/readiness/get-local-readiness"
 
 const dependencyIcons: Record<DependencyReadiness["id"], LucideIcon> = {
   sqlite: Database,
@@ -14,14 +9,10 @@ const dependencyIcons: Record<DependencyReadiness["id"], LucideIcon> = {
   disk: FolderOpen,
 }
 
-const statusPresentation: Record<
-  ReadinessStatus,
-  Readonly<{ variant: "secondary" | "outline" | "destructive"; icon: LucideIcon }>
-> = {
-  Ready: { variant: "secondary", icon: CheckCircle2 },
-  Missing: { variant: "outline", icon: CircleAlert },
-  Unreachable: { variant: "destructive", icon: CircleAlert },
-  "Unsupported Version": { variant: "destructive", icon: CircleAlert },
+const checklistLabels: Record<DependencyReadiness["id"], string> = {
+  sqlite: "SQLite Database",
+  playwright: "Playwright Chromium",
+  disk: "Storage Capacity",
 }
 
 export function LocalReadinessSection({
@@ -30,29 +21,37 @@ export function LocalReadinessSection({
   readiness: readonly DependencyReadiness[]
 }) {
   return (
-    <section aria-label="Local dependency readiness" className="grid gap-3 sm:grid-cols-2">
+    <ul aria-label="Local Readiness Checklist" className="overflow-hidden rounded-xl border">
       {readiness.map((item) => {
         const Icon = dependencyIcons[item.id]
-        const { icon: StatusIcon, variant } = statusPresentation[item.status]
+        const ready = item.status === "Ready"
+        const StatusIcon = ready ? Check : X
 
         return (
-          <Card key={item.id} size="sm">
-            <CardHeader>
-              <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <Icon aria-hidden="true" />
+          <li key={item.id} className="flex items-start gap-3 border-b p-4 last:border-b-0">
+            <div className="flex size-9 shrink-0 items-center justify-center text-muted-foreground">
+              <Icon aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-heading font-medium">{checklistLabels[item.id]}</h3>
+                <span
+                  title={ready ? undefined : item.status}
+                  className={
+                    ready
+                      ? "inline-flex items-center gap-1 text-sm text-success"
+                      : "inline-flex items-center gap-1 text-sm text-destructive"
+                  }
+                >
+                  <StatusIcon className="size-3.5" aria-hidden="true" />
+                  {ready ? "Ready" : "Not Ready"}
+                </span>
               </div>
-              <CardTitle>{item.label}</CardTitle>
-              <CardDescription>{item.detail}</CardDescription>
-              <CardAction>
-                <Badge variant={variant}>
-                  <StatusIcon data-icon="inline-start" aria-hidden="true" />
-                  {item.status}
-                </Badge>
-              </CardAction>
-            </CardHeader>
-          </Card>
+              <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
+            </div>
+          </li>
         )
       })}
-    </section>
+    </ul>
   )
 }

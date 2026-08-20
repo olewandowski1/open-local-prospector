@@ -1,36 +1,27 @@
 import type { LucideIcon } from "lucide-react"
-import { Check, CircleAlert, CircleCheck, CircleSlash } from "lucide-react"
+import { Check, X } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import type {
   RuntimeId,
   RuntimeReadiness,
   RuntimeReadinessStatus,
 } from "@/features/runtime-settings"
 import { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"
+import { cn } from "@/lib/utils"
 
 /**
- * Readiness is the one place this interface uses colour: a runtime is either usable or it is not,
- * and that distinction is worth more than palette consistency.
+ * Readiness is the one place this interface uses colour: a runtime is either usable or it is not.
  */
 const statusPresentation: Record<
   RuntimeReadinessStatus,
-  Readonly<{ variant: "success" | "destructive"; icon: LucideIcon }>
+  Readonly<{ className: string; icon: LucideIcon }>
 > = {
-  Ready: { variant: "success", icon: CircleCheck },
-  Missing: { variant: "destructive", icon: CircleSlash },
-  "Logged Out": { variant: "destructive", icon: CircleSlash },
-  Unreachable: { variant: "destructive", icon: CircleAlert },
-  "Unsupported Version": { variant: "destructive", icon: CircleAlert },
+  Ready: { className: "text-success", icon: Check },
+  Missing: { className: "text-warning", icon: X },
+  "Logged Out": { className: "text-warning", icon: X },
+  Unreachable: { className: "text-destructive", icon: X },
+  "Unsupported Version": { className: "text-warning", icon: X },
 }
 
 export function RuntimeSettingsSection({
@@ -43,60 +34,65 @@ export function RuntimeSettingsSection({
   selectRuntime: (formData: FormData) => Promise<void>
 }) {
   return (
-    <section aria-label="Subscription Runtimes">
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div>
+      <div className="grid gap-3">
         {runtimes.map((runtime) => {
           const selected = runtime.runtimeId === selectedRuntime
           const status = statusPresentation[runtime.status]
           const StatusIcon = status.icon
           return (
-            <Card key={runtime.runtimeId} size="sm">
-              <CardHeader>
-                <div className="mb-2 flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+            <div
+              key={runtime.runtimeId}
+              className="flex flex-col gap-4 rounded-xl border p-4 @sm:flex-row @sm:items-center"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-md border text-foreground">
                   <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
                 </div>
-                <CardTitle>{runtime.label}</CardTitle>
-                <CardDescription>
-                  {runtime.detail}
-                  {runtime.version ? ` Version ${runtime.version}.` : ""}
-                </CardDescription>
-                <CardAction>
-                  <Badge variant={status.variant}>
-                    <StatusIcon data-icon="inline-start" aria-hidden="true" />
-                    {runtime.status}
-                  </Badge>
-                </CardAction>
-              </CardHeader>
-              <CardContent className="mt-auto grid gap-3">
-                {runtime.terminalInstruction ? (
-                  <code className="rounded-md bg-muted px-3 py-2 text-xs">
-                    {runtime.terminalInstruction}
-                  </code>
-                ) : null}
-                <form action={selectRuntime}>
-                  <input type="hidden" name="runtimeId" value={runtime.runtimeId} />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant={selected ? "outline" : "default"}
-                    disabled={runtime.status !== "Ready" || selected}
-                    className={selected ? "w-full text-success disabled:opacity-100" : "w-full"}
-                  >
-                    {selected ? (
-                      <>
-                        <Check data-icon="inline-start" aria-hidden="true" />
-                        Selected
-                      </>
-                    ) : (
-                      "Use Runtime"
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-heading font-medium">{runtime.label}</h3>
+                    <span
+                      className={cn("inline-flex items-center gap-1 text-sm", status.className)}
+                    >
+                      <StatusIcon className="size-3.5" aria-hidden="true" />
+                      {runtime.status}
+                    </span>
+                  </div>
+                  {runtime.version ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Version {runtime.version}
+                    </p>
+                  ) : null}
+                  {runtime.terminalInstruction ? (
+                    <code className="mt-1 block text-xs text-muted-foreground">
+                      {runtime.terminalInstruction}
+                    </code>
+                  ) : null}
+                </div>
+              </div>
+              <form action={selectRuntime} className="shrink-0">
+                <input type="hidden" name="runtimeId" value={runtime.runtimeId} />
+                <Button
+                  type="submit"
+                  variant={selected ? "success" : "info"}
+                  disabled={runtime.status !== "Ready" || selected}
+                  className={cn(selected && "disabled:opacity-100")}
+                >
+                  {selected ? (
+                    <>
+                      <Check data-icon="inline-start" aria-hidden="true" />
+                      Active Runtime
+                    </>
+                  ) : (
+                    `Use ${runtime.label}`
+                  )}
+                </Button>
+              </form>
+            </div>
           )
         })}
       </div>
-    </section>
+    </div>
   )
 }

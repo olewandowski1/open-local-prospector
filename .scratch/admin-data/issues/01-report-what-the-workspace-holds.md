@@ -8,7 +8,7 @@ technical events. It exists in its own right, and it is also what makes the dest
 
 **Blocked by:** None.
 
-**Status:** ready-for-agent
+**Status:** implemented and verified
 
 - [ ] `/settings/data` is a fourth section beside General, Appearance and Subscription, reachable from
       the settings sidebar.

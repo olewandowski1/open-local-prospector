@@ -5,7 +5,7 @@ resetting the whole workspace.
 
 **Blocked by:** `03`, which establishes the deletion order and the artifact handling this reuses.
 
-**Status:** ready-for-agent
+**Status:** implemented and verified
 
 - [ ] Reachable from the run's own detail page and from the runs list action column.
 - [ ] Removes the run, its tasks, transitions, metrics, businesses, discoveries, identity evidence,

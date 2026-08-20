@@ -227,11 +227,11 @@ function commitEvaluation(
       previousAssessment !== null &&
       previousAssessment >= input.committedAt.getTime() - 30 * 24 * 60 * 60 * 1_000
     const policy = input.searchBrief.recentBusinessPolicy ?? "Skip"
-    const suppressed = canonicalBusinessId
+    const suppressed = input.evaluation.canonicalFingerprint
       ? Boolean(
           database
-            .prepare("select 1 from suppression_entries where canonical_business_id = ?")
-            .get(canonicalBusinessId),
+            .prepare("select 1 from suppression_entries where identity_fingerprint = ?")
+            .get(input.evaluation.canonicalFingerprint),
         )
       : false
     const status: CommittedIdentity["status"] =

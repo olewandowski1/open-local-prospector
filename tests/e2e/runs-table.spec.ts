@@ -28,3 +28,39 @@ test("opens a run by clicking its row", async ({ page }) => {
     .click()
   await expect(page).toHaveURL(/\/runs\/[0-9a-f-]{36}$/u)
 })
+
+test("blocks run deletion when its count preview is unavailable", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile-chromium", "Run table actions hide on mobile.")
+  await page.route("**/api/runs/*/deletion-preview", (route) =>
+    route.fulfill({ status: 500, contentType: "application/json", body: '{"error":"failed"}' }),
+  )
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "Delete Run" }).first().click()
+
+  const dialog = page.getByRole("alertdialog", { name: "Delete Run" })
+  await expect(dialog.getByText("Counts Unavailable")).toBeVisible()
+  await dialog.getByLabel("Type DELETE To Confirm").fill("DELETE")
+  await expect(dialog.getByRole("button", { name: "Delete Run" })).toBeDisabled()
+})
+
+test("reports artifact files left behind after run deletion", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile-chromium", "Run table actions hide on mobile.")
+  await page.route("**/api/runs/*", async (route) => {
+    if (route.request().method() !== "DELETE") return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: '{"leftoverFiles":2}',
+    })
+  })
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "Delete Run" }).first().click()
+
+  const dialog = page.getByRole("alertdialog", { name: "Delete Run" })
+  await expect(dialog.getByText("Discovered Businesses")).toBeVisible()
+  await dialog.getByLabel("Type DELETE To Confirm").fill("DELETE")
+  await dialog.getByRole("button", { name: "Delete Run" }).click()
+
+  await expect(dialog.getByText("Some Artifacts Remain")).toBeVisible()
+  await expect(dialog).toContainText("2 artifact files remain")
+})

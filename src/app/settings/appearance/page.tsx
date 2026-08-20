@@ -10,14 +10,18 @@ export default async function AppearanceSettingsRoute() {
   const theme = parseThemePreference((await cookies()).get(THEME_COOKIE)?.value)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="font-heading text-lg font-semibold">Appearance</h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          How the workspace looks on this device.
-        </p>
-      </div>
-      <AppearanceSection theme={theme} />
+    <div className="@container mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <section aria-labelledby="appearance-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="appearance-heading" className="font-heading text-lg font-semibold">
+            Appearance
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            How the workspace looks on this device.
+          </p>
+        </div>
+        <AppearanceSection theme={theme} />
+      </section>
     </div>
   )
 }

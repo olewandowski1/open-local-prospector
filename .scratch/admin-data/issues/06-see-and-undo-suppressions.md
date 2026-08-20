@@ -4,7 +4,7 @@
 
 **Blocked by:** None.
 
-**Status:** ready-for-agent
+**Status:** implemented and verified
 
 - [ ] The Data section lists every entry in `suppression_entries` with the business name, the reason
       recorded, and when it was suppressed.
