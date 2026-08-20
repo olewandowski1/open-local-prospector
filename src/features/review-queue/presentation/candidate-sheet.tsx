@@ -1,21 +1,28 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, CircleCheck, CircleX, MapPin, RotateCcw } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  CircleX,
+  Ellipsis,
+  MapPin,
+  RotateCcw,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
@@ -26,7 +33,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { REJECTION_REASONS } from "@/features/review-queue/domain/review-policy"
 import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
 import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
@@ -39,15 +45,21 @@ import type {
 } from "@/features/review-queue/server/review-queue-read-model"
 
 export type QuickDecision = Readonly<{
-  status: "Shortlisted" | "Rejected" | "Unreviewed"
+  status: "Shortlisted" | "Rejected" | "Unreviewed" | "Contacted" | "Archived"
   rejectionReason?: string
   rejectionNote?: string
 }>
 
+/** Statuses that are real outcomes but not the two a reviewer reaches for constantly. */
+const secondaryStatuses = ["Contacted", "Archived"] as const
+
 /**
- * One candidate at full size, over the queue rather than beside it. The two decisions that dominate
- * reviewing sit in the header where they are always reachable, and recording one moves straight on to
- * the next candidate, so a long queue can be worked through without returning to the list.
+ * One candidate at full size, over the queue rather than beside it.
+ *
+ * Deciding is never behind a tab or a form: the evidence is on screen the moment the panel opens, the
+ * two decisions that dominate reviewing sit above it, and rejecting is picking the reason. Recording
+ * one moves straight on to the next candidate, so a long queue can be worked through without
+ * returning to the list.
  */
 export function CandidateSheet({
   candidate,
@@ -120,39 +132,26 @@ export function CandidateSheet({
 
             <Separator />
 
-            {/* The panel owns the scrolling, so the header and footer stay put however long the
-                evidence runs. */}
-            <Tabs defaultValue="evidence" className="min-h-0 flex-1 gap-0">
-              <TabsList className="mx-4 mt-3 w-fit">
-                <TabsTrigger value="evidence">Evidence</TabsTrigger>
-                <TabsTrigger value="decision">Decision</TabsTrigger>
-                <TabsTrigger value="history">History</TabsTrigger>
-              </TabsList>
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="p-4">
-                  {detail === undefined ? (
-                    <EvidenceSkeleton />
-                  ) : (
-                    <>
-                      <TabsContent value="evidence">
-                        <CandidateEvidence candidate={detail} />
-                      </TabsContent>
-                      <TabsContent value="decision">
-                        <CandidateDecision candidate={detail} busy={busy} onSubmit={onSaveReview} />
-                      </TabsContent>
-                      <TabsContent value="history">
-                        <CandidateHistory
-                          candidate={detail}
-                          busy={busy}
-                          onCorrect={onCorrect}
-                          onSuppress={onSuppress}
-                        />
-                      </TabsContent>
-                    </>
-                  )}
-                </div>
-              </ScrollArea>
-            </Tabs>
+            {/* One column, in the order a reviewer works: read the evidence, note anything, look back
+                at the history. The panel owns the scrolling so the header and footer stay put. */}
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="grid gap-8 p-4">
+                {detail === undefined ? (
+                  <EvidenceSkeleton />
+                ) : (
+                  <>
+                    <CandidateEvidence candidate={detail} />
+                    <CandidateDecision candidate={detail} busy={busy} onSubmit={onSaveReview} />
+                    <CandidateHistory
+                      candidate={detail}
+                      busy={busy}
+                      onCorrect={onCorrect}
+                      onSuppress={onSuppress}
+                    />
+                  </>
+                )}
+              </div>
+            </ScrollArea>
 
             <SheetFooter className="flex-row items-center justify-between gap-3 border-t p-3">
               <span className="text-xs text-muted-foreground tabular-nums">
@@ -182,8 +181,12 @@ export function CandidateSheet({
 }
 
 /**
- * The two decisions that dominate reviewing, plus the reason a rejection needs. Mounted per candidate
- * so its state resets by remounting rather than by an effect watching the selection.
+ * Shortlisting is one click. Rejecting is two: the button reveals the reasons, and choosing one is the
+ * decision — there is no form to fill and nothing to confirm, because every reason is a complete
+ * answer on its own. "Other" is the exception the write insists on a note for.
+ *
+ * Mounted per candidate so its state resets by remounting rather than by an effect watching the
+ * selection.
  */
 function CandidateDecisionBar({
   reviewStatus,
@@ -199,22 +202,17 @@ function CandidateDecisionBar({
   onNext: () => void
 }) {
   const [rejecting, setRejecting] = useState(false)
-  const [reason, setReason] = useState<string>(REJECTION_REASONS[0])
   const [note, setNote] = useState("")
 
-  // "Other" is the one reason the server insists on a note for, so the button waits for one.
-  const rejectionIncomplete = reason === "Other" && note.trim() === ""
-
   const shortlist = () => onQuickDecision({ status: "Shortlisted" })
-  const reject = () => {
-    if (rejectionIncomplete) return
-    onQuickDecision({ status: "Rejected", rejectionReason: reason, rejectionNote: note })
-  }
+  const rejectWith = (reason: string) =>
+    onQuickDecision({ status: "Rejected", rejectionReason: reason })
 
   useKeyboardShortcuts({
     enabled: !busy,
     onShortlist: shortlist,
     onReject: () => setRejecting(true),
+    onCancel: () => setRejecting(false),
     onPrevious,
     onNext,
   })
@@ -238,65 +236,93 @@ function CandidateDecisionBar({
           Reject
           <Kbd className="ml-1">R</Kbd>
         </Button>
-        {reviewStatus !== "Unreviewed" ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={busy}
-            onClick={() => onQuickDecision({ status: "Unreviewed" })}
-          >
-            <RotateCcw data-icon="inline-start" aria-hidden="true" />
-            Reset
-          </Button>
-        ) : null}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="sm" disabled={busy} aria-label="More Decisions">
+                <Ellipsis aria-hidden="true" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="start">
+            <DropdownMenuGroup>
+              {secondaryStatuses.map((status) => (
+                <DropdownMenuItem
+                  key={status}
+                  onClick={() => onQuickDecision({ status })}
+                  disabled={busy || reviewStatus === status}
+                >
+                  Mark {status}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem
+                onClick={() => onQuickDecision({ status: "Unreviewed" })}
+                disabled={busy || reviewStatus === "Unreviewed"}
+              >
+                <RotateCcw data-icon="inline-start" aria-hidden="true" />
+                Reset To Unreviewed
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {rejecting ? (
-        <div className="grid gap-3 rounded-lg border bg-muted/40 p-3">
-          <Field className="gap-1.5">
-            <FieldLabel htmlFor="quick-reason">Rejection Reason</FieldLabel>
-            <Select value={reason} onValueChange={(value) => setReason(value ?? "Other")}>
-              <SelectTrigger id="quick-reason" size="sm" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {REJECTION_REASONS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {humanizeTerm(value)}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field className="gap-1.5" data-invalid={rejectionIncomplete || undefined}>
-            <FieldLabel htmlFor="quick-note">Rejection Note</FieldLabel>
-            <Input
-              id="quick-note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              aria-invalid={rejectionIncomplete || undefined}
-            />
-            <FieldDescription>
-              {rejectionIncomplete
-                ? "A note is required when the reason is Other."
-                : "Optional for every reason except Other."}
-            </FieldDescription>
-          </Field>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setRejecting(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={busy || rejectionIncomplete}
-              onClick={reject}
-            >
-              Confirm Rejection
-            </Button>
+        <div className="grid gap-2 rounded-lg border bg-muted/40 p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Why is this not a fit? Choosing a reason records the rejection.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {REJECTION_REASONS.filter((reason) => reason !== "Other").map((reason) => (
+              <Button
+                key={reason}
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => rejectWith(reason)}
+              >
+                {humanizeTerm(reason)}
+              </Button>
+            ))}
           </div>
+
+          {/* "Other" cannot be a single click: the write rejects it without a note. */}
+          <Field className="gap-1.5 pt-1">
+            <FieldLabel htmlFor="reject-other">Other</FieldLabel>
+            <div className="flex items-center gap-2">
+              <Input
+                id="reject-other"
+                value={note}
+                placeholder="Say why in a few words"
+                onChange={(event) => setNote(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" || note.trim() === "") return
+                  event.preventDefault()
+                  onQuickDecision({
+                    status: "Rejected",
+                    rejectionReason: "Other",
+                    rejectionNote: note,
+                  })
+                }}
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={busy || note.trim() === ""}
+                onClick={() =>
+                  onQuickDecision({
+                    status: "Rejected",
+                    rejectionReason: "Other",
+                    rejectionNote: note,
+                  })
+                }
+              >
+                Reject
+              </Button>
+            </div>
+            <FieldDescription>A reason of its own needs a note.</FieldDescription>
+          </Field>
         </div>
       ) : null}
     </>
@@ -311,28 +337,36 @@ function useKeyboardShortcuts({
   enabled,
   onShortlist,
   onReject,
+  onCancel,
   onPrevious,
   onNext,
 }: {
   enabled: boolean
   onShortlist: () => void
   onReject: () => void
+  onCancel: () => void
   onPrevious: () => void
   onNext: () => void
 }) {
   // The handlers are fresh closures on every render. Held in a ref, the window listener subscribes
   // once per open panel instead of being torn down and rebuilt on each render.
-  const handlers = useRef({ onShortlist, onReject, onPrevious, onNext })
-  handlers.current = { onShortlist, onReject, onPrevious, onNext }
+  const handlers = useRef({ onShortlist, onReject, onCancel, onPrevious, onNext })
+  handlers.current = { onShortlist, onReject, onCancel, onPrevious, onNext }
 
   useEffect(() => {
     if (!enabled) return
     const handle = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
-      if (target?.closest("input,textarea,select,[contenteditable=true],[role=combobox]")) return
-
+      const typing = target?.closest("input,textarea,select,[contenteditable=true],[role=combobox]")
       const current = handlers.current
+      // Escape still closes the reason list while a note is being typed.
+      if (event.key === "Escape") {
+        current.onCancel()
+        return
+      }
+      if (typing) return
+
       const actions: Readonly<Record<string, () => void>> = {
         s: current.onShortlist,
         r: current.onReject,

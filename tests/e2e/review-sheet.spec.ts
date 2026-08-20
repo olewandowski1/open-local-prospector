@@ -11,21 +11,24 @@ test("reviews a candidate in a panel without leaving the queue", async ({ page }
 
   await page.getByRole("button", { name: "Open For Review" }).first().click()
 
-  // The decisions that dominate reviewing are reachable straight away, not behind a tab.
-  const shortlist = page.getByRole("button", { name: /Shortlist/ })
-  await expect(shortlist).toBeVisible()
-  await expect(page.getByRole("tab", { name: "Evidence" })).toBeVisible()
-  await expect(page.getByRole("tab", { name: "Decision" })).toBeVisible()
+  // Nothing is behind a tab: the decisions sit above the evidence, and the evidence is simply there.
+  await expect(page.getByRole("button", { name: /Shortlist/ })).toBeVisible()
+  await expect(page.getByRole("tab")).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 
-  // Rejecting asks for the reason the write requires, rather than failing after the fact.
-  await page.getByRole("button", { name: /^Reject/ }).click()
-  await expect(page.getByLabel("Rejection Reason")).toBeVisible()
+  // Rejecting is two clicks: reveal the reasons, then pick one. There is no form and no confirm step.
+  await page
+    .getByRole("button", { name: /^Reject/ })
+    .first()
+    .click()
+  await expect(page.getByRole("button", { name: "Evidence Too Weak" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Not A Local Decision" })).toBeVisible()
 })
 
 test("keeps the review page inside the viewport while showing long evidence", async ({ page }) => {
   await page.goto("/review")
   await page.getByRole("button", { name: "Open For Review" }).first().click()
-  await expect(page.getByRole("tab", { name: "Evidence" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 
   // The panel scrolls internally; the document behind it must not grow.
   const overflow = await page.evaluate(
@@ -52,5 +55,5 @@ test("keeps candidate evidence out of the queue payload", async ({ page, isMobil
   test.skip((await open.count()) === 0, "No candidates to review")
   await open.click()
   expect((await detail).ok()).toBe(true)
-  await expect(page.getByRole("tab", { name: "Evidence" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 })

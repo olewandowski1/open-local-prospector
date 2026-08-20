@@ -2,7 +2,13 @@ import type { QueueCandidate } from "@/features/review-queue/server/review-queue
 
 /** Persisted vocabularies are PascalCase identifiers; readers get spaced words. */
 export function humanizeTerm(value: string): string {
-  return value.replace(/([a-z0-9])([A-Z])/gu, "$1 $2")
+  return (
+    value
+      // A run of capitals ends where the next word begins, so "NotALocalDecision" does not become
+      // "Not ALocal Decision".
+      .replace(/([A-Z]+)([A-Z][a-z])/gu, "$1 $2")
+      .replace(/([a-z0-9])([A-Z])/gu, "$1 $2")
+  )
 }
 
 /**

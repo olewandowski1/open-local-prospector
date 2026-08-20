@@ -29,6 +29,9 @@ describe("review presentation", () => {
     expect(humanizeTerm("NoDedicatedWebsite")).toBe("No Dedicated Website")
     expect(humanizeTerm("BrokenOrUnusable")).toBe("Broken Or Unusable")
     expect(humanizeTerm("AlreadyHasStrongWebsite")).toBe("Already Has Strong Website")
+    // A single-letter word is still a word: this read as "Not ALocal Decision" on the reject buttons.
+    expect(humanizeTerm("NotALocalDecision")).toBe("Not A Local Decision")
+    expect(humanizeTerm("NotABusinessFit")).toBe("Not A Business Fit")
   })
 
   it("rounds stored floats to a precision that carries meaning", () => {

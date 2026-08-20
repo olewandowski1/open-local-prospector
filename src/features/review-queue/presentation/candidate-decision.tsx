@@ -1,24 +1,19 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { REJECTION_REASONS, REVIEW_STATUSES } from "@/features/review-queue/domain/review-policy"
-import { humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-const fieldSpacing = "gap-1.5"
-
+/**
+ * What a reviewer writes down, separate from what they decide. The decision itself is a click in the
+ * panel header, so this holds only the two things that outlive it: a private note and a date to come
+ * back on.
+ *
+ * The status and rejection fields are sent back unchanged. The write replaces every column it is
+ * given, so omitting them here would erase a decision made above.
+ */
 export function CandidateDecision({
   candidate,
   busy,
@@ -29,74 +24,30 @@ export function CandidateDecision({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle role="heading" aria-level={2}>
-          Decision
-        </CardTitle>
-        <CardDescription>
-          Recorded alongside the machine assessment, never replacing it.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <input type="hidden" name="kind" value="review" />
+    <section aria-labelledby="candidate-notes-heading" className="grid gap-3">
+      <div>
+        <h2 id="candidate-notes-heading" className="font-heading text-base font-semibold">
+          Notes And Follow-Up
+        </h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Stored locally beside the machine assessment, never replacing it.
+        </p>
+      </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field className={fieldSpacing}>
-              <FieldLabel htmlFor="status">Review Status</FieldLabel>
-              <Select name="status" defaultValue={candidate.reviewStatus}>
-                <SelectTrigger id="status" aria-label="Review Status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {REVIEW_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
+      <form className="grid gap-3" onSubmit={onSubmit}>
+        <input type="hidden" name="kind" value="review" />
+        <input type="hidden" name="status" value={candidate.reviewStatus} />
+        <input type="hidden" name="rejectionReason" value={candidate.rejectionReason ?? ""} />
+        <input type="hidden" name="rejectionNote" value={candidate.rejectionNote ?? ""} />
 
-            <Field className={fieldSpacing}>
-              <FieldLabel htmlFor="rejectionReason">Rejection Reason</FieldLabel>
-              <Select name="rejectionReason" defaultValue={candidate.rejectionReason}>
-                <SelectTrigger
-                  id="rejectionReason"
-                  aria-label="Rejection Reason"
-                  className="w-full"
-                >
-                  <SelectValue placeholder="Choose a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {REJECTION_REASONS.map((reason) => (
-                      <SelectItem key={reason} value={reason}>
-                        {humanizeTerm(reason)}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <FieldDescription>Required when the status is Rejected.</FieldDescription>
-            </Field>
-          </div>
+        <Field className="gap-1.5">
+          <FieldLabel htmlFor="privateNotes">Private Review Notes</FieldLabel>
+          <Textarea id="privateNotes" name="privateNotes" defaultValue={candidate.privateNotes} />
+          <FieldDescription>Stored locally and never sent anywhere.</FieldDescription>
+        </Field>
 
-          <Field className={fieldSpacing}>
-            <FieldLabel htmlFor="rejectionNote">Rejection Note</FieldLabel>
-            <Input id="rejectionNote" name="rejectionNote" defaultValue={candidate.rejectionNote} />
-          </Field>
-
-          <Field className={fieldSpacing}>
-            <FieldLabel htmlFor="privateNotes">Private Review Notes</FieldLabel>
-            <Textarea id="privateNotes" name="privateNotes" defaultValue={candidate.privateNotes} />
-            <FieldDescription>Stored locally and never sent anywhere.</FieldDescription>
-          </Field>
-
-          <Field className={fieldSpacing}>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <Field className="w-48 gap-1.5">
             <FieldLabel htmlFor="followUpAt">Follow-Up Date</FieldLabel>
             <Input
               id="followUpAt"
@@ -105,14 +56,11 @@ export function CandidateDecision({
               defaultValue={candidate.followUpAt}
             />
           </Field>
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={busy}>
-              Save Review
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          <Button type="submit" variant="outline" disabled={busy}>
+            Save Notes
+          </Button>
+        </div>
+      </form>
+    </section>
   )
 }
