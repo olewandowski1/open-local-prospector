@@ -203,6 +203,7 @@ export function getReviewQueue(): readonly QueueCandidate[] {
 
 export type RecentCandidate = Readonly<{
   id: string
+  runId: string
   name: string
   locality: string
   score: number
@@ -224,6 +225,7 @@ export type CandidateSummary = Readonly<{
 
 type RecentRow = {
   id: string
+  run_id: string
   name: string
   locality: string
   total: number
@@ -244,7 +246,8 @@ type SummaryRow = {
 
 const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
 
-const RECENT_CANDIDATE_LIMIT = 8
+/** Deliberately larger than one page: the grid pages through these client-side. */
+const RECENT_CANDIDATE_LIMIT = 50
 
 /**
  * The most recently scored qualified candidates, newest first. Suppressed businesses never appear.
@@ -254,11 +257,12 @@ export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): readonly Re
     (
       database
         .prepare(
-          `select cs.id,cb.name,cb.locality,cs.total,cs.scored_at,wo.opportunity_class,crv.status review_status,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null order by cs.scored_at desc,cs.total desc,cs.id limit ?`,
+          `select cs.id,rb.run_id,cb.name,cb.locality,cs.total,cs.scored_at,wo.opportunity_class,crv.status review_status,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available from candidate_scores cs join run_businesses rb on rb.id=cs.run_business_id join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null order by cs.scored_at desc,cs.total desc,cs.id limit ?`,
         )
         .all(limit) as RecentRow[]
     ).map((row) => ({
       id: row.id,
+      runId: row.run_id,
       name: row.name,
       locality: row.locality,
       score: row.total,

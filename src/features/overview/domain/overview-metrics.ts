@@ -14,8 +14,6 @@ export type OverviewMetric = Readonly<{
   trend: OverviewTrend
   /** Short Title Cased phrase describing the trend, or the tile's standing fact. */
   note: string
-  /** Optional supporting fact shown after the note. */
-  detail?: string
 }>
 
 export type OverviewRunSnapshot = Readonly<{
@@ -56,7 +54,6 @@ export function calculateOverviewMetrics(
       label: "Businesses Discovered",
       value: String(discovered),
       ...change(discoveredThisWeek, discoveredLastWeek, runs.length === 0 ? "No Runs Yet" : ""),
-      detail: countLabel(runs.length, "Prospecting Run", "Prospecting Runs"),
     },
     {
       id: "qualified",
@@ -67,9 +64,6 @@ export function calculateOverviewMetrics(
         candidates.qualifiedLastWeek,
         discovered === 0 ? "Nothing Discovered Yet" : "",
       ),
-      ...(discovered === 0
-        ? {}
-        : { detail: `${percentage(candidates.qualified, discovered)}% Of Discovered` }),
     },
     {
       id: "awaiting-review",
@@ -122,10 +116,6 @@ function discoveriesWithin(
     if (Number.isNaN(createdAt) || createdAt <= start || createdAt > end) return total
     return total + run.progress.discoveries
   }, 0)
-}
-
-function percentage(part: number, whole: number): number {
-  return Math.round((part / whole) * 100)
 }
 
 function formatScore(score: number): string {

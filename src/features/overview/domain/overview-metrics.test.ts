@@ -44,10 +44,7 @@ describe("overview metrics", () => {
       NOW,
     )
 
-    expect(metric(metrics, "discovered")).toMatchObject({
-      value: "66",
-      detail: "3 Prospecting Runs",
-    })
+    expect(metric(metrics, "discovered")).toMatchObject({ value: "66" })
     expect(metric(metrics, "active-runs")).toMatchObject({
       value: "1",
       note: "Top Score 91",
@@ -107,7 +104,6 @@ describe("overview metrics", () => {
       NOW,
     )
 
-    expect(metric(metrics, "qualified").detail).toBe("25% Of Discovered")
     expect(metric(metrics, "awaiting-review")).toMatchObject({
       value: "3",
       note: "1 Shortlisted",
@@ -122,7 +118,6 @@ describe("overview metrics", () => {
     expect(metrics.every((item) => item.trend === "none")).toBe(true)
     expect(metric(metrics, "discovered").note).toBe("No Runs Yet")
     expect(metric(metrics, "qualified").note).toBe("Nothing Discovered Yet")
-    expect(metric(metrics, "qualified").detail).toBeUndefined()
     expect(metric(metrics, "awaiting-review").note).toBe("Nothing To Review Yet")
     expect(metric(metrics, "active-runs").note).toBe("No Scored Candidates Yet")
   })
