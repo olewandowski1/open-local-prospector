@@ -90,3 +90,34 @@ export function safeHttpUrl(value?: string): string | undefined {
     return undefined
   }
 }
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu
+
+/**
+ * A readable stand-in for an event source. Identifiers that are plainly internal ids are shortened,
+ * because 36 characters of UUID tell a reader nothing while crowding out the rest of the row.
+ */
+export function eventSourceLabel(sourceIdentifier: string): string {
+  return uuidPattern.test(sourceIdentifier) ? `#${sourceIdentifier.slice(0, 8)}` : sourceIdentifier
+}
+
+/**
+ * How a per-business status should read. A failure is destructive, work that finished well is success,
+ * and an outcome that simply did not make the cut stays neutral rather than alarming.
+ */
+export function businessStatusVariant(
+  status: string,
+): "secondary" | "outline" | "destructive" | "warning" | "success" {
+  if (["FailedPermanent", "Failed"].includes(status)) return "destructive"
+  // Blocked or unreachable work may still succeed on a later attempt, so it warns rather than reading
+  // as a settled failure.
+  if (["Blocked", "Unreachable", "Retrying"].includes(status)) return "warning"
+  if (["Qualified", "Completed", "Scored"].includes(status)) return "success"
+  if (["BelowThreshold", "Excluded", "Duplicate", "Suppressed"].includes(status)) return "secondary"
+  return "outline"
+}
+
+/** Scores are stored as raw floats; a reader wants at most one decimal. */
+export function formatBusinessScore(score: number): string {
+  return Number.isInteger(score) ? String(score) : score.toFixed(1)
+}

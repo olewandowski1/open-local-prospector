@@ -4,16 +4,18 @@ import { ArrowLeft, Ban, CirclePause, CirclePlay, MapPin, RotateCcw } from "luci
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import type { RunControl } from "@/features/run-monitoring/application/run-repositories"
 import type { RunDetail } from "@/features/run-monitoring/domain/run-progress"
 import { runControlAvailability } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import {
   formatUpdatedAt,
   humanizeStage,
+  runStatusPresentation,
 } from "@/features/run-monitoring/presentation/run-presentation"
+import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
 import { RuntimeProviderIcon } from "@/features/runtime-settings/client"
 
 export function RunDetailHeader({
@@ -36,61 +38,61 @@ export function RunDetailHeader({
   const qualified = run.progress.qualifiedCandidates
   const completion = target <= 0 ? 0 : Math.min(100, Math.round((qualified / target) * 100))
   const configuration = run.searchBrief.runtimeConfiguration
+  const status = runStatusPresentation(run.state, run.completionState)
 
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        href="/runs"
-        className="inline-flex w-fit items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft aria-hidden="true" className="size-3.5" />
-        All Runs
-      </Link>
+    <div className="flex shrink-0 flex-col gap-3">
+      {/* Every control sits on one row at the top, so the run title is never competing with them. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/runs" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+          All Runs
+        </Link>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-heading text-2xl font-bold tracking-tight">
-            {run.searchBrief.category}
-          </h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
-            {run.searchBrief.searchArea.displayName}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            variant="outline"
+            variant="warning"
             size="sm"
             onClick={() => onControl("Pause")}
             disabled={!canPause || busy}
           >
-            <CirclePause aria-hidden="true" /> Pause
+            <CirclePause data-icon="inline-start" aria-hidden="true" /> Pause
           </Button>
           <Button
-            variant="outline"
+            variant="success"
             size="sm"
             onClick={() => onControl("Resume")}
             disabled={!canResume || busy}
           >
-            <CirclePlay aria-hidden="true" /> Resume
+            <CirclePlay data-icon="inline-start" aria-hidden="true" /> Resume
           </Button>
+          {/* Cancelling a run cannot be undone, so it is styled as the destructive act it is. */}
           <Button
-            variant="outline"
+            variant="destructive"
             size="sm"
             onClick={() => onControl("Cancel")}
             disabled={!canCancel || busy}
           >
-            <Ban aria-hidden="true" /> Cancel
+            <Ban data-icon="inline-start" aria-hidden="true" /> Cancel
           </Button>
-          <Button variant="ghost" size="sm" onClick={onRefresh} disabled={refreshing}>
-            <RotateCcw aria-hidden="true" /> Refresh
+          <Button variant="info" size="sm" onClick={onRefresh} disabled={refreshing}>
+            <RotateCcw data-icon="inline-start" aria-hidden="true" /> Refresh
           </Button>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="min-w-0">
+        <h1 className="font-heading text-xl font-bold tracking-tight">
+          {run.searchBrief.category}
+        </h1>
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+          <span className="truncate">{run.searchBrief.searchArea.displayName}</span>
+        </p>
+      </div>
+
+      <div className="grid shrink-0 gap-3 border-y py-4">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="grid gap-1.5">
             <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
               <span>
@@ -105,21 +107,32 @@ export function RunDetailHeader({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{run.completionState ?? run.state}</Badge>
-            <Badge variant="outline">{humanizeStage(run.currentStage)}</Badge>
-            <Badge variant="outline" className="gap-1.5">
+          {/* The run state is the one thing worth a badge; the rest are facts, not statuses. */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+            <Badge variant={status.variant} title={status.detail}>
+              {status.label}
+            </Badge>
+            <span>{humanizeStage(run.currentStage)}</span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1.5">
               <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
               {configuration
                 ? `${configuration.model} · ${configuration.reasoningEffort}`
                 : "Model Not Recorded"}
-            </Badge>
+            </span>
             {run.requestedControl !== "None" ? (
-              <Badge variant="outline">{run.requestedControl} Requested</Badge>
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{run.requestedControl} Requested</span>
+              </>
             ) : null}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <Separator />
+
+        <RunProgressFunnel progress={run.progress} />
+      </div>
     </div>
   )
 }

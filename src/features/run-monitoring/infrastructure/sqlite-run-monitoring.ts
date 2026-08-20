@@ -148,10 +148,12 @@ function readBusinesses(
   const rows = database
     .prepare(
       `select t.business_id, t.stage, t.status, t.attempt_count, t.failure,
-       rb.status as identity_status, rb.exclusion_reason, db.name as business_name
+       rb.status as identity_status, rb.exclusion_reason, db.name as business_name,
+       cs.total as score_total, cs.qualified as score_qualified
        from run_tasks t left join run_businesses rb
         on rb.run_id = t.run_id and rb.discovered_business_id = t.business_id
        left join discovered_businesses db on db.id = t.business_id
+       left join candidate_scores cs on cs.run_business_id = rb.id
        where t.run_id = ? and t.business_id is not null order by t.updated_at desc`,
     )
     .all(runId) as Array<{
@@ -163,6 +165,8 @@ function readBusinesses(
     identity_status: string | null
     exclusion_reason: string | null
     business_name: string | null
+    score_total: number | null
+    score_qualified: number | null
   }>
   const businesses = new Map<string, BusinessProgress>()
   for (const row of rows) {
@@ -178,6 +182,11 @@ function readBusinesses(
       status: existing?.status ?? row.identity_status ?? row.status,
       retryCount: (existing?.retryCount ?? 0) + Math.max(0, row.attempt_count - 1),
       ...(failureReason ? { failureReason } : {}),
+      ...(existing?.score !== undefined
+        ? { score: existing.score, qualified: existing.qualified }
+        : row.score_total !== null
+          ? { score: row.score_total, qualified: row.score_qualified === 1 }
+          : {}),
       sourceEvents:
         existing?.sourceEvents ?? events.filter((event) => event.businessId === row.business_id),
     })

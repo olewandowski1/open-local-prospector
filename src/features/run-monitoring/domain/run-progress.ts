@@ -44,6 +44,10 @@ export type BusinessProgress = Readonly<{
   status: string
   retryCount: number
   failureReason?: string
+  /** The opportunity score this business was judged on, absent until scoring has run. */
+  score?: number
+  /** True when the score cleared the review threshold. */
+  qualified?: boolean
   sourceEvents: readonly TechnicalRunEvent[]
 }>
 

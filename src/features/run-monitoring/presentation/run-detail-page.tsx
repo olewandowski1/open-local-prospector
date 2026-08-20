@@ -11,8 +11,7 @@ import type { RunDetail } from "@/features/run-monitoring/domain/run-progress"
 import { RunBusinessesTable } from "@/features/run-monitoring/presentation/run-businesses-table"
 import { RunDetailHeader } from "@/features/run-monitoring/presentation/run-detail-header"
 import { isRunTerminal } from "@/features/run-monitoring/presentation/run-detail-presentation"
-import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
-import { TechnicalLogPanel } from "@/features/run-monitoring/presentation/technical-log-panel"
+import { TechnicalLogSheet } from "@/features/run-monitoring/presentation/technical-log-panel"
 
 export function RunDetailPage({ runId }: { runId: string }) {
   const queryClient = useQueryClient()
@@ -52,7 +51,9 @@ export function RunDetailPage({ runId }: { runId: string }) {
   const selectedBusiness = run.businesses.find((business) => business.id === selectedBusinessId)
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+    // Bounded to the viewport so the controls never leave the screen while a run is producing events.
+    // The business list takes whatever height is left and scrolls inside itself.
+    <main className="flex h-[calc(100svh-var(--shell-header))] flex-col gap-4 overflow-hidden p-4 sm:p-6">
       <RunDetailHeader
         run={run}
         now={new Date()}
@@ -70,19 +71,18 @@ export function RunDetailPage({ runId }: { runId: string }) {
         </Alert>
       ) : null}
 
-      <RunProgressFunnel progress={run.progress} />
-
       <RunBusinessesTable
         businesses={run.businesses}
         selectedBusinessId={selectedBusinessId}
         onSelect={setSelectedBusinessId}
-      />
-
-      <TechnicalLogPanel
-        events={run.technicalLog}
-        businessId={selectedBusinessId}
-        businessLabel={selectedBusiness?.name ?? selectedBusiness?.id}
-        onClearBusiness={() => setSelectedBusinessId(undefined)}
+        action={
+          <TechnicalLogSheet
+            events={run.technicalLog}
+            businessId={selectedBusinessId}
+            businessLabel={selectedBusiness?.name ?? selectedBusiness?.id}
+            onClearBusiness={() => setSelectedBusinessId(undefined)}
+          />
+        }
       />
     </main>
   )

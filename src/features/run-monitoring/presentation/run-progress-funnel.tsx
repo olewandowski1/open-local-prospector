@@ -1,54 +1,53 @@
 import { ChevronRight } from "lucide-react"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { RunProgressCounts } from "@/features/run-monitoring/domain/run-progress"
 import {
   runAdjustments,
   runFunnel,
 } from "@/features/run-monitoring/presentation/run-detail-presentation"
 
+/**
+ * Stage-by-stage counts from committed SQLite checkpoints. Rendered without a surface of its own so it
+ * can sit alongside the completion bar it belongs with, rather than repeating progress in a second card.
+ */
 export function RunProgressFunnel({ progress }: { progress: RunProgressCounts }) {
   const funnel = runFunnel(progress)
   const adjustments = runAdjustments(progress)
 
   return (
-    <Card>
-      <CardHeader>
-        {/* These panels are document sections, so their titles carry heading semantics. */}
-        <CardTitle role="heading" aria-level={2}>
-          Run Progress
-        </CardTitle>
-        <CardDescription>
-          Application-generated counts from committed SQLite checkpoints.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-5">
-        <ol className="flex flex-wrap items-stretch gap-1">
-          {funnel.map((step, index) => (
-            <li key={step.key} className="flex flex-1 items-center gap-1">
-              <div className="min-w-0 flex-1 rounded-lg border px-3 py-2">
-                <p className="truncate text-xs text-muted-foreground">{step.label}</p>
-                <p className="font-heading text-xl font-medium tabular-nums">{step.value}</p>
-              </div>
-              {index < funnel.length - 1 ? (
-                <ChevronRight
-                  aria-hidden="true"
-                  className="size-4 shrink-0 text-muted-foreground/60"
-                />
-              ) : null}
-            </li>
-          ))}
-        </ol>
+    <section aria-labelledby="run-progress-heading" className="grid gap-2">
+      {/* This is a document section, so its title carries heading semantics. */}
+      <h2 id="run-progress-heading" className="text-sm font-medium">
+        Run Progress
+      </h2>
 
-        <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-xs">
-          {adjustments.map((item) => (
-            <div key={item.key} className="flex items-baseline gap-1.5">
-              <dt className="text-muted-foreground">{item.label}</dt>
-              <dd className="font-medium tabular-nums">{item.value}</dd>
+      <ol className="flex flex-wrap items-stretch gap-1">
+        {funnel.map((step, index) => (
+          <li key={step.key} className="flex flex-1 items-center gap-1">
+            <div className="min-w-0 flex-1 rounded-lg border px-2.5 py-1.5">
+              <p className="truncate text-xs text-muted-foreground">{step.label}</p>
+              <p className="font-heading text-lg font-medium tabular-nums">{step.value}</p>
             </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
+            {index < funnel.length - 1 ? (
+              <ChevronRight
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground/60"
+              />
+            ) : null}
+          </li>
+        ))}
+      </ol>
+
+      {/* One strip sharing the funnel's box language. The 1px gaps over a border-coloured background
+          give clean separators however the cells wrap. */}
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
+        {adjustments.map((item) => (
+          <div key={item.key} className="min-w-0 bg-background px-2.5 py-1.5">
+            <dt className="truncate text-xs text-muted-foreground">{item.label}</dt>
+            <dd className="text-sm font-medium tabular-nums">{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }

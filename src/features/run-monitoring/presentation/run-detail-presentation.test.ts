@@ -5,8 +5,11 @@ import type {
   TechnicalRunEvent,
 } from "@/features/run-monitoring/domain/run-progress"
 import {
+  businessStatusVariant,
   eventKindCounts,
+  eventSourceLabel,
   filterTechnicalLog,
+  formatBusinessScore,
   isRunTerminal,
   runAdjustments,
   runControlAvailability,
@@ -133,5 +136,59 @@ describe("run detail presentation", () => {
     expect(safeHttpUrl("file:///etc/passwd")).toBeUndefined()
     expect(safeHttpUrl("not a url")).toBeUndefined()
     expect(safeHttpUrl(undefined)).toBeUndefined()
+  })
+})
+
+describe("eventSourceLabel", () => {
+  it("shortens an internal identifier that tells a reader nothing", () => {
+    expect(eventSourceLabel("90560377-8038-4b69-93d4-2129024aa399")).toBe("#90560377")
+  })
+
+  it("leaves a meaningful source name exactly as recorded", () => {
+    expect(eventSourceLabel("subscription-runtime-web-search")).toBe(
+      "subscription-runtime-web-search",
+    )
+  })
+
+  it("does not mistake a near-miss for an identifier", () => {
+    expect(eventSourceLabel("90560377-8038-4b69-93d4")).toBe("90560377-8038-4b69-93d4")
+  })
+})
+
+describe("businessStatusVariant", () => {
+  it("marks a settled failure as destructive", () => {
+    expect(businessStatusVariant("FailedPermanent")).toBe("destructive")
+    expect(businessStatusVariant("Failed")).toBe("destructive")
+  })
+
+  it("warns rather than condemns when work may still succeed on another attempt", () => {
+    expect(businessStatusVariant("Blocked")).toBe("warning")
+    expect(businessStatusVariant("Unreachable")).toBe("warning")
+  })
+
+  it("marks work that finished well as success", () => {
+    expect(businessStatusVariant("Qualified")).toBe("success")
+    expect(businessStatusVariant("Completed")).toBe("success")
+  })
+
+  it("keeps an outcome that simply did not make the cut neutral, not alarming", () => {
+    expect(businessStatusVariant("BelowThreshold")).toBe("secondary")
+    expect(businessStatusVariant("Excluded")).toBe("secondary")
+  })
+
+  it("falls back to outline for work still in flight", () => {
+    expect(businessStatusVariant("InProgress")).toBe("outline")
+    expect(businessStatusVariant("Anything Unrecognised")).toBe("outline")
+  })
+})
+
+describe("formatBusinessScore", () => {
+  it("keeps a whole score whole", () => {
+    expect(formatBusinessScore(25)).toBe("25")
+  })
+
+  it("never shows a reader a raw float", () => {
+    expect(formatBusinessScore(87.47)).toBe("87.5")
+    expect(formatBusinessScore(24.666666666666668)).toBe("24.7")
   })
 })

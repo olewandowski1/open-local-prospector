@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest"
-import type { RunSummary } from "@/features/run-monitoring/domain/run-progress"
+import { type RunSummary, runCompletionStates } from "@/features/run-monitoring/domain/run-progress"
 import {
   formatUpdatedAt,
   humanizeStage,
+  runStatusPresentation,
   toRunRow,
 } from "@/features/run-monitoring/presentation/run-presentation"
 
@@ -48,19 +49,22 @@ describe("run presentation", () => {
     expect(toRunRow(summary(), NOW)).toMatchObject({
       category: "Florist",
       location: "Zdzieszowice, Polska",
-      status: "Running",
+      status: { label: "Running", variant: "info", detail: "Running" },
       settled: false,
       completion: 20,
       qualified: 2,
       targetCount: 10,
-      updatedLabel: "3 hours ago",
+      updatedLabel: "3 Hours Ago",
     })
   })
 
   it("prefers the completion state and marks finished runs as settled", () => {
     const row = toRunRow(summary({ state: "Completed", completionState: "Target Reached" }), NOW)
 
-    expect(row).toMatchObject({ status: "Target Reached", settled: true })
+    expect(row).toMatchObject({
+      status: { label: "Target Met", variant: "success", detail: "Target Reached" },
+      settled: true,
+    })
   })
 
   it("never reports more than full completion", () => {
@@ -77,10 +81,50 @@ describe("run presentation", () => {
   })
 
   it("formats recent activity relatively and older activity absolutely", () => {
-    expect(formatUpdatedAt("2026-08-16T11:59:30.000Z", NOW)).toBe("Just now")
-    expect(formatUpdatedAt("2026-08-16T11:30:00.000Z", NOW)).toBe("30 minutes ago")
-    expect(formatUpdatedAt("2026-08-15T12:00:00.000Z", NOW)).toBe("yesterday")
+    expect(formatUpdatedAt("2026-08-16T11:59:30.000Z", NOW)).toBe("Just Now")
+    expect(formatUpdatedAt("2026-08-16T11:30:00.000Z", NOW)).toBe("30 Minutes Ago")
+    expect(formatUpdatedAt("2026-08-15T12:00:00.000Z", NOW)).toBe("Yesterday")
     expect(formatUpdatedAt("2026-07-01T12:00:00.000Z", NOW)).toMatch(/2026/)
     expect(formatUpdatedAt("not-a-date", NOW)).toBe("Unknown")
+  })
+})
+
+describe("runStatusPresentation", () => {
+  it("shortens a sentence-length state and keeps the original as the detail", () => {
+    expect(runStatusPresentation("Completed", "Cancelled with Partial Results")).toEqual({
+      label: "Cancelled",
+      variant: "destructive",
+      detail: "Cancelled with Partial Results",
+    })
+    expect(runStatusPresentation("Completed", "Search Exhausted")).toEqual({
+      label: "Exhausted",
+      variant: "warning",
+      detail: "Search Exhausted",
+    })
+  })
+
+  it("colours an outcome by what it means for the run", () => {
+    expect(runStatusPresentation("Completed", "Target Reached").variant).toBe("success")
+    expect(runStatusPresentation("Completed", "Infrastructure Failed").variant).toBe("destructive")
+    expect(runStatusPresentation("Completed", "Runtime Unavailable").variant).toBe("destructive")
+    expect(runStatusPresentation("Completed", "Completed with Warnings").variant).toBe("warning")
+    expect(runStatusPresentation("Running").variant).toBe("info")
+    expect(runStatusPresentation("Cancelled").variant).toBe("destructive")
+  })
+
+  it("falls back to the recorded state rather than inventing a label", () => {
+    expect(runStatusPresentation("SomethingNew")).toEqual({
+      label: "Something New",
+      variant: "outline",
+      detail: "SomethingNew",
+    })
+  })
+
+  it("gives every completion state the policy allows a short label", () => {
+    for (const state of runCompletionStates) {
+      const presentation = runStatusPresentation("Completed", state)
+      expect(presentation.label.length).toBeLessThanOrEqual(12)
+      expect(presentation.variant).not.toBe("outline")
+    }
   })
 })
