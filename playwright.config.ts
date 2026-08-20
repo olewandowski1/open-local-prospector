@@ -14,7 +14,9 @@ export default defineConfig({
   webServer: {
     command: "pnpm dev",
     url: "http://127.0.0.1:4310",
-    reuseExistingServer: false,
+    // The developer keeps their own server on this port; tests attach to it rather than fighting it
+    // for the binding, which would fail their run with EADDRINUSE.
+    reuseExistingServer: true,
     timeout: 120_000,
   },
   projects: [

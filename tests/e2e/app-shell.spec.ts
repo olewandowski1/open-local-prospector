@@ -72,11 +72,13 @@ test("renders the persisted review queue", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible()
   // The local database may hold qualified candidates or none; neither state may use fixtures.
-  await expect(page.getByText(/no qualified candidates yet|ranked candidates/i)).toBeVisible()
+  const empty = page.getByText(/nothing to review yet/i)
+  const queue = page.getByRole("columnheader", { name: /Business/ })
+  await expect(empty.or(queue).first()).toBeVisible()
   await expect(page.getByText("sample data")).toHaveCount(0)
-  await expect(page.getByRole("main").getByRole("link", { name: "New run" })).toHaveAttribute(
-    "href",
-    "/runs/new",
+  // Starting a run belongs to the Runs page; this queue only offers it when there is nothing to review.
+  await expect(page.getByRole("main").getByRole("link", { name: "New Run" })).toHaveCount(
+    (await empty.count()) > 0 ? 1 : 0,
   )
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
@@ -102,8 +104,17 @@ test("opens mobile navigation", async ({ page, isMobile }) => {
   // The sidebar is identical on every page; /runs has no streamed section to re-render mid-click.
   await page.goto("/runs")
 
-  await page.getByRole("button", { name: "Toggle Sidebar" }).click()
   const sidebar = page.getByRole("dialog", { name: /Sidebar/ })
+  // Under a loaded dev server the document can be interactive before the client bundle attaches, so
+  // the first click is sometimes a no-op. Retry opening, but only while it is still closed, so a
+  // click that did land is never toggled back shut.
+  await expect(async () => {
+    if (!(await sidebar.isVisible())) {
+      await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    }
+    await expect(sidebar).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 20_000 })
+
   await expect(sidebar).toContainText(/overview/i)
   await expect(sidebar).toContainText(/review queue/i)
 })
@@ -153,19 +164,27 @@ test("reports local dependency readiness without rendering secrets", async ({ pa
 })
 
 test("persists the appearance choice on this device", async ({ page }) => {
+  // One dev server serves every worker, so first paint here can far exceed the default budget.
+  test.slow()
   await page.goto("/settings/appearance")
 
-  await page.getByRole("radio", { name: "Dark" }).click()
-  // Applied optimistically, then persisted to a cookie the server reads on the next render.
-  await expect(page.locator("html")).toHaveClass(/dark/)
+  // Choosing a theme is a client action, so it retries until the bundle has attached. Selecting the
+  // same theme twice means the same thing, so repeating the click is safe.
+  await expect(async () => {
+    await page.getByRole("radio", { name: "Dark" }).click()
+    // Applied optimistically, then persisted to a cookie the server reads on the next render.
+    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
   await expect.poll(() => page.evaluate(() => document.cookie)).toContain("prospector-theme=dark")
 
   await page.reload()
   await expect(page.locator("html")).toHaveClass(/dark/)
   await expect(page.getByRole("radio", { name: "Dark" })).toBeChecked()
 
-  await page.getByRole("radio", { name: "Light" }).click()
-  await expect(page.locator("html")).not.toHaveClass(/dark/)
+  await expect(async () => {
+    await page.getByRole("radio", { name: "Light" }).click()
+    await expect(page.locator("html")).not.toHaveClass(/dark/, { timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
   await expect.poll(() => page.evaluate(() => document.cookie)).toContain("prospector-theme=light")
 })
 
@@ -177,11 +196,51 @@ test("switches the runs list between table and card views", async ({ page }) => 
 
   await tableView.click()
   await expect(page.getByRole("table")).toBeVisible()
-  await expect(page.getByRole("columnheader", { name: /Qualified/ })).toBeVisible()
+  // Supporting columns drop away on narrow viewports, so this asserts one that never does.
+  await expect(page.getByRole("columnheader", { name: /Run/ }).first()).toBeVisible()
 
   await page.getByRole("radio", { name: "Cards" }).click()
   await expect(page.getByRole("table")).toHaveCount(0)
 
   await page.reload()
   await expect(page.getByRole("radio", { name: "Cards" })).toBeChecked()
+})
+
+test("names every chrome icon button on hover", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Tooltips are a pointer affordance")
+  // One dev server serves every worker, so first paint here can be far slower than the default budget.
+  test.slow()
+  await page.goto("/runs")
+
+  // Icons alone carry no reliable meaning, so each icon-only control has to say what it does.
+  // Settings navigates, so it is a link; the rest act on this page and are buttons.
+  // The runtime control renames itself when a new release is published, so it is matched by pattern.
+  const controls = [
+    { label: "Toggle Sidebar", role: "button" as const },
+    { label: "Search Workspace", role: "button" as const },
+    { label: "Settings", role: "link" as const },
+    { label: /Update (Runtimes|Available)/, role: "button" as const },
+  ]
+
+  // Base UI does not put role=tooltip on the popup, so these assert on the slot the primitive owns,
+  // filtered by text because a closing tooltip briefly overlaps the one being opened.
+  const tooltipFor = (label: string | RegExp) =>
+    page.locator('[data-slot="tooltip-content"]').filter({ hasText: label })
+
+  // Establish once that the client bundle has attached, retrying only here. The pointer is parked away
+  // from the control first, because hovering an element the mouse already sits on fires no new events,
+  // so a retry could otherwise never recover from an attempt made too early.
+  const [first, ...rest] = controls
+  await expect(async () => {
+    await page.mouse.move(0, 0)
+    await page.getByRole(first.role, { name: first.label }).first().hover()
+    await expect(tooltipFor(first.label)).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
+
+  // The page is interactive now, so the rest need no retry budget of their own.
+  for (const { label, role } of rest) {
+    await page.mouse.move(0, 0)
+    await page.getByRole(role, { name: label }).first().hover()
+    await expect(tooltipFor(label)).toBeVisible()
+  }
 })

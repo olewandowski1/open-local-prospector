@@ -74,7 +74,10 @@ test("polls active progress and persists pause, resume, and cancellation control
   await page.getByRole("button", { name: "Resume" }).click()
   await expect(page.getByText("Running", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Cancel" }).click()
-  await expect(page.getByText("Cancelled with Partial Results", { exact: true })).toBeVisible()
+  // States read as short badges now, with the full recorded wording kept as the title.
+  const cancelled = page.getByText("Cancelled", { exact: true })
+  await expect(cancelled).toBeVisible()
+  await expect(cancelled).toHaveAttribute("title", "Cancelled with Partial Results")
   await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled()
 })
 
@@ -114,13 +117,56 @@ test("shows partial business failure and a separate factual Technical Run Log", 
   })
   await page.goto("/runs/run-e2e")
 
-  await expect(page.getByText("Completed with Warnings", { exact: true })).toBeVisible()
+  const warnings = page.getByText("Warnings", { exact: true })
+  await expect(warnings).toBeVisible()
+  await expect(warnings).toHaveAttribute("title", "Completed with Warnings")
   await expect(page.getByText("The isolated browser process exited.")).toBeVisible()
+
+  // The log lives in a panel so it cannot lengthen the page; it has to be opened to be read.
+  await expect(page.getByRole("heading", { name: "Technical Run Log" })).toBeHidden()
+  await page.getByRole("button", { name: /Technical Log/ }).click()
   await expect(page.getByRole("heading", { name: "Technical Run Log" })).toBeVisible()
-  await expect(page.getByText("Source: subscription-runtime-web-search")).toBeVisible()
+  // The source is a chip on the timeline row now, so it carries the identifier without a prefix.
+  await expect(page.getByText("subscription-runtime-web-search")).toBeVisible()
   await expect(page.getByRole("link", { name: "Result URL" })).toHaveAttribute(
     "href",
     "https://example.com/result",
   )
   await expect(page.locator("body")).not.toContainText("chain-of-thought")
+})
+
+test("keeps the run detail page inside the viewport", async ({ page }) => {
+  await page.route("**/api/runs/run-e2e", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      // Far more businesses and events than fit on screen, which is exactly when the page must not grow.
+      body: JSON.stringify(
+        runDetail({
+          state: "Running",
+          businesses: Array.from({ length: 40 }, (_, index) => ({
+            id: `business-${index}`,
+            currentStage: "InspectBusiness",
+            status: "InProgress",
+            retryCount: 0,
+            sourceEvents: [],
+          })),
+          technicalLog: Array.from({ length: 200 }, (_, index) => ({
+            id: `event-${index}`,
+            kind: "DiscoveryResult",
+            sourceIdentifier: "subscription-runtime-web-search",
+            message: `Event ${index}`,
+            createdAt: "2026-08-16T10:01:00.000Z",
+          })),
+        }),
+      ),
+    })
+  })
+  await page.goto("/runs/run-e2e")
+  await expect(page.getByRole("heading", { name: "Run Progress" })).toBeVisible()
+
+  // The panes scroll internally, so the document itself should never exceed the viewport.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollHeight - window.innerHeight,
+  )
+  expect(overflow).toBeLessThanOrEqual(4)
 })
