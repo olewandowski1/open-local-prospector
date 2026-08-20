@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table"
 import { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
-import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
+import type { QueueCandidateSummary } from "@/features/review-queue/server/review-queue-read-model"
 import { cn } from "@/lib/utils"
 
 const features = tableFeatures({
@@ -38,7 +38,7 @@ const features = tableFeatures({
 })
 
 /** The row carries its own open handler so the column definitions can stay module-level. */
-type ReviewRow = QueueCandidate & Readonly<{ onOpen: () => void }>
+type ReviewRow = QueueCandidateSummary & Readonly<{ onOpen: () => void }>
 
 const helper = createColumnHelper<typeof features, ReviewRow>()
 
@@ -132,7 +132,7 @@ export function CandidatesTable({
   selectedId,
   onOpen,
 }: {
-  candidates: readonly QueueCandidate[]
+  candidates: readonly QueueCandidateSummary[]
   selectedId?: string
   onOpen: (id: string) => void
 }) {

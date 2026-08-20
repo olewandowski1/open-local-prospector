@@ -25,6 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { REJECTION_REASONS } from "@/features/review-queue/domain/review-policy"
 import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
@@ -32,7 +33,10 @@ import { CandidateEvidence } from "@/features/review-queue/presentation/candidat
 import { CandidateHistory } from "@/features/review-queue/presentation/candidate-history"
 import { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
-import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
+import type {
+  QueueCandidate,
+  QueueCandidateSummary,
+} from "@/features/review-queue/server/review-queue-read-model"
 
 export type QuickDecision = Readonly<{
   status: "Shortlisted" | "Rejected" | "Unreviewed"
@@ -47,6 +51,7 @@ export type QuickDecision = Readonly<{
  */
 export function CandidateSheet({
   candidate,
+  detail,
   position,
   total,
   busy,
@@ -60,7 +65,9 @@ export function CandidateSheet({
   onCorrect,
   onSuppress,
 }: {
-  candidate?: QueueCandidate
+  candidate?: QueueCandidateSummary
+  /** The evidence, which arrives after the panel opens. */
+  detail?: QueueCandidate
   position: number
   total: number
   busy: boolean
@@ -103,8 +110,8 @@ export function CandidateSheet({
               {/* Keyed on the candidate so a half-written rejection never carries over to the next. */}
               <CandidateDecisionBar
                 key={candidate.id}
-                candidate={candidate}
-                busy={busy}
+                reviewStatus={candidate.reviewStatus}
+                busyOrLoading={busy || detail === undefined}
                 onQuickDecision={onQuickDecision}
                 onPrevious={onPrevious}
                 onNext={onNext}
@@ -123,20 +130,26 @@ export function CandidateSheet({
               </TabsList>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="p-4">
-                  <TabsContent value="evidence">
-                    <CandidateEvidence candidate={candidate} />
-                  </TabsContent>
-                  <TabsContent value="decision">
-                    <CandidateDecision candidate={candidate} busy={busy} onSubmit={onSaveReview} />
-                  </TabsContent>
-                  <TabsContent value="history">
-                    <CandidateHistory
-                      candidate={candidate}
-                      busy={busy}
-                      onCorrect={onCorrect}
-                      onSuppress={onSuppress}
-                    />
-                  </TabsContent>
+                  {detail === undefined ? (
+                    <EvidenceSkeleton />
+                  ) : (
+                    <>
+                      <TabsContent value="evidence">
+                        <CandidateEvidence candidate={detail} />
+                      </TabsContent>
+                      <TabsContent value="decision">
+                        <CandidateDecision candidate={detail} busy={busy} onSubmit={onSaveReview} />
+                      </TabsContent>
+                      <TabsContent value="history">
+                        <CandidateHistory
+                          candidate={detail}
+                          busy={busy}
+                          onCorrect={onCorrect}
+                          onSuppress={onSuppress}
+                        />
+                      </TabsContent>
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </Tabs>
@@ -173,14 +186,14 @@ export function CandidateSheet({
  * so its state resets by remounting rather than by an effect watching the selection.
  */
 function CandidateDecisionBar({
-  candidate,
-  busy,
+  reviewStatus,
+  busyOrLoading: busy,
   onQuickDecision,
   onPrevious,
   onNext,
 }: {
-  candidate: QueueCandidate
-  busy: boolean
+  reviewStatus: string
+  busyOrLoading: boolean
   onQuickDecision: (decision: QuickDecision) => void
   onPrevious: () => void
   onNext: () => void
@@ -225,7 +238,7 @@ function CandidateDecisionBar({
           Reject
           <Kbd className="ml-1">R</Kbd>
         </Button>
-        {candidate.reviewStatus !== "Unreviewed" ? (
+        {reviewStatus !== "Unreviewed" ? (
           <Button
             variant="ghost"
             size="sm"
@@ -336,4 +349,17 @@ function useKeyboardShortcuts({
     window.addEventListener("keydown", handle)
     return () => window.removeEventListener("keydown", handle)
   }, [enabled])
+}
+
+/** Stands in for the evidence while it is fetched, so the panel does not resize when it lands. */
+function EvidenceSkeleton() {
+  return (
+    // A bare div takes no accessible name, so the status role carries it.
+    <div role="status" aria-busy="true" aria-label="Loading Evidence" className="grid gap-3">
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-24 w-full rounded-lg" />
+      <Skeleton className="h-4 w-52" />
+      <Skeleton className="h-24 w-full rounded-lg" />
+    </div>
+  )
 }

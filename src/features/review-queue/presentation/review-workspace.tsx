@@ -1,5 +1,6 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query"
 import { FilterX } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -28,12 +29,15 @@ import {
 } from "@/features/review-queue/presentation/candidate-sheet"
 import { CandidatesTable } from "@/features/review-queue/presentation/candidates-table"
 import { ExportDialog } from "@/features/review-queue/presentation/export-dialog"
-import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
+import type {
+  QueueCandidate,
+  QueueCandidateSummary,
+} from "@/features/review-queue/server/review-queue-read-model"
 
 const FILTER_STORAGE_KEY = "v1:review-filter"
 const SELECTION_STORAGE_KEY = "v1:review-selection"
 
-export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidate[] }) {
+export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidateSummary[] }) {
   const router = useRouter()
   const requestedId = useSearchParams().get("candidate")
   const [filter, setFilter] = useState("All")
@@ -64,6 +68,15 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
 
   const index = openId ? visible.findIndex((candidate) => candidate.id === openId) : -1
   const open = index >= 0 ? visible[index] : undefined
+
+  // The evidence is fetched for the one candidate on screen instead of shipped for the whole queue,
+  // and React Query keeps it for a candidate revisited while stepping back and forth.
+  const detail = useQuery({
+    queryKey: ["review-candidate", open?.id],
+    queryFn: () => fetchCandidate(open?.id ?? ""),
+    enabled: open !== undefined,
+    staleTime: 30_000,
+  })
 
   const selectFilter = (value: string) => {
     setFilter(value)
@@ -97,6 +110,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         return false
       }
       refresh()
+      await detail.refetch()
       return true
     } finally {
       setBusy(false)
@@ -110,14 +124,17 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
    */
   const quickDecision = async (decision: QuickDecision) => {
     if (!open) return
+    // The write replaces every column it is given, so a decision waits for the values it must return.
+    const loaded = detail.data
+    if (!loaded) return
     const nextCandidate = visible[index + 1]
     const saved = await post(`/api/review/${open.id}`, {
       kind: "review",
       status: decision.status,
       ...(decision.rejectionReason ? { rejectionReason: decision.rejectionReason } : {}),
       ...(decision.rejectionNote ? { rejectionNote: decision.rejectionNote } : {}),
-      privateNotes: open.privateNotes,
-      followUpAt: open.followUpAt ?? null,
+      privateNotes: loaded.privateNotes,
+      followUpAt: loaded.followUpAt ?? null,
     })
     if (!saved) return
 
@@ -201,6 +218,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
 
       <CandidateSheet
         candidate={open}
+        detail={detail.data}
         position={index + 1}
         total={visible.length}
         busy={busy}
@@ -218,4 +236,10 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
       />
     </div>
   )
+}
+
+async function fetchCandidate(scoreId: string): Promise<QueueCandidate> {
+  const response = await fetch(`/api/review/${encodeURIComponent(scoreId)}`)
+  if (!response.ok) throw new Error("candidate unavailable")
+  return (await response.json()) as QueueCandidate
 }

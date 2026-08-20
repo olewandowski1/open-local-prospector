@@ -10,10 +10,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { ReviewWorkspace } from "@/features/review-queue/presentation/review-workspace"
-import { getReviewQueue } from "@/features/review-queue/server/review-queue-read-model"
+import { getReviewQueueSummaries } from "@/features/review-queue/server/review-queue-read-model"
 
 export function ReviewQueuePage() {
-  const candidates = getReviewQueue()
+  const candidates = getReviewQueueSummaries()
   return (
     <main className="flex h-[calc(100svh-var(--shell-header))] flex-col gap-6 overflow-hidden p-4 sm:p-6">
       <div>

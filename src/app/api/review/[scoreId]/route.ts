@@ -6,6 +6,7 @@ import {
   REVIEW_STATUSES,
   updateCandidateReview,
 } from "@/features/review-queue/infrastructure/review-candidate"
+import { getQueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
 export async function POST(request: Request, context: { params: Promise<{ scoreId: string }> }) {
   try {
@@ -46,4 +47,12 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
       { status: 400 },
     )
   }
+}
+
+/** The evidence for one candidate, read only when its review panel opens. */
+export async function GET(_request: Request, context: { params: Promise<{ scoreId: string }> }) {
+  const { scoreId } = await context.params
+  const candidate = getQueueCandidate(scoreId)
+  if (!candidate) return NextResponse.json({ error: "Candidate not found." }, { status: 404 })
+  return NextResponse.json(candidate)
 }

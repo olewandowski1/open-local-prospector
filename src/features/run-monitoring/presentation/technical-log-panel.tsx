@@ -120,7 +120,7 @@ export function TechnicalLogSheet({
                   {kindMessage ? (
                     <p className="text-sm text-muted-foreground">{kindMessage}</p>
                   ) : null}
-                  <EventRows events={filtered} showKind={kind === undefined} />
+                  <EventRows events={filtered} />
                 </div>
               )}
             </>
@@ -143,14 +143,11 @@ export function TechnicalLogSheet({
  * and where the result lives. Only the rows in view are rendered, so a run that checkpointed thousands
  * costs the same as one that checkpointed ten.
  */
-function EventRows({
-  events,
-  showKind,
-}: {
-  events: readonly TechnicalRunEvent[]
-  showKind: boolean
-}) {
+function EventRows({ events }: { events: readonly TechnicalRunEvent[] }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  // Derived rather than passed: when every row shares one kind, the label repeats the filter above it.
+  // A caller cannot then disagree with the data about whether the column is worth its width.
+  const showKind = useMemo(() => new Set(events.map((event) => event.kind)).size > 1, [events])
   const virtualizer = useVirtualizer({
     count: events.length,
     getScrollElement: () => scrollRef.current,

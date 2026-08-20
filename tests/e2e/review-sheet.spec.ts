@@ -33,3 +33,24 @@ test("keeps the review page inside the viewport while showing long evidence", as
   )
   expect(overflow).toBeLessThanOrEqual(4)
 })
+
+test("keeps candidate evidence out of the queue payload", async ({ page, isMobile }) => {
+  test.skip(isMobile, "One assertion about the served document is enough")
+
+  const response = await page.goto("/review")
+  const html = (await response?.text()) ?? ""
+
+  // The grid needs six fields per candidate. Evidence belongs to the one candidate on screen, so it
+  // must not be serialised for the whole queue — that payload grows with every run.
+  for (const field of ["observations", "screenshots", "measurements", "limitations"]) {
+    expect(html, `${field} should not be in the queue payload`).not.toContain(field)
+  }
+
+  // It arrives on demand instead.
+  const detail = page.waitForResponse((res) => /\/api\/review\/[0-9a-f-]{36}$/u.test(res.url()))
+  const open = page.getByRole("button", { name: "Open For Review" }).first()
+  test.skip((await open.count()) === 0, "No candidates to review")
+  await open.click()
+  expect((await detail).ok()).toBe(true)
+  await expect(page.getByRole("tab", { name: "Evidence" })).toBeVisible()
+})

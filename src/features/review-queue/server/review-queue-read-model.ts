@@ -1,6 +1,20 @@
 import Database from "better-sqlite3"
 import { loadLocalApplicationConfig } from "@/features/local-application"
 
+/**
+ * What the queue grid renders. The evidence a reviewer reads is deliberately absent: sending it for
+ * every candidate put the whole queue's observations, screenshots and measurements into the page.
+ */
+export type QueueCandidateSummary = Readonly<{
+  id: string
+  name: string
+  locality: string
+  score: number
+  primaryOpportunity: string
+  contactAvailable: boolean
+  reviewStatus: string
+}>
+
 export type QueueCandidate = Readonly<{
   id: string
   name: string
@@ -73,7 +87,46 @@ type QueueRow = {
   inspection_id: string
 }
 
+const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,wo.opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null`
+
+/** The queue grid, without the per-candidate evidence that only the open panel reads. */
+export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
+  let db: Database.Database | undefined
+  try {
+    const database = new Database(loadLocalApplicationConfig().databasePath, {
+      readonly: true,
+      fileMustExist: true,
+    })
+    db = database
+    const rows = database
+      .prepare(`${QUEUE_SELECT} order by cs.total desc,cb.name collate nocase,cs.id`)
+      .all() as QueueRow[]
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      locality: row.locality,
+      score: row.total,
+      primaryOpportunity: row.opportunity_class,
+      contactAvailable: Boolean(row.contact_available),
+      reviewStatus: row.review_status ?? "Unreviewed",
+    }))
+  } catch {
+    return []
+  } finally {
+    db?.close()
+  }
+}
+
+/** One candidate with the evidence the review panel reads, fetched only when that panel opens. */
+export function getQueueCandidate(scoreId: string): QueueCandidate | undefined {
+  return readQueue(scoreId)[0]
+}
+
 export function getReviewQueue(): readonly QueueCandidate[] {
+  return readQueue()
+}
+
+function readQueue(scoreId?: string): readonly QueueCandidate[] {
   let db: Database.Database | undefined
   try {
     const database = new Database(loadLocalApplicationConfig().databasePath, {
@@ -83,9 +136,9 @@ export function getReviewQueue(): readonly QueueCandidate[] {
     db = database
     const rows = database
       .prepare(
-        `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,wo.opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.canonical_business_id=cs.canonical_business_id where cs.qualified=1 and se.canonical_business_id is null order by cs.total desc,cb.name collate nocase,cs.id`,
+        `${QUEUE_SELECT}${scoreId ? " and cs.id = ?" : ""} order by cs.total desc,cb.name collate nocase,cs.id`,
       )
-      .all() as QueueRow[]
+      .all(...(scoreId ? [scoreId] : [])) as QueueRow[]
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
