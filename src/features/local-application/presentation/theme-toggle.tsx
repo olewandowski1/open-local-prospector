@@ -2,7 +2,7 @@
 
 import { MoonStar, Sun } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { IconButton } from "@/components/icon-button"
 import { useThemePreference } from "@/features/local-application/presentation/theme-provider"
 import { useTheme } from "@/features/local-application/presentation/use-theme"
 
@@ -15,14 +15,13 @@ export function ThemeToggle() {
   const next = resolved === "dark" ? "light" : "dark"
 
   return (
-    <Button
-      variant="ghost"
+    <IconButton
+      label={next === "dark" ? "Switch To Dark Theme" : "Switch To Light Theme"}
+      variant="subtle"
       size="icon-sm"
-      aria-label={`Switch to ${next} theme`}
-      title={`Switch to ${next} theme`}
       onClick={() => select(next)}
     >
       {resolved === "dark" ? <Sun aria-hidden="true" /> : <MoonStar aria-hidden="true" />}
-    </Button>
+    </IconButton>
   )
 }

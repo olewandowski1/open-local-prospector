@@ -79,16 +79,21 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 function DialogFooter({
   className,
   showCloseButton = false,
+  layout = "default",
   children,
   ...props
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
+  /** "stretch" gives the primary action the remaining width and holds the others to a fixed size. */
+  layout?: "default" | "stretch"
 }) {
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        // The primary action is the last child, so it is the one that grows.
+        layout === "stretch" && "[&>*:last-child]:flex-1 sm:[&>*:not(:last-child)]:w-28",
         className,
       )}
       {...props}

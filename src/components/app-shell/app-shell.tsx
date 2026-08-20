@@ -8,7 +8,7 @@ import type { ReactNode } from "react"
 
 import { type NavigationItem, primaryNavigation } from "@/components/app-shell/app-navigation"
 import { useWorkspaceCommand, WorkspaceCommand } from "@/components/app-shell/workspace-command"
-import { Button } from "@/components/ui/button"
+import { IconButton, IconLink } from "@/components/icon-button"
 import {
   Sidebar,
   SidebarContent,
@@ -60,9 +60,9 @@ function NavigationGroup({ label, items }: { label: string; items: readonly Navi
 
 function WorkspaceSearchTrigger({ onClick }: { onClick: () => void }) {
   return (
-    <Button variant="subtle" size="icon-sm" aria-label="Search" onClick={onClick}>
+    <IconButton label="Search Workspace" variant="subtle" size="icon-sm" onClick={onClick}>
       <HugeiconsIcon icon={Search01Icon} strokeWidth={2} aria-hidden="true" />
-    </Button>
+    </IconButton>
   )
 }
 
@@ -113,22 +113,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Settings"
-              nativeButton={false}
-              render={<Link href="/settings/general" />}
-            >
+            <IconLink label="Settings" href="/settings/general" variant="subtle" size="icon-sm">
               <HugeiconsIcon icon={Settings02Icon} aria-hidden="true" />
-            </Button>
+            </IconLink>
             <RuntimeUpdatePanel />
           </div>
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
-        <header className="flex h-11 shrink-0 items-center gap-3 border-b px-3 sm:px-4">
+      <SidebarInset className="[--shell-header:2.75rem]">
+        <header className="flex h-(--shell-header) shrink-0 items-center gap-3 border-b px-3 sm:px-4">
           <SidebarTrigger className="md:hidden" />
           <SidebarRestoreTrigger />
           <div className="hidden items-center gap-2 text-xs sm:flex">
