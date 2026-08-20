@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 
 import "@/app/globals.css"
 import { QueryProvider } from "@/components/query-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   parseThemePreference,
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <QueryProvider>
             <TooltipProvider>{children}</TooltipProvider>
           </QueryProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
