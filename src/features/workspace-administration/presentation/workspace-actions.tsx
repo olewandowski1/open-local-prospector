@@ -12,17 +12,6 @@ import { useRef, useState } from "react"
 
 import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -41,14 +30,13 @@ import {
   formatCount,
   type WorkspaceInventory,
 } from "@/features/workspace-administration/client"
+import { ConfirmedAction } from "@/features/workspace-administration/presentation/confirmed-action"
 
 export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory }) {
   const router = useRouter()
-  const [resetOpen, setResetOpen] = useState(false)
-  const [cleanupOpen, setCleanupOpen] = useState(false)
+  // Restore keeps its own dialog: it takes a file as well as a word, and it is the one action that
+  // asks for something before it can be confirmed.
   const [restoreOpen, setRestoreOpen] = useState(false)
-  const [resetConfirmation, setResetConfirmation] = useState("")
-  const [cleanupConfirmation, setCleanupConfirmation] = useState("")
   const [restoreConfirmation, setRestoreConfirmation] = useState("")
   const [restoreFile, setRestoreFile] = useState<File>()
   const [pending, setPending] = useState<"reset" | "restore" | "compact" | "cleanup" | "backup">()
@@ -104,8 +92,6 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
       if (!response.ok)
         throw new Error(typeof body.error === "string" ? body.error : "The action failed.")
       if (action === "reset") {
-        setResetOpen(false)
-        setResetConfirmation("")
         const leftoverFiles = Number(body.leftoverFiles ?? 0)
         setFeedback({
           title: "Workspace Reset",
@@ -132,20 +118,20 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
           description: `${formatBytes(Number(body.beforeBytes))} → ${formatBytes(Number(body.afterBytes))}`,
         })
       } else {
-        setCleanupOpen(false)
-        setCleanupConfirmation("")
         setFeedback({
           title: "Artifacts Cleaned Up",
           description: `${formatCount(Number(body.removedFiles ?? 0))} archived or orphaned files removed.`,
         })
       }
       router.refresh()
+      return true
     } catch (error) {
       setFeedback({
         title: "Action Not Completed",
         description: error instanceof Error ? error.message : "The action failed.",
         destructive: true,
       })
+      return false
     } finally {
       setPending(undefined)
     }
@@ -269,49 +255,24 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
           title="Clean Up Artifacts"
           description="Remove screenshots for archived candidates and files no database record still uses."
           action={
-            <AlertDialog open={cleanupOpen} onOpenChange={setCleanupOpen}>
-              <AlertDialogTrigger render={<Button variant="outline" />}>
-                Clean Up
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clean Up Artifacts</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This permanently removes archived candidate screenshots and orphaned files. It
-                    refuses to run while prospecting is active.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="cleanup-confirmation">Type CLEANUP To Confirm</FieldLabel>
-                    <Input
-                      id="cleanup-confirmation"
-                      value={cleanupConfirmation}
-                      onChange={(event) => setCleanupConfirmation(event.target.value)}
-                      autoComplete="off"
-                    />
-                  </Field>
-                </FieldGroup>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={pending === "cleanup" || cleanupConfirmation !== "CLEANUP"}
-                    onClick={() =>
-                      void runAction("cleanup", () =>
-                        fetch("/api/workspace/cleanup", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ confirmation: cleanupConfirmation }),
-                        }),
-                      )
-                    }
-                  >
-                    {pending === "cleanup" ? "Cleaning Up…" : "Clean Up Artifacts"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmedAction
+              title="Clean Up Artifacts"
+              description="This permanently removes archived candidate screenshots and orphaned files. It refuses to run while prospecting is active."
+              token="CLEANUP"
+              trigger={<Button variant="outline">Clean Up</Button>}
+              pending={pending === "cleanup"}
+              busyLabel="Cleaning Up…"
+              confirmLabel="Clean Up Artifacts"
+              onConfirm={(confirmation) =>
+                runAction("cleanup", () =>
+                  fetch("/api/workspace/cleanup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ confirmation }),
+                  }),
+                )
+              }
+            />
           }
         />
 
@@ -319,61 +280,53 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
           title="Reset Workspace"
           description="Delete prospecting results and artifacts while keeping preferences and suppressions."
           action={
-            <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-              <AlertDialogTrigger render={<Button variant="destructive" />}>
-                <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
-                Reset Workspace
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset Workspace</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This permanently removes {formatCount(inventory.runs)} runs,{" "}
-                    {formatCount(inventory.discoveredBusinesses)} discovered businesses and{" "}
-                    {formatCount(inventory.artifactCount)} artifact files. Preferences, geocoding
-                    cache and suppressions remain.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <Alert variant="destructive">
-                  <HugeiconsIcon icon={DatabaseBackupIcon} aria-hidden="true" />
-                  <AlertTitle>Keep A Copy First</AlertTitle>
-                  <AlertDescription>
-                    <a href="/api/workspace/backup">Download A Workspace Backup</a> before resetting
-                    if any of this data may be needed again.
-                  </AlertDescription>
-                </Alert>
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="reset-confirmation">Type RESET To Confirm</FieldLabel>
-                    <Input
-                      id="reset-confirmation"
-                      value={resetConfirmation}
-                      onChange={(event) => setResetConfirmation(event.target.value)}
-                      autoComplete="off"
-                    />
-                  </Field>
-                </FieldGroup>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={pending === "reset" || resetConfirmation !== "RESET"}
-                    onClick={() =>
-                      void runAction("reset", () =>
-                        fetch("/api/workspace/reset", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ confirmation: resetConfirmation }),
-                        }),
-                      )
-                    }
+            <ConfirmedAction
+              title="Reset Workspace"
+              description={
+                <>
+                  This permanently removes {formatCount(inventory.runs)} runs,{" "}
+                  {formatCount(inventory.discoveredBusinesses)} discovered businesses and{" "}
+                  {formatCount(inventory.artifactCount)} artifact files. Preferences, geocoding
+                  cache and suppressions remain.
+                </>
+              }
+              token="RESET"
+              trigger={
+                <Button variant="destructive">
+                  <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
+                  Reset Workspace
+                </Button>
+              }
+              pending={pending === "reset"}
+              busyLabel="Resetting…"
+              confirmLabel="Reset Workspace"
+              onConfirm={(confirmation) =>
+                runAction("reset", () =>
+                  fetch("/api/workspace/reset", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ confirmation }),
+                  }),
+                )
+              }
+            >
+              <Alert variant="destructive">
+                <HugeiconsIcon icon={DatabaseBackupIcon} aria-hidden="true" />
+                <AlertTitle>Keep A Copy First</AlertTitle>
+                <AlertDescription className="flex flex-col items-start gap-2">
+                  Take a copy before resetting if any of this data may be needed again.
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending === "backup"}
+                    onClick={downloadBackup}
                   >
-                    <HugeiconsIcon icon={Delete02Icon} data-icon="inline-start" />
-                    {pending === "reset" ? "Resetting…" : "Reset Workspace"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <HugeiconsIcon icon={DatabaseBackupIcon} data-icon="inline-start" />
+                    {pending === "backup" ? "Preparing…" : "Download A Workspace Backup"}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </ConfirmedAction>
           }
         />
       </div>

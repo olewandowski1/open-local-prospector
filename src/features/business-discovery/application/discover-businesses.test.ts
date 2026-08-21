@@ -15,6 +15,7 @@ import {
   runWorkerCycle,
   sqliteRunTaskRepositoryLive,
   stageExecutorLive,
+  TaskExecutionError,
 } from "@/features/run-execution"
 import { createMigratedTestDatabase } from "@/test-support/local-database"
 import { createTestProspectingRun } from "@/test-support/prospecting-run"
@@ -135,7 +136,15 @@ describe("business discovery workflow", () => {
     )
     const workerLayer = Layer.merge(
       sqliteRunTaskRepositoryLive(database.path),
-      stageExecutorLive(execute),
+      // This run never gets past discovery, so the later stages stand as executors that would fail
+      // loudly if it did.
+      stageExecutorLive({
+        DiscoverBusinesses: execute,
+        CorroborateBusiness: unreachableStage,
+        InspectWebsite: unreachableStage,
+        AssessWebsiteOpportunity: unreachableStage,
+        ScoreCandidate: unreachableStage,
+      }),
     )
     const configuration = { concurrency: 1, leaseMilliseconds: 30_000, pollMilliseconds: 1 }
 
@@ -231,4 +240,14 @@ function readDatabase<A>(databasePath: string, use: (database: Database.Database
   } finally {
     database.close()
   }
+}
+
+function unreachableStage(task: RunTask) {
+  return Effect.fail(
+    new TaskExecutionError({
+      classification: "Permanent",
+      code: "unexpected-stage",
+      message: `This test should never reach ${task.stage}.`,
+    }),
+  )
 }

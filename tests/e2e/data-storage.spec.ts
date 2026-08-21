@@ -27,7 +27,7 @@ test("downloads an application backup from Maintenance", async ({ page, isMobile
   await page.goto("/settings/maintenance")
 
   const downloadPromise = page.waitForEvent("download")
-  await page.getByRole("link", { name: "Download Backup" }).first().click()
+  await page.getByRole("button", { name: "Download Backup" }).first().click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toMatch(
     /^open-local-prospector-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.olp-backup\.tgz$/u,
@@ -45,7 +45,9 @@ test("requires explicit confirmation for restore and reset", async ({ page }) =>
 
   await page.getByRole("button", { name: "Reset Workspace" }).click()
   const resetDialog = page.getByRole("alertdialog", { name: "Reset Workspace" })
-  await expect(resetDialog.getByRole("link", { name: "Download A Workspace Backup" })).toBeVisible()
+  await expect(
+    resetDialog.getByRole("button", { name: "Download A Workspace Backup" }),
+  ).toBeVisible()
   const reset = resetDialog.getByRole("button", { name: "Reset Workspace" })
   await expect(reset).toBeDisabled()
   await resetDialog.getByLabel("Type RESET To Confirm").fill("RESET")

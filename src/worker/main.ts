@@ -95,13 +95,13 @@ const program = Effect.gen(function* () {
       Effect.provide(
         Layer.merge(
           sqliteRunTaskRepositoryLive(localConfig.databasePath),
-          stageExecutorLive(
-            executeDiscovery,
-            executeIdentity,
-            executeInspection,
-            executeAssessment,
-            executeScoring,
-          ),
+          stageExecutorLive({
+            DiscoverBusinesses: executeDiscovery,
+            CorroborateBusiness: executeIdentity,
+            InspectWebsite: executeInspection,
+            AssessWebsiteOpportunity: executeAssessment,
+            ScoreCandidate: executeScoring,
+          }),
         ),
       ),
     )
