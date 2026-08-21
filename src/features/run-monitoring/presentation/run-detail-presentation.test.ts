@@ -5,7 +5,7 @@ import type {
   TechnicalRunEvent,
 } from "@/features/run-monitoring/domain/run-progress"
 import {
-  businessStatusVariant,
+  businessStatusTone,
   eventKindCounts,
   eventSourceLabel,
   filterTechnicalLog,
@@ -155,30 +155,30 @@ describe("eventSourceLabel", () => {
   })
 })
 
-describe("businessStatusVariant", () => {
+describe("businessStatusTone", () => {
   it("marks a settled failure as destructive", () => {
-    expect(businessStatusVariant("FailedPermanent")).toBe("destructive")
-    expect(businessStatusVariant("Failed")).toBe("destructive")
+    expect(businessStatusTone("FailedPermanent")).toBe("destructive")
+    expect(businessStatusTone("Failed")).toBe("destructive")
   })
 
   it("warns rather than condemns when work may still succeed on another attempt", () => {
-    expect(businessStatusVariant("Blocked")).toBe("warning")
-    expect(businessStatusVariant("Unreachable")).toBe("warning")
+    expect(businessStatusTone("Blocked")).toBe("warning")
+    expect(businessStatusTone("Unreachable")).toBe("warning")
   })
 
   it("marks work that finished well as success", () => {
-    expect(businessStatusVariant("Qualified")).toBe("success")
-    expect(businessStatusVariant("Completed")).toBe("success")
+    expect(businessStatusTone("Qualified")).toBe("success")
+    expect(businessStatusTone("Completed")).toBe("success")
   })
 
   it("keeps an outcome that simply did not make the cut neutral, not alarming", () => {
-    expect(businessStatusVariant("BelowThreshold")).toBe("secondary")
-    expect(businessStatusVariant("Excluded")).toBe("secondary")
+    expect(businessStatusTone("BelowThreshold")).toBe("muted")
+    expect(businessStatusTone("Excluded")).toBe("muted")
   })
 
-  it("falls back to outline for work still in flight", () => {
-    expect(businessStatusVariant("InProgress")).toBe("outline")
-    expect(businessStatusVariant("Anything Unrecognised")).toBe("outline")
+  it("keeps work still in flight neutral", () => {
+    expect(businessStatusTone("InProgress")).toBe("muted")
+    expect(businessStatusTone("Anything Unrecognised")).toBe("muted")
   })
 })
 

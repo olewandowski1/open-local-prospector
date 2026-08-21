@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
-import { Badge } from "@/components/ui/badge"
+import { SectionHeader } from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
 import { REVIEW_QUEUE_THRESHOLD } from "@/features/review-queue/client"
 import type { BusinessProgress } from "@/features/run-monitoring/domain/run-progress"
 import {
-  businessStatusVariant,
+  businessStatusTone,
   formatBusinessScore,
 } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import { humanizeStage } from "@/features/run-monitoring/presentation/run-presentation"
@@ -26,14 +27,20 @@ import { cn } from "@/lib/utils"
  * so the table never has to scroll sideways.
  */
 const columnClass = {
-  // Only at the very narrowest does the status step aside; the badge is wide and the row already
-  // shows a failure through the Issue column.
+  // Only at the very narrowest does status step aside; the Issue column still explains failures.
   status: "hidden @sm:table-cell",
   score: "whitespace-nowrap",
   stage: "hidden @2xl:table-cell",
   retries: "hidden @4xl:table-cell",
   // The Issue column always stays: a failure reason is the whole point of looking at this table.
   issue: "max-w-40 @2xl:max-w-72",
+} as const
+
+const statusToneClass = {
+  muted: "text-muted-foreground",
+  destructive: "text-destructive",
+  warning: "text-warning",
+  success: "text-success",
 } as const
 
 export function RunBusinessesTable({
@@ -61,31 +68,30 @@ export function RunBusinessesTable({
   const page = businesses.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize)
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          {/* This is a document section, so its title carries heading semantics. */}
-          <h2 className="font-heading text-base font-semibold tracking-tight">
-            Per-Business Progress
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            A business reaches the Review Queue at {REVIEW_QUEUE_THRESHOLD} points. Select one to
-            narrow the Technical Run Log to its events.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {selectedBusinessId ? (
-            <Button variant="ghost" size="sm" onClick={() => onSelect(undefined)}>
-              Clear Selection
-            </Button>
-          ) : null}
-          {action}
-        </div>
-      </div>
+    <section aria-labelledby="business-progress-heading" className="flex flex-col gap-4">
+      <SectionHeader
+        title={<span id="business-progress-heading">Per-Business Progress</span>}
+        description={`A business reaches the Review Queue at ${REVIEW_QUEUE_THRESHOLD} points. Select one to narrow the Technical Run Log to its events.`}
+        actions={
+          <>
+            {selectedBusinessId ? (
+              <Button variant="ghost" size="sm" onClick={() => onSelect(undefined)}>
+                Clear Selection
+              </Button>
+            ) : null}
+            {action}
+          </>
+        }
+      />
       {businesses.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No per-business work has been checkpointed yet.
-        </p>
+        <Empty className="min-h-48 border py-10">
+          <EmptyHeader>
+            <EmptyTitle>No Business Progress Yet</EmptyTitle>
+            <EmptyDescription>
+              Per-business rows appear after the first discovery checkpoint is committed.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <Table>
           <TableHeader>
@@ -138,9 +144,14 @@ export function RunBusinessesTable({
                     )}
                   </TableCell>
                   <TableCell className={columnClass.status}>
-                    <Badge variant={businessStatusVariant(business.status)}>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        statusToneClass[businessStatusTone(business.status)],
+                      )}
+                    >
                       {humanizeStage(business.status)}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell className={cn("tabular-nums", columnClass.retries)}>
                     {business.retryCount}

@@ -1,11 +1,10 @@
 "use client"
 
-import { CircleAlert, CircleCheck, LoaderCircle, Settings2 } from "lucide-react"
+import { Check, CircleAlert, LoaderCircle, Settings2, X } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import {
@@ -26,6 +25,7 @@ import {
   runtimeModelOptions,
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
+import { cn } from "@/lib/utils"
 
 /**
  * The workspace-wide runtime, model, and reasoning effort that seed every new Prospecting Run.
@@ -96,30 +96,31 @@ export function RuntimeSteeringPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
         <div>
-          <h2 className="font-heading text-base font-semibold tracking-tight">Run Steering</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-heading text-base font-semibold tracking-tight">Run Steering</h2>
+            {selectedRuntime ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 text-sm",
+                  selectedRuntime.status === "Ready" ? "text-success" : "text-destructive",
+                )}
+              >
+                {selectedRuntime.status === "Ready" ? (
+                  <Check className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <X className="size-3.5" aria-hidden="true" />
+                )}
+                {selectedRuntime.status === "Ready" ? "Ready" : "Not Ready"}
+              </span>
+            ) : null}
+          </div>
           <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
             The runtime, model, and reasoning effort that new prospecting runs start from. Provider
             logins stay in their own terminals.
           </p>
         </div>
-        {selectedRuntime ? (
-          <div>
-            {selectedRuntime.status === "Ready" ? (
-              <Badge variant="success">
-                <CircleCheck data-icon="inline-start" aria-hidden="true" />
-                Connected
-              </Badge>
-            ) : (
-              // Anything other than Ready means the stored runtime cannot currently start a run.
-              <Badge variant="destructive">
-                <CircleAlert data-icon="inline-start" aria-hidden="true" />
-                {selectedRuntime.status}
-              </Badge>
-            )}
-          </div>
-        ) : null}
       </div>
 
       <div className="flex flex-col gap-2">

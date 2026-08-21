@@ -15,7 +15,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -71,7 +70,9 @@ export function CandidateHistory({
                 className="border-b pb-3 text-sm last:border-0 last:pb-0"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{humanizeTerm(correction.target)}</Badge>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {humanizeTerm(correction.target)}
+                  </span>
                   <time className="text-xs text-muted-foreground">
                     {formatObservedAt(correction.createdAt)}
                   </time>

@@ -101,20 +101,16 @@ export function eventSourceLabel(sourceIdentifier: string): string {
   return uuidPattern.test(sourceIdentifier) ? `#${sourceIdentifier.slice(0, 8)}` : sourceIdentifier
 }
 
-/**
- * How a per-business status should read. A failure is destructive, work that finished well is success,
- * and an outcome that simply did not make the cut stays neutral rather than alarming.
- */
-export function businessStatusVariant(
+/** Semantic emphasis for a per-business status when it is presented as text, not a badge. */
+export function businessStatusTone(
   status: string,
-): "secondary" | "outline" | "destructive" | "warning" | "success" {
+): "muted" | "destructive" | "warning" | "success" {
   if (["FailedPermanent", "Failed"].includes(status)) return "destructive"
   // Blocked or unreachable work may still succeed on a later attempt, so it warns rather than reading
   // as a settled failure.
   if (["Blocked", "Unreachable", "Retrying"].includes(status)) return "warning"
   if (["Qualified", "Completed", "Scored"].includes(status)) return "success"
-  if (["BelowThreshold", "Excluded", "Duplicate", "Suppressed"].includes(status)) return "secondary"
-  return "outline"
+  return "muted"
 }
 
 /** Scores are stored as raw floats; a reader wants at most one decimal. */

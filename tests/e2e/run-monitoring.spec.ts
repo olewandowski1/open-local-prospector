@@ -75,11 +75,11 @@ test("polls active progress and persists pause, resume, and cancellation control
   await page.getByRole("button", { name: "Resume" }).click()
   await expect(page.getByText("Running", { exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Cancel" }).click()
-  // States read as short badges now, with the full recorded wording kept as the title.
+  // Detail-page state is a labeled fact; the full recorded wording remains available as its title.
   const cancelled = page.getByText("Cancelled", { exact: true })
   await expect(cancelled).toBeVisible()
   await expect(cancelled).toHaveAttribute("title", "Cancelled with Partial Results")
-  await expect(page.getByRole("button", { name: "Cancel" })).toBeDisabled()
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeHidden()
 })
 
 test("shows partial business failure and a separate factual Technical Run Log", async ({
@@ -121,6 +121,7 @@ test("shows partial business failure and a separate factual Technical Run Log", 
   const warnings = page.getByText("Warnings", { exact: true })
   await expect(warnings).toBeVisible()
   await expect(warnings).toHaveAttribute("title", "Completed with Warnings")
+  await expect(page.locator('[data-slot="badge"]')).toHaveCount(0)
   await expect(page.getByText("The isolated browser process exited.")).toBeVisible()
 
   // The log lives in a panel so it cannot lengthen the page; it has to be opened to be read.

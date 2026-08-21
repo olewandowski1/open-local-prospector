@@ -1,13 +1,22 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, Clock3, LoaderCircle, MapPin, Play, Search } from "lucide-react"
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  MapPin,
+  Play,
+  Search,
+  X,
+} from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -39,6 +48,7 @@ import {
   runtimeModelOptions,
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
+import { cn } from "@/lib/utils"
 
 /** Keeps a label, its control, and its description reading as one field. */
 const fieldSpacing = "gap-1.5"
@@ -598,16 +608,19 @@ export function SearchBriefPage({
                           className="flex items-start gap-2 text-sm"
                         >
                           {dependency.status === "Ready" ? (
-                            <CheckCircle2 className="mt-0.5 text-success" aria-hidden="true" />
+                            <Check className="mt-0.5 size-3.5 text-success" aria-hidden="true" />
                           ) : (
-                            <AlertCircle className="mt-0.5 text-destructive" aria-hidden="true" />
+                            <X className="mt-0.5 size-3.5 text-destructive" aria-hidden="true" />
                           )}
                           <span className="flex-1">{dependency.label}</span>
-                          <Badge
-                            variant={dependency.status === "Ready" ? "secondary" : "destructive"}
+                          <span
+                            className={cn(
+                              "text-sm font-medium",
+                              dependency.status === "Ready" ? "text-success" : "text-destructive",
+                            )}
                           >
-                            {dependency.status}
-                          </Badge>
+                            {dependency.status === "Ready" ? "Ready" : "Not Ready"}
+                          </span>
                         </li>
                       ))}
                     </ul>

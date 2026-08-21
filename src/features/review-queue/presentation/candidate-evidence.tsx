@@ -3,7 +3,6 @@
 import { ExternalLink } from "lucide-react"
 
 import { SectionHeader } from "@/components/page-layout"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -49,9 +48,9 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
         <div className="grid gap-4">
           {candidate.opportunities.map((opportunity) => (
             <div key={`${opportunity.opportunityClass}-${opportunity.explanation}`}>
-              <Badge variant="secondary">
+              <p className="text-xs font-medium text-muted-foreground">
                 {humanizeTerm(opportunity.opportunityClass)} · Severity {opportunity.severity}
-              </Badge>
+              </p>
               <p className="mt-1.5 text-sm text-pretty">{opportunity.explanation}</p>
             </div>
           ))}
@@ -71,7 +70,9 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
               className="border-b pb-3 text-sm last:border-0 last:pb-0"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{humanizeTerm(observation.evidenceState)}</Badge>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {humanizeTerm(observation.evidenceState)}
+                </span>
                 <time className="text-xs text-muted-foreground">
                   {formatObservedAt(observation.observedAt)}
                 </time>

@@ -3,8 +3,7 @@
 import { ArrowLeft, Ban, CirclePause, CirclePlay, MapPin, RotateCcw } from "lucide-react"
 import Link from "next/link"
 
-import { PageHeader } from "@/components/page-layout"
-import { Badge } from "@/components/ui/badge"
+import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -19,6 +18,16 @@ import {
 import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
 import { RuntimeProviderIcon } from "@/features/runtime-settings/client"
 import { RunDeleteDialog } from "@/features/workspace-administration/client"
+import { cn } from "@/lib/utils"
+
+const statusTextClass = {
+  success: "text-success",
+  destructive: "text-destructive",
+  warning: "text-warning",
+  info: "text-info",
+  secondary: "text-muted-foreground",
+  outline: "text-muted-foreground",
+} as const
 
 export function RunDetailHeader({
   run,
@@ -43,7 +52,7 @@ export function RunDetailHeader({
   const status = runStatusPresentation(run.state, run.completionState)
 
   return (
-    <div className="flex shrink-0 flex-col gap-3">
+    <div className="flex shrink-0 flex-col gap-8">
       <PageHeader
         eyebrow={
           <Link
@@ -63,32 +72,37 @@ export function RunDetailHeader({
         }
         actions={
           <>
-            <Button
-              variant="warning"
-              size="sm"
-              onClick={() => onControl("Pause")}
-              disabled={!canPause || busy}
-            >
-              <CirclePause data-icon="inline-start" aria-hidden="true" /> Pause
-            </Button>
-            <Button
-              variant="success"
-              size="sm"
-              onClick={() => onControl("Resume")}
-              disabled={!canResume || busy}
-            >
-              <CirclePlay data-icon="inline-start" aria-hidden="true" /> Resume
-            </Button>
-            {/* Cancelling a run cannot be undone, so it is styled as the destructive act it is. */}
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onControl("Cancel")}
-              disabled={!canCancel || busy}
-            >
-              <Ban data-icon="inline-start" aria-hidden="true" /> Cancel
-            </Button>
-            <Button variant="info" size="sm" onClick={onRefresh} disabled={refreshing}>
+            {canPause ? (
+              <Button
+                variant="warning"
+                size="sm"
+                onClick={() => onControl("Pause")}
+                disabled={busy}
+              >
+                <CirclePause data-icon="inline-start" aria-hidden="true" /> Pause
+              </Button>
+            ) : null}
+            {canResume ? (
+              <Button
+                variant="success"
+                size="sm"
+                onClick={() => onControl("Resume")}
+                disabled={busy}
+              >
+                <CirclePlay data-icon="inline-start" aria-hidden="true" /> Resume
+              </Button>
+            ) : null}
+            {canCancel ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onControl("Cancel")}
+                disabled={busy}
+              >
+                <Ban data-icon="inline-start" aria-hidden="true" /> Cancel
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
               <RotateCcw data-icon="inline-start" aria-hidden="true" /> Refresh
             </Button>
             {["Completed", "Cancelled"].includes(run.state) ? (
@@ -101,48 +115,74 @@ export function RunDetailHeader({
         }
       />
 
-      <div className="grid shrink-0 gap-3 border-y py-4">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-          <div className="grid gap-1.5">
-            <div className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
-              <span>
-                <span className="font-medium text-foreground tabular-nums">{qualified}</span> of{" "}
-                <span className="tabular-nums">{target}</span> Qualified
+      <section aria-labelledby="run-overview-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="run-overview-heading">Run Overview</span>}
+          description="Current execution state and the runtime handling this prospecting run."
+        />
+        <div className="overflow-hidden rounded-xl border">
+          <RunFact label="Status">
+            <span
+              className={cn("font-medium", statusTextClass[status.variant])}
+              title={status.detail}
+            >
+              {status.label}
+            </span>
+          </RunFact>
+          <Separator />
+          <RunFact label="Current Stage">{humanizeStage(run.currentStage)}</RunFact>
+          <Separator />
+          <RunFact label="Runtime">
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
+              <span className="truncate">
+                {configuration
+                  ? `${configuration.model} · ${configuration.reasoningEffort}`
+                  : "Model Not Recorded"}
               </span>
-              <span className="tabular-nums">{completion}%</span>
+            </span>
+          </RunFact>
+          <Separator />
+          <RunFact label="Last Updated">{formatUpdatedAt(run.updatedAt, now)}</RunFact>
+          {run.requestedControl !== "None" ? (
+            <>
+              <Separator />
+              <RunFact label="Requested Control">{run.requestedControl}</RunFact>
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      <Separator />
+
+      <section aria-labelledby="run-progress-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="run-progress-heading">Run Progress</span>}
+          description="Committed checkpoint counts from discovery through qualification."
+        />
+        <div className="overflow-hidden rounded-xl border">
+          <div className="flex flex-col gap-2 p-4">
+            <div className="flex items-baseline justify-between gap-4 text-sm">
+              <span className="text-muted-foreground">Qualified Target</span>
+              <span className="font-medium tabular-nums">
+                {qualified} of {target} · {completion}%
+              </span>
             </div>
             <Progress value={completion} />
-            <p className="text-xs text-muted-foreground">
-              Updated {formatUpdatedAt(run.updatedAt, now)}
-            </p>
           </div>
-
-          {/* The run state is the one thing worth a badge; the rest are facts, not statuses. */}
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-            <Badge variant={status.variant} title={status.detail}>
-              {status.label}
-            </Badge>
-            <span>{humanizeStage(run.currentStage)}</span>
-            <span aria-hidden="true">·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
-              {configuration
-                ? `${configuration.model} · ${configuration.reasoningEffort}`
-                : "Model Not Recorded"}
-            </span>
-            {run.requestedControl !== "None" ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{run.requestedControl} Requested</span>
-              </>
-            ) : null}
-          </div>
+          <Separator />
+          <RunProgressFunnel progress={run.progress} />
         </div>
-
-        <Separator />
-
-        <RunProgressFunnel progress={run.progress} />
-      </div>
+      </section>
     </div>
+  )
+}
+
+function RunFact({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <dl className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm sm:text-right">{children}</dd>
+    </dl>
   )
 }

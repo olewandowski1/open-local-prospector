@@ -4,8 +4,8 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { ExternalLink, ScrollText } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
   SheetContent,
@@ -65,10 +65,7 @@ export function TechnicalLogSheet({
         render={
           <Button variant="outline" size="sm">
             <ScrollText data-icon="inline-start" aria-hidden="true" />
-            Technical Log
-            <Badge variant="secondary" className="ml-1 tabular-nums">
-              {events.length}
-            </Badge>
+            Technical Log ({events.length})
           </Button>
         }
       />
@@ -90,19 +87,18 @@ export function TechnicalLogSheet({
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-1.5">
-                <FilterChip active={!kind} onClick={() => selectKind(undefined)}>
+                <LogFilterButton active={!kind} onClick={() => selectKind(undefined)}>
                   All <span className="tabular-nums opacity-70">{inScope.length}</span>
-                </FilterChip>
+                </LogFilterButton>
                 {kinds.map((item) => (
-                  <FilterChip
+                  <LogFilterButton
                     key={item.kind}
                     active={kind === item.kind}
-                    trouble={troubleKinds.includes(item.kind)}
                     onClick={() => selectKind(item.kind)}
                   >
                     {humanizeStage(item.kind)}{" "}
                     <span className="tabular-nums opacity-70">{item.count}</span>
-                  </FilterChip>
+                  </LogFilterButton>
                 ))}
                 {businessId ? (
                   <Button variant="ghost" size="sm" className="h-7" onClick={onClearBusiness}>
@@ -127,7 +123,8 @@ export function TechnicalLogSheet({
           )}
         </div>
 
-        <SheetFooter className="flex-row items-center justify-between gap-3 border-t p-3 text-xs text-muted-foreground">
+        <Separator />
+        <SheetFooter className="flex-row items-center justify-between gap-3 p-3 text-xs text-muted-foreground">
           <span className="tabular-nums">
             {filtered.length} {filtered.length === 1 ? "Event" : "Events"}
           </span>
@@ -157,7 +154,7 @@ function EventRows({ events }: { events: readonly TechnicalRunEvent[] }) {
   })
 
   return (
-    <div ref={scrollRef} className="min-h-0 overflow-y-auto">
+    <div ref={scrollRef} className="app-scrollbar min-h-0 overflow-y-auto">
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const event = events[item.index]
@@ -218,33 +215,23 @@ function EventRows({ events }: { events: readonly TechnicalRunEvent[] }) {
   )
 }
 
-function FilterChip({
+function LogFilterButton({
   active,
-  trouble = false,
   onClick,
   children,
 }: {
   active: boolean
-  trouble?: boolean
   onClick: () => void
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant={active ? "secondary" : "ghost"}
+      size="xs"
       aria-pressed={active}
       onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
-        "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        active
-          ? "border-foreground/30 bg-muted font-medium text-foreground"
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        // Something going wrong is worth noticing before the successful retrievals.
-        trouble && !active && "border-destructive/30 text-destructive",
-      )}
     >
       {children}
-    </button>
+    </Button>
   )
 }
