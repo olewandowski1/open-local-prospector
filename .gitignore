@@ -19,6 +19,9 @@
 # local application data
 /.local/
 
+# isolated workspace used by the destructive-workspace e2e run
+/.scratch/workspace-e2e/
+
 # next.js
 /.next/
 /out/
