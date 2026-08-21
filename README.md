@@ -96,7 +96,6 @@ A feature owns its domain rules, application execution, adapters, server integra
 - [Domain language](CONTEXT.md)
 - [Product requirements](docs/PRD.md)
 - [Architecture decisions](docs/adr)
-- [Implementation plans](plans/README.md)
 - [MVP quality gate](docs/MVP-QUALITY-GATE.md)
 
 Quick website inspection is application-owned and stores bounded page evidence plus desktop/mobile screenshots; its network policy blocks local/private destinations, unsafe protocols, popups, downloads, WebSockets, and unexpected navigation. Discovery and identity-evidence lookup use only the selected subscription CLI's constrained web-search capability. Codex and Claude Code adapters launch directly with bounded, no-shell execution and persist only schema-validated, public-source output. Search results and website content are always treated as untrusted text, never commands. No adapter falls back to a usage-based API or another provider.
