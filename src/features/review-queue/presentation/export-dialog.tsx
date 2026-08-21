@@ -65,7 +65,7 @@ export function ExportDialog({
     <Dialog>
       <DialogTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button size="sm" className="h-8">
             <Download data-icon="inline-start" aria-hidden="true" />
             Export
           </Button>
