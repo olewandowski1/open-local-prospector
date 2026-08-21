@@ -9,7 +9,9 @@
 - [ ] The Data section lists every entry in `suppression_entries` with the business name, the reason
       recorded, and when it was suppressed.
 - [ ] A suppression can be lifted, and the business becomes eligible for future runs again.
-- [ ] Lifting one is confirmed by a toast, since it otherwise leaves no trace on screen.
+- [ ] Lifting one is confirmed on screen. Originally specified as a toast; `sonner` has since been
+      removed from the workspace, so the row leaving the list is the confirmation, and a failure to
+      lift says so in place. See the Components section of `docs/agents/design-system.md`.
 - [ ] The empty state says that nothing is suppressed, and what suppressing does.
 
 ## Notes

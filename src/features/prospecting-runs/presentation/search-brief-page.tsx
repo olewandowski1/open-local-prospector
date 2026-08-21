@@ -329,7 +329,7 @@ export function SearchBriefPage({
 
                 <Field>
                   <FieldLabel htmlFor="recent-business-policy">
-                    Recently assessed businesses
+                    Recently Assessed Businesses
                   </FieldLabel>
                   <Select
                     items={[
@@ -350,7 +350,7 @@ export function SearchBriefPage({
                   >
                     <SelectTrigger
                       id="recent-business-policy"
-                      aria-label="Recently assessed businesses"
+                      aria-label="Recently Assessed Businesses"
                       className="w-full"
                     >
                       <SelectValue />
@@ -652,7 +652,11 @@ export function SearchBriefPage({
                       <CheckCircle2 aria-hidden="true" />
                       <AlertTitle>Pending run created</AlertTitle>
                       <AlertDescription>
-                        Run {createdRun.id} is ready for the worker.{" "}
+                        Run{" "}
+                        <span className="font-medium tabular-nums" title={createdRun.id}>
+                          #{createdRun.id.slice(0, 8)}
+                        </span>{" "}
+                        is ready for the worker.{" "}
                         <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
                       </AlertDescription>
                     </Alert>

@@ -4,10 +4,14 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   createColumnHelper,
   createPaginatedRowModel,
+  createSortedRowModel,
   rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_text,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
@@ -29,7 +33,23 @@ import {
 } from "@/features/workspace-administration/client"
 
 type SuppressionRow = SuppressionRecord & Readonly<{ lift: () => void; pending: boolean }>
+
+/** One map, so a header and its cells cannot drift apart as the table narrows. */
+const columnClass: Readonly<Record<string, string | undefined>> = {
+  createdAt: "hidden @2xl:table-cell",
+  actions: "text-right",
+}
+const sortIcons = { asc: ArrowUp, desc: ArrowDown } as const
+
+function ariaSort(direction: false | "asc" | "desc") {
+  if (direction === "asc") return "ascending"
+  if (direction === "desc") return "descending"
+  return "none"
+}
+
 const features = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
   rowPaginationFeature,
   paginatedRowModel: createPaginatedRowModel(),
 })
@@ -37,14 +57,17 @@ const helper = createColumnHelper<typeof features, SuppressionRow>()
 const columns = helper.columns([
   helper.accessor("businessName", {
     header: "Business",
+    sortFn: sortFn_text,
     cell: (context) => <span className="font-medium">{context.getValue()}</span>,
   }),
   helper.accessor("reason", {
     header: "Reason",
+    sortFn: sortFn_text,
     cell: (context) => <span className="text-muted-foreground">{context.getValue()}</span>,
   }),
   helper.accessor("createdAt", {
     header: "Suppressed",
+    sortFn: sortFn_text,
     cell: (context) => (
       <time dateTime={context.getValue()} className="whitespace-nowrap text-muted-foreground">
         {formatWorkspaceDate(context.getValue())}
@@ -149,20 +172,31 @@ export function SuppressionList({
             <TableHeader>
               {table.getHeaderGroups().map((group) => (
                 <TableRow key={group.id}>
-                  {group.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className={
-                        header.column.id === "createdAt"
-                          ? "hidden @2xl:table-cell"
-                          : header.column.id === "actions"
-                            ? "text-right"
-                            : undefined
-                      }
-                    >
-                      <table.FlexRender header={header} />
-                    </TableHead>
-                  ))}
+                  {group.headers.map((header) => {
+                    const direction = header.column.getIsSorted()
+                    const SortIcon = direction ? sortIcons[direction] : ArrowUpDown
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={columnClass[header.column.id]}
+                        aria-sort={ariaSort(direction)}
+                      >
+                        {header.column.getCanSort() ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="-ml-2 h-7 px-2 font-medium"
+                            onClick={() => header.column.toggleSorting()}
+                          >
+                            <table.FlexRender header={header} />
+                            <SortIcon aria-hidden="true" className="text-muted-foreground" />
+                          </Button>
+                        ) : (
+                          <table.FlexRender header={header} />
+                        )}
+                      </TableHead>
+                    )
+                  })}
                 </TableRow>
               ))}
             </TableHeader>
@@ -170,16 +204,7 @@ export function SuppressionList({
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getAllCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={
-                        cell.column.id === "createdAt"
-                          ? "hidden @2xl:table-cell"
-                          : cell.column.id === "actions"
-                            ? "text-right"
-                            : undefined
-                      }
-                    >
+                    <TableCell key={cell.id} className={columnClass[cell.column.id]}>
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}

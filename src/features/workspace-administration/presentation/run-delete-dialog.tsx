@@ -15,6 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -99,14 +100,13 @@ export function RunDeleteDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={changeOpen}>
-      <IconButton
-        label="Delete Run"
-        variant="destructive"
-        size="icon-sm"
-        onClick={() => changeOpen(true)}
-      >
-        <HugeiconsIcon icon={Delete02Icon} />
-      </IconButton>
+      <AlertDialogTrigger
+        render={
+          <IconButton label="Delete Run" variant="destructive" size="icon-sm">
+            <HugeiconsIcon icon={Delete02Icon} />
+          </IconButton>
+        }
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Run</AlertDialogTitle>

@@ -13,6 +13,7 @@ import { runControlAvailability } from "@/features/run-monitoring/presentation/r
 import {
   formatUpdatedAt,
   humanizeStage,
+  isRunSettled,
   runStatusPresentation,
 } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
@@ -105,7 +106,7 @@ export function RunDetailHeader({
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
               <RotateCcw data-icon="inline-start" aria-hidden="true" /> Refresh
             </Button>
-            {["Completed", "Cancelled"].includes(run.state) ? (
+            {isRunSettled(run.state) ? (
               <RunDeleteDialog
                 runId={run.id}
                 runLabel={`${run.searchBrief.category} in ${run.searchBrief.searchArea.displayName}`}

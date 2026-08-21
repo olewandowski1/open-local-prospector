@@ -3,6 +3,11 @@ import type { RunSummary } from "@/features/run-monitoring/domain/run-progress"
 /** A run is "settled" once it can no longer make progress on its own. */
 const settledStates = ["Completed", "Cancelled"]
 
+/** Whether a run can still make progress, asked the same way by the table and the detail header. */
+export function isRunSettled(state: string): boolean {
+  return settledStates.includes(state)
+}
+
 export type RunStatusVariant =
   | "success"
   | "destructive"
@@ -75,7 +80,7 @@ export function toRunRow(run: RunSummary, now: Date): RunRow {
     category: run.searchBrief.category,
     location: run.searchBrief.searchArea.displayName,
     status: runStatusPresentation(run.state, run.completionState),
-    settled: settledStates.includes(run.state),
+    settled: isRunSettled(run.state),
     stage: humanizeStage(run.currentStage),
     mode: run.searchBrief.mode,
     targetCount: target,

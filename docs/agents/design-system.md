@@ -76,7 +76,10 @@ mistake being made again.
 - **Selects open below their trigger** (`alignItemWithTrigger={false}` is the default here) rather
   than over the field being changed.
 - **`DialogFooter layout="stretch"`** when the primary action should fill the row.
-- Toasts (`sonner`) for actions that would otherwise leave no trace, such as recording a decision.
+- **No toasts.** `sonner` was removed deliberately; do not reintroduce it. An action confirms itself
+  by changing what is on screen — the decided row restates its status, a lifted suppression leaves
+  the list. Where an action genuinely leaves nothing behind, show the outcome in place, next to the
+  control that caused it, rather than in a corner the reader has to catch.
 
 ## Engineering guards
 
