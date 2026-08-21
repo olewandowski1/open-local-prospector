@@ -92,8 +92,8 @@ export function CandidateHistory({
         <div>
           <h2 className="font-heading font-medium">Delete Business</h2>
           <p className="text-sm text-muted-foreground">
-            Remove this business, its assessments, notes and artifacts. A minimal suppression is
-            retained so it is not rediscovered.
+            Remove this business, its assessments, notes and artifacts. A later run may find it
+            again; to keep it out for good, suppress it instead.
           </p>
         </div>
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -104,8 +104,8 @@ export function CandidateHistory({
             <AlertDialogHeader>
               <AlertDialogTitle>Delete {candidate.name}</AlertDialogTitle>
               <AlertDialogDescription>
-                This permanently removes the stored business and its evidence. The suppression entry
-                is the only record kept.
+                This permanently removes the stored business and its evidence. Nothing is kept, so a
+                later run may discover it again.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <Field className={fieldSpacing}>

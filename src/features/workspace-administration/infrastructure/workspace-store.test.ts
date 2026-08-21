@@ -26,6 +26,7 @@ import {
   assertCompleteTableClassification,
   cleanupArchivedArtifacts,
   createWorkspaceBackup,
+  deleteBusiness,
   deleteRun,
   readRunDeletionPreview,
   readWorkspaceInventory,
@@ -278,6 +279,52 @@ describe("workspace store", () => {
       expect(existsSync(result.recoveryBackupPath)).toBe(true)
     } finally {
       backup.cleanup()
+    }
+  })
+
+  it("deletes a business without recording it as Do Not Contact", () => {
+    const fixture = workspaceFixture()
+    const evidence = join(fixture.config.artifactsPath, "gone.png")
+    writeFileSync(evidence, "image")
+    const database = new Database(fixture.config.databasePath)
+    try {
+      seedRun(database, "run-gone", "Completed")
+      database.pragma("foreign_keys = OFF")
+      database
+        .prepare(
+          "insert into canonical_businesses (id,identity_fingerprint,name,normalized_name,locality,country_code,decision_scope,created_at,updated_at) values ('canonical-gone','fingerprint-gone','Gone','gone','Krakow','PL','Local',1,1)",
+        )
+        .run()
+      database
+        .prepare(
+          "insert into discovered_businesses (id,run_id,source,source_identifier,discovery_key,name,normalized_name,result_url,raw_attributes,discovered_at) values ('discovered-gone','run-gone','Search','source','key-gone','Gone','gone','https://example.com','{}',1)",
+        )
+        .run()
+      database
+        .prepare(
+          "insert into run_businesses (id,run_id,discovered_business_id,canonical_business_id,status,identity_confidence,signals,created_at,updated_at) values ('business-gone','run-gone','discovered-gone','canonical-gone','Eligible','Corroborated','[]',1,1)",
+        )
+        .run()
+      seedCandidate(database, "gone", "Shortlisted", evidence)
+    } finally {
+      database.close()
+    }
+
+    expect(deleteBusiness(fixture.config, "score-gone")).toEqual({ leftoverFiles: 0 })
+    expect(existsSync(evidence)).toBe(false)
+
+    const checked = new Database(fixture.config.databasePath, { readonly: true })
+    try {
+      expect(
+        Number(checked.prepare("select count(*) from canonical_businesses").pluck().get()),
+      ).toBe(0)
+      // Deleting is about stored data, not about contacting anyone. A Suppression Entry here would
+      // list the business under Do Not Contact and bar it from ever being discovered again.
+      expect(
+        Number(checked.prepare("select count(*) from suppression_entries").pluck().get()),
+      ).toBe(0)
+    } finally {
+      checked.close()
     }
   })
 

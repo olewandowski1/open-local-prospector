@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -51,13 +51,46 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
   const [cleanupConfirmation, setCleanupConfirmation] = useState("")
   const [restoreConfirmation, setRestoreConfirmation] = useState("")
   const [restoreFile, setRestoreFile] = useState<File>()
-  const [pending, setPending] = useState<"reset" | "restore" | "compact" | "cleanup">()
+  const [pending, setPending] = useState<"reset" | "restore" | "compact" | "cleanup" | "backup">()
   const [feedback, setFeedback] = useState<{
     title: string
     description: string
     destructive?: boolean
   }>()
   const fileInput = useRef<HTMLInputElement>(null)
+
+  /**
+   * A plain link handed a failure straight to the browser, which replaced the page with the raw JSON
+   * error — so "not enough free disk" arrived as a stack trace in the operator's words' place. The
+   * archive is fetched instead, and only a successful response becomes a download.
+   */
+  const downloadBackup = async () => {
+    setPending("backup")
+    setFeedback(undefined)
+    try {
+      const response = await fetch("/api/workspace/backup")
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error ?? "The backup could not be prepared.")
+      }
+      const disposition = response.headers.get("content-disposition") ?? ""
+      const name = /filename="?([^"]+)"?/u.exec(disposition)?.[1] ?? "workspace-backup.tgz"
+      const url = URL.createObjectURL(await response.blob())
+      const link = document.createElement("a")
+      link.href = url
+      link.download = name
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (reason) {
+      setFeedback({
+        title: "Backup Not Created",
+        description: reason instanceof Error ? reason.message : "The backup could not be prepared.",
+        destructive: true,
+      })
+    } finally {
+      setPending(undefined)
+    }
+  }
 
   const runAction = async (
     action: "reset" | "restore" | "compact" | "cleanup",
@@ -137,10 +170,10 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
           title="Download Backup"
           description="Keep a restorable copy of this workspace."
           action={
-            <a href="/api/workspace/backup" className={buttonVariants({ variant: "outline" })}>
+            <Button variant="outline" disabled={pending === "backup"} onClick={downloadBackup}>
               <HugeiconsIcon icon={DatabaseBackupIcon} data-icon="inline-start" />
-              Download Backup
-            </a>
+              {pending === "backup" ? "Preparing…" : "Download Backup"}
+            </Button>
           }
         />
 

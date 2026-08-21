@@ -332,17 +332,11 @@ export function deleteBusiness(
         )
         .all(business.id)
         .map((row) => (row as { path: string }).path)
+      // Deleting removes stored data; it is not a decision about contacting anyone. Writing a
+      // Suppression Entry here listed the business under Do Not Contact, which CONTEXT.md reserves
+      // for a deliberate standing instruction, and permanently barred rediscovery. An operator who
+      // wants that has Suppress; this leaves the business free to be found again.
       database.transaction(() => {
-        database
-          .prepare(
-            `insert into suppression_entries
-             (identity_fingerprint,canonical_business_id,business_name,reason,created_at)
-             values (?,null,?,'Deleted by operator',?)
-             on conflict(identity_fingerprint) do update set
-               canonical_business_id=null,business_name=excluded.business_name,
-               reason=excluded.reason,created_at=excluded.created_at`,
-          )
-          .run(business.identity_fingerprint, business.name, Date.now())
         const deleteTasks = database.prepare("delete from run_tasks where business_id=?")
         const deleteRunBusiness = database.prepare("delete from run_businesses where id=?")
         const deleteDiscovered = database.prepare("delete from discovered_businesses where id=?")
