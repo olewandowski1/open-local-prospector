@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { expectPageScroll, pageScroller } from "@/testing/page-scroll"
+import { expectPageScroll, pageScroller } from "@/test-support/e2e-page-scroll"
 
 test("renders the persisted overview without sample data", async ({ page }) => {
   await page.goto("/")

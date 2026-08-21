@@ -3,7 +3,7 @@ import {
   expectPageScroll,
   expectTablesDoNotScrollVertically,
   pageCanScroll,
-} from "@/testing/page-scroll"
+} from "@/test-support/e2e-page-scroll"
 
 test.describe.configure({ mode: "serial" })
 

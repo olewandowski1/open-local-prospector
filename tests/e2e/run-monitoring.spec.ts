@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { expectPageScroll, expectTablesDoNotScrollVertically } from "@/testing/page-scroll"
+import { expectPageScroll, expectTablesDoNotScrollVertically } from "@/test-support/e2e-page-scroll"
 
 function runDetail(overrides: Record<string, unknown> = {}) {
   return {
