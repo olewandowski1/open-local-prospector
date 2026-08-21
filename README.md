@@ -50,7 +50,7 @@ The development worker reloads when a file changes; the production worker does n
 ## Verification
 
 ```powershell
-pnpm check          # Biome, TypeScript, unit tests, production build
+pnpm check          # Biome, feature boundaries, TypeScript, unit tests, production build
 pnpm test:e2e       # Chromium desktop and mobile flows
 pnpm worker:check   # independent worker composition root
 ```
