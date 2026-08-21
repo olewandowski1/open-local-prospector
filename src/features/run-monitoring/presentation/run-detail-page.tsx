@@ -14,12 +14,20 @@ import { RunDetailHeader } from "@/features/run-monitoring/presentation/run-deta
 import { isRunTerminal } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import { TechnicalLogSheet } from "@/features/run-monitoring/presentation/technical-log-panel"
 
-export function RunDetailPage({ runId }: { runId: string }) {
+export function RunDetailPage({
+  runId,
+  initialRun,
+}: {
+  runId: string
+  /** The snapshot the server already read, so the first paint is the run rather than a spinner. */
+  initialRun?: RunDetail
+}) {
   const queryClient = useQueryClient()
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>()
   const query = useQuery({
     queryKey: ["run", runId],
     queryFn: () => fetchRun(runId),
+    ...(initialRun ? { initialData: initialRun } : {}),
     refetchInterval: (state) => (isRunTerminal(state.state.data) ? false : 1_500),
   })
   const control = useMutation({
@@ -27,23 +35,22 @@ export function RunDetailPage({ runId }: { runId: string }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["run", runId] }),
   })
 
-  if (query.isPending) {
+  // Only reachable when the server could not read the run, since otherwise its snapshot is the
+  // first render.
+  if (!query.data) {
     return (
       <PageScroller className="flex items-center justify-center p-8">
-        <LoaderCircle className="animate-spin" aria-label="Loading run" />
-      </PageScroller>
-    )
-  }
-  if (query.isError) {
-    return (
-      <PageScroller>
-        <Alert variant="destructive">
-          <AlertCircle aria-hidden="true" />
-          <AlertTitle>Run Unavailable</AlertTitle>
-          <AlertDescription>
-            The persisted run could not be loaded. <Link href="/runs">Return to Runs</Link>.
-          </AlertDescription>
-        </Alert>
+        {query.isError ? (
+          <Alert variant="destructive">
+            <AlertCircle aria-hidden="true" />
+            <AlertTitle>Run Unavailable</AlertTitle>
+            <AlertDescription>
+              The persisted run could not be loaded. <Link href="/runs">Return to Runs</Link>.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <LoaderCircle className="animate-spin" aria-label="Loading run" />
+        )}
       </PageScroller>
     )
   }
@@ -53,6 +60,18 @@ export function RunDetailPage({ runId }: { runId: string }) {
 
   return (
     <PageScroller className="flex flex-col gap-6">
+      {/* A failed refresh leaves the last committed snapshot on screen and says it is stale, rather
+          than replacing a run being watched with an error page. */}
+      {query.isError ? (
+        <Alert variant="destructive">
+          <AlertCircle aria-hidden="true" />
+          <AlertTitle>Progress Not Refreshing</AlertTitle>
+          <AlertDescription>
+            These figures are the last that could be read. <Link href="/runs">Return to Runs</Link>.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <RunDetailHeader
         run={run}
         now={new Date()}

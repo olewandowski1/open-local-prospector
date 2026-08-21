@@ -27,30 +27,41 @@ export function loadWorkerConfiguration(
 export const runWorkerCycle = (owner: string, configuration: WorkerConfiguration) =>
   Effect.gen(function* () {
     const repository = yield* RunTaskRepository
-    const now = new Date(yield* Clock.currentTimeMillis)
-    yield* repository.recoverAbandoned(now)
-    const claimed: RunTask[] = []
-    for (let index = 0; index < configuration.concurrency; index += 1) {
-      const task = yield* repository.claimNext(owner, now, configuration.leaseMilliseconds)
-      if (Option.isNone(task)) break
-      claimed.push(task.value)
-    }
-    // One task's persistence failure must not abandon the others. Without this, `forEach` fails fast:
-    // the sibling task is interrupted part-way through a subscription runtime call, and the failure
-    // travels on out of the cycle and ends the worker process.
-    yield* Effect.forEach(
-      claimed,
-      (task) =>
-        executeClaimedTask(task, owner, configuration).pipe(
+    yield* repository.recoverAbandoned(new Date(yield* Clock.currentTimeMillis))
+    let claimed = 0
+
+    /**
+     * One worker slot, taking its next task the moment it is free.
+     *
+     * The cycle used to claim a batch up front and wait for all of it before claiming again, so a
+     * slot that finished a ten-second task sat idle until a four-minute one beside it returned.
+     * Sampled through a real run, a slot was idle with work already queued in 36 of 40 samples.
+     */
+    const slot = Effect.gen(function* () {
+      while (true) {
+        const now = new Date(yield* Clock.currentTimeMillis)
+        const task = yield* repository.claimNext(owner, now, configuration.leaseMilliseconds)
+        if (Option.isNone(task)) return
+        claimed += 1
+        // One task's persistence failure must not abandon the others, and must not travel out of the
+        // cycle: it used to interrupt the task beside it part-way through a subscription runtime call
+        // and then end the worker process.
+        yield* executeClaimedTask(task.value, owner, configuration).pipe(
           Effect.catchAll((error) =>
             Console.error(
-              `Task ${task.id} (${task.stage}) could not be settled: ${error.operation}`,
+              `Task ${task.value.id} (${task.value.stage}) could not be settled: ${error.operation}`,
             ),
           ),
-        ),
+        )
+      }
+    })
+
+    yield* Effect.forEach(
+      Array.from({ length: configuration.concurrency }, (_, index) => index),
+      () => slot,
       { concurrency: configuration.concurrency, discard: true },
     )
-    return claimed.length
+    return claimed
   })
 
 export const runWorker = (
