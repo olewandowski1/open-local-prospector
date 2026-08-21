@@ -120,8 +120,8 @@ export function RunBusinessesTable({
                       {business.name ?? business.id}
                     </span>
                     <span className="block text-xs text-muted-foreground tabular-nums">
-                      {business.sourceEvents.length}{" "}
-                      {business.sourceEvents.length === 1 ? "Event" : "Events"}
+                      {business.sourceEventCount}{" "}
+                      {business.sourceEventCount === 1 ? "Event" : "Events"}
                     </span>
                   </TableCell>
                   <TableCell className={cn("text-muted-foreground", columnClass.stage)}>

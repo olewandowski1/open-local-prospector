@@ -37,11 +37,17 @@ const troubleKinds = ["InspectionBlock", "Failure", "Retry", "Error"]
 
 export function TechnicalLogSheet({
   events,
+  limit,
+  truncated,
   businessId,
   businessLabel,
   onClearBusiness,
 }: {
   events: readonly TechnicalRunEvent[]
+  /** How many entries the run detail request returns at most. */
+  limit: number
+  /** True when the run holds older entries than these. */
+  truncated: boolean
   businessId?: string
   businessLabel?: string
   onClearBusiness: () => void
@@ -78,6 +84,7 @@ export function TechnicalLogSheet({
           <SheetDescription>
             Source and tool events, retries, transitions, and errors. This is not hidden AI
             reasoning.
+            {truncated ? ` Showing the most recent ${limit} entries of this run.` : null}
           </SheetDescription>
         </SheetHeader>
 

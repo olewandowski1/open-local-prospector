@@ -77,6 +77,8 @@ export function RunDetailPage({ runId }: { runId: string }) {
         action={
           <TechnicalLogSheet
             events={run.technicalLog}
+            limit={run.technicalLogLimit}
+            truncated={run.technicalLogTruncated}
             businessId={selectedBusinessId}
             businessLabel={selectedBusiness?.name ?? selectedBusiness?.id}
             onClearBusiness={() => setSelectedBusinessId(undefined)}

@@ -48,7 +48,8 @@ export type BusinessProgress = Readonly<{
   score?: number
   /** True when the score cleared the review threshold. */
   qualified?: boolean
-  sourceEvents: readonly TechnicalRunEvent[]
+  /** How many Technical Run Log entries name this business. The entries themselves live in the log. */
+  sourceEventCount: number
 }>
 
 export type TechnicalRunEvent = Readonly<{
@@ -66,5 +67,9 @@ export type RunDetail = RunSummary &
   Readonly<{
     requestedControl: string
     businesses: readonly BusinessProgress[]
+    /** The most recent entries, newest first, capped at `technicalLogLimit`. */
     technicalLog: readonly TechnicalRunEvent[]
+    technicalLogLimit: number
+    /** True when the run holds older entries than the ones returned. */
+    technicalLogTruncated: boolean
   }>

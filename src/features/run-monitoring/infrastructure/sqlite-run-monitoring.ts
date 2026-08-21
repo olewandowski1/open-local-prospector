@@ -95,8 +95,13 @@ const runSelect = `
     coalesce(m.target_remaining, json_extract(r.search_brief, '$.targetCount')) as target_remaining
   from prospecting_runs r left join run_metrics m on m.run_id = r.id`
 
+/** Every run ever created was shipped to the client on each visit to Prospecting Runs. */
+const RUN_LIST_LIMIT = 200
+
 function list(database: Database.Database): readonly RunSummary[] {
-  const rows = database.prepare(`${runSelect} order by r.created_at desc`).all() as RunRow[]
+  const rows = database
+    .prepare(`${runSelect} order by r.created_at desc, r.id limit ?`)
+    .all(RUN_LIST_LIMIT) as RunRow[]
   return rows.map(mapSummary)
 }
 
@@ -107,10 +112,18 @@ function get(database: Database.Database, runId: string): RunDetail {
   return {
     ...mapSummary(row),
     requestedControl: row.requested_control,
-    businesses: readBusinesses(database, runId, technicalLog),
-    technicalLog,
+    businesses: readBusinesses(database, runId),
+    technicalLog: technicalLog.slice(0, TECHNICAL_LOG_LIMIT),
+    technicalLogLimit: TECHNICAL_LOG_LIMIT,
+    technicalLogTruncated: technicalLog.length > TECHNICAL_LOG_LIMIT,
   }
 }
+
+/**
+ * The run detail page polls while a run is live, and the log grows with every result a query returns.
+ * Unbounded, one ten-business run already answered with 184 KB every 1.5 seconds.
+ */
+const TECHNICAL_LOG_LIMIT = 200
 
 function mapSummary(row: RunRow): RunSummary {
   return {
@@ -140,11 +153,20 @@ function progress(row: RunRow): RunProgressCounts {
   }
 }
 
-function readBusinesses(
-  database: Database.Database,
-  runId: string,
-  events: readonly TechnicalRunEvent[],
-): readonly BusinessProgress[] {
+function readBusinesses(database: Database.Database, runId: string): readonly BusinessProgress[] {
+  // The table shows how many log entries name each business, not the entries themselves. Shipping the
+  // entries here sent the whole Technical Run Log a second time, and pairing them meant scanning the
+  // full log once per task row.
+  const eventCounts = new Map(
+    (
+      database
+        .prepare(
+          `select business_id, count(*) as total from technical_run_events
+           where run_id = ? and business_id is not null group by business_id`,
+        )
+        .all(runId) as readonly { business_id: string; total: number }[]
+    ).map((row) => [row.business_id, row.total]),
+  )
   const rows = database
     .prepare(
       `select t.business_id, t.stage, t.status, t.attempt_count, t.failure,
@@ -187,8 +209,7 @@ function readBusinesses(
         : row.score_total !== null
           ? { score: row.score_total, qualified: row.score_qualified === 1 }
           : {}),
-      sourceEvents:
-        existing?.sourceEvents ?? events.filter((event) => event.businessId === row.business_id),
+      sourceEventCount: eventCounts.get(row.business_id) ?? 0,
     })
   }
   return [...businesses.values()]
@@ -198,12 +219,15 @@ function readTechnicalLog(
   database: Database.Database,
   runId: string,
 ): readonly TechnicalRunEvent[] {
+  // One more than the cap from each source, so the merged list can still tell the caller that older
+  // entries exist without reading a run's entire history to find out.
+  const readLimit = TECHNICAL_LOG_LIMIT + 1
   const transitions = database
     .prepare(
       `select id, event as kind, task_id, to_state, created_at
-       from run_transitions where run_id = ?`,
+       from run_transitions where run_id = ? order by created_at desc limit ?`,
     )
-    .all(runId) as Array<{
+    .all(runId, readLimit) as Array<{
     id: string
     kind: string
     task_id: string | null
@@ -213,9 +237,9 @@ function readTechnicalLog(
   const events = database
     .prepare(
       `select id, kind, business_id, source_identifier, result_url, message, created_at
-       from technical_run_events where run_id = ?`,
+       from technical_run_events where run_id = ? order by created_at desc limit ?`,
     )
-    .all(runId) as Array<{
+    .all(runId, readLimit) as Array<{
     id: string
     kind: string
     business_id: string | null
