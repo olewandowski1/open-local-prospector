@@ -29,6 +29,24 @@ Search Area interpretation uses the public OpenStreetMap Nominatim endpoint by d
 
 The Next.js server binds to `127.0.0.1:4310` by default. It is intentionally not exposed to the local network.
 
+## Running the local application
+
+`pnpm dev` is for changing the application, not for using it. Use the production build instead:
+
+```powershell
+pnpm run app
+```
+
+`pnpm run app` runs setup, produces a production build, and then starts the web process and the worker together. `pnpm start` skips setup and the build and starts both processes from the existing build; use it when the build is already current. `pnpm start:web` and `pnpm start:worker` start one process each.
+
+The build lives in the ignored `.next/` directory, so it belongs to the machine rather than the repository. `next start` serves whatever that directory contains: rebuild after pulling changes, or run `pnpm run app` and let it rebuild.
+
+Both `pnpm dev` and `pnpm start` bind `127.0.0.1:4310`, so only one of them can run at a time. The second reports `EADDRINUSE`.
+
+Run every command from the repository root. The SQLite and artifact paths resolve against the current working directory, so starting the application elsewhere creates an empty workspace rather than reporting an error.
+
+The development worker reloads when a file changes; the production worker does not, so a save cannot restart a worker that is executing a Prospecting Run.
+
 ## Verification
 
 ```powershell
