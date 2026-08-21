@@ -10,6 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
+import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -119,15 +120,10 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
 
   return (
     <section aria-labelledby="workspace-actions-heading" className="flex flex-col gap-4">
-      <div>
-        <h2 id="workspace-actions-heading" className="font-heading text-lg font-semibold">
-          Backup And Maintenance
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Backups include the database, artifacts and non-secret configuration. A snapshot taken
-          during a run records the workspace at that moment; it does not pause the run.
-        </p>
-      </div>
+      <SectionHeader
+        title={<span id="workspace-actions-heading">Backup And Maintenance</span>}
+        description="Backups include the database, artifacts and non-secret configuration. A snapshot taken during a run records the workspace at that moment; it does not pause the run."
+      />
 
       {feedback ? (
         <Alert variant={feedback.destructive ? "destructive" : "default"}>

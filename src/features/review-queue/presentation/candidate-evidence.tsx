@@ -2,9 +2,10 @@
 
 import { ExternalLink } from "lucide-react"
 
+import { SectionHeader } from "@/components/page-layout"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import {
   displayUrl,
   formatObservedAt,
@@ -20,42 +21,32 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
   const presences = groupPresences(candidate.presences)
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Score Explanation
-          </CardTitle>
-          <CardDescription>
-            Deterministic rubric {candidate.rubricVersion}. The machine assessment is never
-            overwritten.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-2.5">
-            {components.map((component) => (
-              <div key={component.label} className="grid gap-1">
-                <div className="flex items-baseline justify-between gap-3 text-xs">
-                  <dt className="text-muted-foreground">{component.label}</dt>
-                  <dd className="tabular-nums">
-                    <span className="font-medium">{formatScore(component.value)}</span>
-                    <span className="text-muted-foreground"> / {component.max}</span>
-                  </dd>
-                </div>
-                <Progress value={(component.value / component.max) * 100} />
+    <div className="flex flex-col gap-6">
+      <section aria-labelledby="score-explanation-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="score-explanation-heading">Score Explanation</span>}
+          description={`Deterministic rubric ${candidate.rubricVersion}. The machine assessment is never overwritten.`}
+        />
+        <dl className="grid gap-2.5">
+          {components.map((component) => (
+            <div key={component.label} className="grid gap-1">
+              <div className="flex items-baseline justify-between gap-3 text-xs">
+                <dt className="text-muted-foreground">{component.label}</dt>
+                <dd className="tabular-nums">
+                  <span className="font-medium">{formatScore(component.value)}</span>
+                  <span className="text-muted-foreground"> / {component.max}</span>
+                </dd>
               </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+              <Progress value={(component.value / component.max) * 100} />
+            </div>
+          ))}
+        </dl>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Opportunities
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+      <Separator />
+      <section aria-labelledby="opportunities-heading" className="flex flex-col gap-4">
+        <SectionHeader title={<span id="opportunities-heading">Opportunities</span>} />
+        <div className="grid gap-4">
           {candidate.opportunities.map((opportunity) => (
             <div key={`${opportunity.opportunityClass}-${opportunity.explanation}`}>
               <Badge variant="secondary">
@@ -64,52 +55,48 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
               <p className="mt-1.5 text-sm text-pretty">{opportunity.explanation}</p>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Supporting Evidence
-          </CardTitle>
-          <CardDescription>
-            Every statement carries the public source it was observed on.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid gap-3">
-            {candidate.observations.map((observation) => (
-              <li
-                key={`${observation.sourceUrl}-${observation.statement}`}
-                className="border-b pb-3 text-sm last:border-0 last:pb-0"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{humanizeTerm(observation.evidenceState)}</Badge>
-                  <time className="text-xs text-muted-foreground">
-                    {formatObservedAt(observation.observedAt)}
-                  </time>
-                </div>
-                <p className="mt-1.5 text-pretty">{observation.statement}</p>
-                <SourceLink url={observation.sourceUrl} />
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <Separator />
+      <section aria-labelledby="supporting-evidence-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="supporting-evidence-heading">Supporting Evidence</span>}
+          description="Every statement carries the public source it was observed on."
+        />
+        <ul className="grid gap-3">
+          {candidate.observations.map((observation) => (
+            <li
+              key={`${observation.sourceUrl}-${observation.statement}`}
+              className="border-b pb-3 text-sm last:border-0 last:pb-0"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{humanizeTerm(observation.evidenceState)}</Badge>
+                <time className="text-xs text-muted-foreground">
+                  {formatObservedAt(observation.observedAt)}
+                </time>
+              </div>
+              <p className="mt-1.5 text-pretty">{observation.statement}</p>
+              <SourceLink url={observation.sourceUrl} />
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
+      <Separator />
+      <section aria-labelledby="presence-heading" className="flex flex-col gap-4">
+        <header>
+          <h2 id="presence-heading" className="font-heading text-base font-semibold tracking-tight">
             Online Presence and Contact
-          </CardTitle>
-          <CardDescription>
+          </h2>
+          <p className="mt-0.5 text-sm text-pretty text-muted-foreground">
             Inspection state {humanizeTerm(candidate.inspectionState)}
             {candidate.limitations.length > 0
               ? ` · Limitations: ${candidate.limitations.map(humanizeTerm).join(", ")}`
               : " · No recorded limitations"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+          </p>
+        </header>
+        <div className="grid gap-4">
           {candidate.contacts.length > 0 ? (
             <div>
               <h3 className="text-xs font-medium text-muted-foreground">Contact Routes</h3>
@@ -156,8 +143,8 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
               </p>
             </div>
           ) : null}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }

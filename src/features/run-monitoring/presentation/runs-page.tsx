@@ -1,6 +1,7 @@
 import { FileSearch, Plus } from "lucide-react"
 import Link from "next/link"
 
+import { PageHeader } from "@/components/page-layout"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
@@ -18,36 +19,36 @@ export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date
   const rows = runs.map((run) => toRunRow(run, now))
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Prospecting Runs</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Persisted work and checkpointed progress. Every run keeps its own evidence and history.
-        </p>
-      </div>
+    <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Prospecting Runs"
+          description="Persisted work and checkpointed progress. Every run keeps its own evidence and history."
+        />
 
-      {rows.length === 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FileSearch />
-            </EmptyMedia>
-            <EmptyTitle>No Runs Yet</EmptyTitle>
-            <EmptyDescription>
-              A run discovers local businesses, inspects their websites and scores what it finds.
-              Confirm a Search Brief to start the first one.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Link href="/runs/new" className={buttonVariants()}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              New Run
-            </Link>
-          </EmptyContent>
-        </Empty>
-      ) : (
-        <RunsWorkspace runs={rows} />
-      )}
+        {rows.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileSearch />
+              </EmptyMedia>
+              <EmptyTitle>No Runs Yet</EmptyTitle>
+              <EmptyDescription>
+                A run discovers local businesses, inspects their websites and scores what it finds.
+                Confirm a Search Brief to start the first one.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Link href="/runs/new" className={buttonVariants()}>
+                <Plus data-icon="inline-start" aria-hidden="true" />
+                New Run
+              </Link>
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <RunsWorkspace runs={rows} />
+        )}
+      </div>
     </main>
   )
 }

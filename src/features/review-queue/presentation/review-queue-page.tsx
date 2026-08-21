@@ -1,5 +1,6 @@
 import { CircleGauge, Plus } from "lucide-react"
 import Link from "next/link"
+import { PageHeader } from "@/components/page-layout"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
@@ -16,12 +17,10 @@ export function ReviewQueuePage() {
   const candidates = getReviewQueueSummaries()
   return (
     <main className="flex h-[calc(100svh-var(--shell-header))] flex-col gap-6 overflow-hidden p-4 sm:p-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Review Queue</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Review evidence, record decisions, and preserve machine history.
-        </p>
-      </div>
+      <PageHeader
+        title="Review Queue"
+        description="Review evidence, record decisions, and preserve machine history."
+      />
       {candidates.length === 0 ? (
         <Empty>
           <EmptyHeader>

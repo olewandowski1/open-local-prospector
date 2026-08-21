@@ -11,6 +11,7 @@ import {
 import Link from "next/link"
 import type { ReactNode } from "react"
 
+import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
@@ -62,19 +63,16 @@ export function OverviewPage({
   return (
     <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="font-heading text-2xl font-bold tracking-tight">Overview</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Persisted prospecting activity from this workspace, and the runtime that steers the
-              next run.
-            </p>
-          </div>
-          <Link href="/runs/new" className={buttonVariants()}>
-            <Plus data-icon="inline-start" aria-hidden="true" />
-            New Run
-          </Link>
-        </div>
+        <PageHeader
+          title="Overview"
+          description="Persisted prospecting activity from this workspace, and the runtime that steers the next run."
+          actions={
+            <Link href="/runs/new" className={buttonVariants()}>
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              New Run
+            </Link>
+          }
+        />
 
         {/* Rules between the figures carry the structure a card used to, without boxing each one in. */}
         <section
@@ -101,14 +99,10 @@ export function OverviewPage({
         <section aria-label="Run Steering">{steeringPanel}</section>
 
         <section aria-label="Recent Candidates" className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-heading text-base font-semibold tracking-tight">
-              Recent Candidates
-            </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              The most recently scored qualified businesses. Suppressed businesses never appear.
-            </p>
-          </div>
+          <SectionHeader
+            title="Recent Candidates"
+            description="The most recently scored qualified businesses. Suppressed businesses never appear."
+          />
           <div>
             {recentCandidates.length === 0 ? (
               <Empty>

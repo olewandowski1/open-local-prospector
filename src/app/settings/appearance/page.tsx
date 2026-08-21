@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 
+import { SectionHeader } from "@/components/page-layout"
 import {
   parseThemePreference,
   THEME_COOKIE,
@@ -12,14 +13,10 @@ export default async function AppearanceSettingsRoute() {
   return (
     <div className="@container mx-auto flex w-full max-w-5xl flex-col gap-8">
       <section aria-labelledby="appearance-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="appearance-heading" className="font-heading text-lg font-semibold">
-            Appearance
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            How the workspace looks on this device.
-          </p>
-        </div>
+        <SectionHeader
+          title={<span id="appearance-heading">Appearance</span>}
+          description="How the workspace looks on this device."
+        />
         <AppearanceSection theme={theme} />
       </section>
     </div>

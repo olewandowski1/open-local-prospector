@@ -9,6 +9,14 @@ const pages = [
   { path: "/review", name: "Review Queue" },
 ] as const
 
+const settingsPages = [
+  "/settings/general",
+  "/settings/appearance",
+  "/settings/subscription",
+  "/settings/data",
+  "/settings/maintenance",
+] as const
+
 for (const width of widths) {
   for (const { path, name } of pages) {
     test(`${name} fits ${width}px without sideways scrolling`, async ({ page, isMobile }) => {
@@ -35,6 +43,23 @@ for (const width of widths) {
     })
   }
 }
+
+test("Settings sections fit a narrow phone without sideways scrolling", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Width is driven explicitly here")
+  await page.setViewportSize({ width: 375, height: 900 })
+
+  for (const path of settingsPages) {
+    await page.goto(path)
+    await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow, `${path} overflow`).toBeLessThanOrEqual(1)
+  }
+})
 
 for (const width of [375, 768, 1024]) {
   test(`Run detail fits ${width}px without sideways scrolling`, async ({ page, isMobile }) => {

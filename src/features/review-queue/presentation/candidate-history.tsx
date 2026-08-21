@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 
+import { SectionHeader } from "@/components/page-layout"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,8 +17,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -54,45 +54,40 @@ export function CandidateHistory({
   const [confirmation, setConfirmation] = useState("")
   const [deleteOpen, setDeleteOpen] = useState(false)
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Correction History
-          </CardTitle>
-          <CardDescription>
-            Corrections are appended. The original machine assessment stays immutable.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {candidate.corrections.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No corrections recorded.</p>
-          ) : (
-            <ul className="grid gap-3">
-              {candidate.corrections.map((correction) => (
-                <li
-                  key={`${correction.createdAt}-${correction.target}`}
-                  className="border-b pb-3 text-sm last:border-0 last:pb-0"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{humanizeTerm(correction.target)}</Badge>
-                    <time className="text-xs text-muted-foreground">
-                      {formatObservedAt(correction.createdAt)}
-                    </time>
-                  </div>
-                  <p className="mt-1.5 text-pretty">{correction.correctedValue}</p>
-                  {correction.note ? (
-                    <p className="mt-1 text-xs text-muted-foreground">{correction.note}</p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <Separator />
+      <section aria-labelledby="correction-history-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="correction-history-heading">Correction History</span>}
+          description="Corrections are appended. The original machine assessment stays immutable."
+        />
+        {candidate.corrections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No corrections recorded.</p>
+        ) : (
+          <ul className="grid gap-3">
+            {candidate.corrections.map((correction) => (
+              <li
+                key={`${correction.createdAt}-${correction.target}`}
+                className="border-b pb-3 text-sm last:border-0 last:pb-0"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{humanizeTerm(correction.target)}</Badge>
+                  <time className="text-xs text-muted-foreground">
+                    {formatObservedAt(correction.createdAt)}
+                  </time>
+                </div>
+                <p className="mt-1.5 text-pretty">{correction.correctedValue}</p>
+                {correction.note ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{correction.note}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
+      <Separator />
       <section className="flex flex-col gap-3">
-        <Separator />
         <div>
           <h2 className="font-heading font-medium">Delete Business</h2>
           <p className="text-sm text-muted-foreground">
@@ -141,15 +136,12 @@ export function CandidateHistory({
         </AlertDialog>
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Add Correction
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4" onSubmit={onCorrect}>
-            <input type="hidden" name="kind" value="correction" />
+      <Separator />
+      <section aria-labelledby="add-correction-heading" className="flex flex-col gap-4">
+        <SectionHeader title={<span id="add-correction-heading">Add Correction</span>} />
+        <form onSubmit={onCorrect}>
+          <input type="hidden" name="kind" value="correction" />
+          <FieldGroup className="gap-4">
             <Field className={fieldSpacing}>
               <FieldLabel htmlFor="target">Correction Target</FieldLabel>
               <Select name="target" defaultValue="SupportingObservation">
@@ -180,22 +172,18 @@ export function CandidateHistory({
                 Add Correction
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </FieldGroup>
+        </form>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle role="heading" aria-level={2}>
-            Do Not Contact
-          </CardTitle>
-          <CardDescription>
-            Suppression prevents future recommendation, reassessment for outreach, and export. It
-            does not contact anyone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4" onSubmit={onSuppress}>
+      <Separator />
+      <section aria-labelledby="do-not-contact-heading" className="flex flex-col gap-4">
+        <SectionHeader
+          title={<span id="do-not-contact-heading">Do Not Contact</span>}
+          description="Suppression prevents future recommendation, reassessment for outreach, and export. It does not contact anyone."
+        />
+        <form onSubmit={onSuppress}>
+          <FieldGroup className="gap-4">
             <Field className={fieldSpacing}>
               <FieldLabel htmlFor="suppressionReason">Suppression Reason</FieldLabel>
               <Input id="suppressionReason" name="reason" required />
@@ -206,9 +194,9 @@ export function CandidateHistory({
                 Suppress Globally
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </FieldGroup>
+        </form>
+      </section>
     </div>
   )
 }

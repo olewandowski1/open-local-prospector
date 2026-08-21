@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/page-layout"
 import type { LocalApplicationConfig } from "@/features/local-application/configuration"
 
 /**
@@ -13,16 +14,16 @@ export function StorageLocationsSection({ config }: { config: LocalApplicationCo
 
   return (
     <section aria-labelledby="storage-locations-heading" className="flex flex-col gap-4">
-      <div>
-        <h2 id="storage-locations-heading" className="font-heading text-lg font-semibold">
-          Storage Locations
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Override these with <code className="font-mono">PROSPECTOR_DATABASE_PATH</code> and{" "}
-          <code className="font-mono">PROSPECTOR_ARTIFACTS_PATH</code> before starting the
-          application.
-        </p>
-      </div>
+      <SectionHeader
+        title={<span id="storage-locations-heading">Storage Locations</span>}
+        description={
+          <>
+            Override these with <code className="font-mono">PROSPECTOR_DATABASE_PATH</code> and{" "}
+            <code className="font-mono">PROSPECTOR_ARTIFACTS_PATH</code> before starting the
+            application.
+          </>
+        }
+      />
       <dl className="overflow-hidden rounded-xl border">
         {locations.map((location) => (
           <div key={location.label} className="grid gap-1 border-b p-4 last:border-b-0">

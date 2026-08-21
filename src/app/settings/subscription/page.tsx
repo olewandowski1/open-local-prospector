@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache"
 import { connection } from "next/server"
 import { Suspense } from "react"
 
+import { SectionHeader } from "@/components/page-layout"
 import { loadLocalApplicationConfig } from "@/features/local-application/configuration"
 import {
   getSelectedRuntime,
@@ -64,15 +65,10 @@ export default async function SubscriptionSettingsRoute() {
   return (
     <div className="@container mx-auto flex w-full max-w-5xl flex-col gap-8">
       <section aria-labelledby="subscription-runtimes-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="subscription-runtimes-heading" className="font-heading text-lg font-semibold">
-            Subscription Runtimes
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Login stays in each provider&apos;s own terminal. The application stores only which
-            runtime you selected, never a credential.
-          </p>
-        </div>
+        <SectionHeader
+          title={<span id="subscription-runtimes-heading">Subscription Runtimes</span>}
+          description="Login stays in each provider's own terminal. The application stores only which runtime you selected, never a credential."
+        />
 
         <Suspense fallback={<RuntimeReadinessSkeleton />}>
           <RuntimeReadinessCards />

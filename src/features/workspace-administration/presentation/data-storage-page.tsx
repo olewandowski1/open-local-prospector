@@ -1,6 +1,7 @@
 import { DatabaseBackupIcon, Delete02Icon, FileEmpty02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { SectionHeader } from "@/components/page-layout"
 import { Separator } from "@/components/ui/separator"
 import type { WorkspaceInventoryPresentation } from "@/features/workspace-administration/domain/workspace-presentation"
 import type { SuppressionRecord } from "@/features/workspace-administration/infrastructure/workspace-store"
@@ -25,14 +26,10 @@ export function DataStoragePage({
   return (
     <div className="@container mx-auto flex w-full max-w-5xl flex-col gap-8">
       <section aria-labelledby="workspace-storage-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="workspace-storage-heading" className="font-heading text-lg font-semibold">
-            Workspace Storage
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Live figures from the SQLite database and assessment artifacts on this device.
-          </p>
-        </div>
+        <SectionHeader
+          title={<span id="workspace-storage-heading">Workspace Storage</span>}
+          description="Live figures from the SQLite database and assessment artifacts on this device."
+        />
 
         <dl className="grid gap-x-6 gap-y-4 @sm:grid-cols-2 @lg:grid-cols-3">
           {figures.map((figure) => (

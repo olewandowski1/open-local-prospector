@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
+import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -118,15 +119,10 @@ export function SuppressionList({
 
   return (
     <section aria-labelledby="suppression-list-heading" className="flex flex-col gap-4">
-      <div>
-        <h2 id="suppression-list-heading" className="font-heading text-lg font-semibold">
-          Suppressed Businesses
-        </h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Suppressed businesses stay out of future recommendations, reassessment and exports until
-          their suppression is lifted.
-        </p>
-      </div>
+      <SectionHeader
+        title={<span id="suppression-list-heading">Suppressed Businesses</span>}
+        description="Suppressed businesses stay out of future recommendations, reassessment and exports until their suppression is lifted."
+      />
 
       {error ? (
         <Alert variant="destructive">

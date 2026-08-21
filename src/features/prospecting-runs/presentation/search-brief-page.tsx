@@ -4,10 +4,10 @@ import { AlertCircle, CheckCircle2, Clock3, LoaderCircle, MapPin, Play, Search }
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
+import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
@@ -180,16 +180,14 @@ export function SearchBriefPage({
   }
 
   return (
-    <main className="flex-1 p-4 sm:p-6">
+    <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.8fr)]">
-        <div>
-          <Badge variant="secondary" className="mb-3">
-            New prospecting run
-          </Badge>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Create a Search Brief</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Define the market, confirm how the location was interpreted, and verify local readiness.
-          </p>
+        <div className="min-w-0">
+          <PageHeader
+            eyebrow="New prospecting run"
+            title="Create a Search Brief"
+            description="Define the market, confirm how the location was interpreted, and verify local readiness."
+          />
 
           {readyRuntimes.length === 0 ? (
             <Alert variant="destructive" className="mt-6">
@@ -202,327 +200,319 @@ export function SearchBriefPage({
             </Alert>
           ) : null}
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Search Scope</CardTitle>
-              <CardDescription>
-                Poland is assumed when no country is provided. Add a country to search elsewhere.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={checkPreflight}>
-                <FieldGroup>
+          <section aria-labelledby="search-scope-heading" className="mt-6 border-y py-5">
+            <SectionHeader
+              title={<span id="search-scope-heading">Search Scope</span>}
+              description="Poland is assumed when no country is provided. Add a country to search elsewhere."
+              className="mb-5"
+            />
+            <form onSubmit={checkPreflight}>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="location">City or Municipality</FieldLabel>
+                  <Input
+                    id="location"
+                    name="location"
+                    placeholder="e.g. Kraków or Berlin, Germany"
+                    value={draft.location}
+                    onChange={(event) => invalidate({ location: event.target.value })}
+                    required
+                  />
+                  <FieldDescription>
+                    Search runs only when you choose Check preflight; there is no location
+                    autocomplete.
+                  </FieldDescription>
+                </Field>
+
+                <div className="grid gap-5 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor="location">City or Municipality</FieldLabel>
+                    <FieldLabel htmlFor="radius">Radius in Kilometres (Optional)</FieldLabel>
                     <Input
-                      id="location"
-                      name="location"
-                      placeholder="e.g. Kraków or Berlin, Germany"
-                      value={draft.location}
-                      onChange={(event) => invalidate({ location: event.target.value })}
+                      id="radius"
+                      name="radius"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={draft.radiusKm}
+                      onChange={(event) => invalidate({ radiusKm: event.target.value })}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="target">Target Businesses</FieldLabel>
+                    <Input
+                      id="target"
+                      name="target"
+                      type="number"
+                      min="5"
+                      max="50"
+                      step="1"
+                      value={draft.targetCount}
+                      onChange={(event) => invalidate({ targetCount: event.target.value })}
                       required
                     />
-                    <FieldDescription>
-                      Search runs only when you choose Check preflight; there is no location
-                      autocomplete.
-                    </FieldDescription>
+                    <FieldDescription>Choose any value from 5 through 50.</FieldDescription>
                   </Field>
+                </div>
 
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel htmlFor="radius">Radius in Kilometres (Optional)</FieldLabel>
-                      <Input
-                        id="radius"
-                        name="radius"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={draft.radiusKm}
-                        onChange={(event) => invalidate({ radiusKm: event.target.value })}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="target">Target Businesses</FieldLabel>
-                      <Input
-                        id="target"
-                        name="target"
-                        type="number"
-                        min="5"
-                        max="50"
-                        step="1"
-                        value={draft.targetCount}
-                        onChange={(event) => invalidate({ targetCount: event.target.value })}
-                        required
-                      />
-                      <FieldDescription>Choose any value from 5 through 50.</FieldDescription>
-                    </Field>
-                  </div>
-
-                  <Field>
-                    <FieldLabel htmlFor="category">Business Category</FieldLabel>
-                    <Select
-                      items={categoryItems}
-                      value={draft.categoryChoice}
-                      onValueChange={(value) => value && invalidate({ categoryChoice: value })}
-                    >
-                      <SelectTrigger
-                        id="category"
-                        aria-label="Business category"
-                        className="w-full"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryPresets.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  {draft.categoryChoice === "Custom category" ? (
-                    <Field>
-                      <FieldLabel htmlFor="custom-category">Custom Category</FieldLabel>
-                      <Input
-                        id="custom-category"
-                        value={draft.customCategory}
-                        onChange={(event) => invalidate({ customCategory: event.target.value })}
-                        placeholder="e.g. Independent climbing gyms"
-                        required
-                      />
-                    </Field>
-                  ) : null}
-
-                  <FieldSet>
-                    <FieldLegend>Run Mode</FieldLegend>
-                    <RadioGroup
-                      value={draft.mode}
-                      onValueChange={(value) =>
-                        value && invalidate({ mode: value as DraftState["mode"] })
-                      }
-                      className="grid sm:grid-cols-2"
-                    >
-                      {(["Quick", "Thorough"] as const).map((mode) => (
-                        <FieldLabel key={mode}>
-                          <Field orientation="horizontal">
-                            <RadioGroupItem value={mode} aria-label={mode} />
-                            <div>
-                              <p className="font-medium">{mode}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {mode === "Quick"
-                                  ? "Faster initial qualification"
-                                  : "More sources and evidence"}
-                              </p>
-                            </div>
-                          </Field>
-                        </FieldLabel>
-                      ))}
-                    </RadioGroup>
-                  </FieldSet>
-
-                  <Field>
-                    <FieldLabel htmlFor="recent-business-policy">
-                      Recently assessed businesses
-                    </FieldLabel>
-                    <Select
-                      items={[
-                        { label: "Skip by default", value: "Skip" },
-                        {
-                          label: "Include existing assessment",
-                          value: "IncludeWithoutReassessment",
-                        },
-                        { label: "Explicitly reassess", value: "Reassess" },
-                      ]}
-                      value={draft.recentBusinessPolicy}
-                      onValueChange={(value) =>
-                        value &&
-                        invalidate({
-                          recentBusinessPolicy: value as DraftState["recentBusinessPolicy"],
-                        })
-                      }
-                    >
-                      <SelectTrigger
-                        id="recent-business-policy"
-                        aria-label="Recently assessed businesses"
-                        className="w-full"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Skip">Skip by default</SelectItem>
-                        <SelectItem value="IncludeWithoutReassessment">
-                          Include existing assessment
+                <Field>
+                  <FieldLabel htmlFor="category">Business Category</FieldLabel>
+                  <Select
+                    items={categoryItems}
+                    value={draft.categoryChoice}
+                    onValueChange={(value) => value && invalidate({ categoryChoice: value })}
+                  >
+                    <SelectTrigger id="category" aria-label="Business category" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryPresets.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
                         </SelectItem>
-                        <SelectItem value="Reassess">Explicitly reassess</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FieldDescription>
-                      Reassessment is always an explicit choice and never overwrites history.
-                    </FieldDescription>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {draft.categoryChoice === "Custom category" ? (
+                  <Field>
+                    <FieldLabel htmlFor="custom-category">Custom Category</FieldLabel>
+                    <Input
+                      id="custom-category"
+                      value={draft.customCategory}
+                      onChange={(event) => invalidate({ customCategory: event.target.value })}
+                      placeholder="e.g. Independent climbing gyms"
+                      required
+                    />
                   </Field>
+                ) : null}
 
-                  <Field className={fieldSpacing}>
-                    <FieldLabel htmlFor="runtime">Subscription Runtime</FieldLabel>
-                    <Select
-                      items={runtimeItems}
-                      value={draft.runtime}
-                      onValueChange={(value) =>
-                        value &&
-                        invalidate({
-                          runtime: value as RuntimeId,
-                          ...defaultRuntimeExecutionConfiguration(value as RuntimeId),
-                        })
-                      }
+                <FieldSet>
+                  <FieldLegend>Run Mode</FieldLegend>
+                  <RadioGroup
+                    value={draft.mode}
+                    onValueChange={(value) =>
+                      value && invalidate({ mode: value as DraftState["mode"] })
+                    }
+                    className="grid sm:grid-cols-2"
+                  >
+                    {(["Quick", "Thorough"] as const).map((mode) => (
+                      <FieldLabel key={mode}>
+                        <Field orientation="horizontal">
+                          <RadioGroupItem value={mode} aria-label={mode} />
+                          <div>
+                            <p className="font-medium">{mode}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {mode === "Quick"
+                                ? "Faster initial qualification"
+                                : "More sources and evidence"}
+                            </p>
+                          </div>
+                        </Field>
+                      </FieldLabel>
+                    ))}
+                  </RadioGroup>
+                </FieldSet>
+
+                <Field>
+                  <FieldLabel htmlFor="recent-business-policy">
+                    Recently assessed businesses
+                  </FieldLabel>
+                  <Select
+                    items={[
+                      { label: "Skip by default", value: "Skip" },
+                      {
+                        label: "Include existing assessment",
+                        value: "IncludeWithoutReassessment",
+                      },
+                      { label: "Explicitly reassess", value: "Reassess" },
+                    ]}
+                    value={draft.recentBusinessPolicy}
+                    onValueChange={(value) =>
+                      value &&
+                      invalidate({
+                        recentBusinessPolicy: value as DraftState["recentBusinessPolicy"],
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="recent-business-policy"
+                      aria-label="Recently assessed businesses"
+                      className="w-full"
                     >
-                      <SelectTrigger
-                        id="runtime"
-                        aria-label="Subscription Runtime"
-                        className="w-full"
-                        disabled={!runtimeItems.length}
-                      >
-                        <SelectValue placeholder="No ready runtime">
-                          {(value: string | null) => {
-                            const runtime = readyRuntimes.find((item) => item.runtimeId === value)
-                            if (!runtime) return "No ready runtime"
-                            return (
-                              <>
-                                <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                                {runtime.label}
-                              </>
-                            )
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {readyRuntimes.map((runtime) => (
-                          <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
-                            <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                            {runtime.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Skip">Skip by default</SelectItem>
+                      <SelectItem value="IncludeWithoutReassessment">
+                        Include existing assessment
+                      </SelectItem>
+                      <SelectItem value="Reassess">Explicitly reassess</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    Reassessment is always an explicit choice and never overwrites history.
+                  </FieldDescription>
+                </Field>
 
-                  {draft.runtime ? (
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <Field className={fieldSpacing}>
-                        <FieldLabel htmlFor="runtime-model">Model</FieldLabel>
-                        <Select
-                          items={runtimeModelOptions(draft.runtime).map((model) => ({
-                            label: model.label,
-                            value: model.value,
-                          }))}
-                          value={draft.model}
-                          onValueChange={(value) =>
-                            value &&
-                            draft.runtime &&
-                            invalidate(
-                              resolveRuntimeConfiguration(
-                                draft.runtime,
-                                value,
-                                draft.reasoningEffort,
-                              ),
-                            )
-                          }
-                        >
-                          <SelectTrigger id="runtime-model" aria-label="Model" className="w-full">
-                            <SelectValue>
-                              {(value: string | null) => (
-                                <>
-                                  {draft.runtime ? (
-                                    <RuntimeProviderIcon runtimeId={draft.runtime} />
-                                  ) : null}
-                                  {runtimeModelOptions(draft.runtime as RuntimeId).find(
-                                    (model) => model.value === value,
-                                  )?.label ?? "Select a model"}
-                                </>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {runtimeModelOptions(draft.runtime).map((model) => (
-                              <SelectItem key={model.value} value={model.value}>
+                <Field className={fieldSpacing}>
+                  <FieldLabel htmlFor="runtime">Subscription Runtime</FieldLabel>
+                  <Select
+                    items={runtimeItems}
+                    value={draft.runtime}
+                    onValueChange={(value) =>
+                      value &&
+                      invalidate({
+                        runtime: value as RuntimeId,
+                        ...defaultRuntimeExecutionConfiguration(value as RuntimeId),
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="runtime"
+                      aria-label="Subscription Runtime"
+                      className="w-full"
+                      disabled={!runtimeItems.length}
+                    >
+                      <SelectValue placeholder="No ready runtime">
+                        {(value: string | null) => {
+                          const runtime = readyRuntimes.find((item) => item.runtimeId === value)
+                          if (!runtime) return "No ready runtime"
+                          return (
+                            <>
+                              <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                              {runtime.label}
+                            </>
+                          )
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {readyRuntimes.map((runtime) => (
+                        <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
+                          <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                          {runtime.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                {draft.runtime ? (
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field className={fieldSpacing}>
+                      <FieldLabel htmlFor="runtime-model">Model</FieldLabel>
+                      <Select
+                        items={runtimeModelOptions(draft.runtime).map((model) => ({
+                          label: model.label,
+                          value: model.value,
+                        }))}
+                        value={draft.model}
+                        onValueChange={(value) =>
+                          value &&
+                          draft.runtime &&
+                          invalidate(
+                            resolveRuntimeConfiguration(
+                              draft.runtime,
+                              value,
+                              draft.reasoningEffort,
+                            ),
+                          )
+                        }
+                      >
+                        <SelectTrigger id="runtime-model" aria-label="Model" className="w-full">
+                          <SelectValue>
+                            {(value: string | null) => (
+                              <>
                                 {draft.runtime ? (
                                   <RuntimeProviderIcon runtimeId={draft.runtime} />
                                 ) : null}
-                                {model.label}
+                                {runtimeModelOptions(draft.runtime as RuntimeId).find(
+                                  (model) => model.value === value,
+                                )?.label ?? "Select a model"}
+                              </>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {runtimeModelOptions(draft.runtime).map((model) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              {draft.runtime ? (
+                                <RuntimeProviderIcon runtimeId={draft.runtime} />
+                              ) : null}
+                              {model.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        {runtimeModelOptions(draft.runtime).find(
+                          (model) => model.value === draft.model,
+                        )?.detail ?? "The selected model ID is pinned for this run."}
+                      </FieldDescription>
+                    </Field>
+                    <Field className={fieldSpacing}>
+                      <FieldLabel htmlFor="reasoning-effort">Reasoning Effort</FieldLabel>
+                      {selectedEfforts.length === 0 ? (
+                        <div
+                          id="reasoning-effort"
+                          className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
+                        >
+                          Not applicable
+                        </div>
+                      ) : (
+                        <Select
+                          items={selectedEfforts.map((effort) => ({
+                            label: effort,
+                            value: effort,
+                          }))}
+                          value={draft.reasoningEffort}
+                          onValueChange={(value) =>
+                            value &&
+                            invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
+                          }
+                        >
+                          <SelectTrigger id="reasoning-effort" className="w-full capitalize">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectedEfforts.map((effort) => (
+                              <SelectItem className="capitalize" key={effort} value={effort}>
+                                {effort}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FieldDescription>
-                          {runtimeModelOptions(draft.runtime).find(
-                            (model) => model.value === draft.model,
-                          )?.detail ?? "The selected model ID is pinned for this run."}
-                        </FieldDescription>
-                      </Field>
-                      <Field className={fieldSpacing}>
-                        <FieldLabel htmlFor="reasoning-effort">Reasoning Effort</FieldLabel>
-                        {selectedEfforts.length === 0 ? (
-                          <div
-                            id="reasoning-effort"
-                            className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
-                          >
-                            Not applicable
-                          </div>
-                        ) : (
-                          <Select
-                            items={selectedEfforts.map((effort) => ({
-                              label: effort,
-                              value: effort,
-                            }))}
-                            value={draft.reasoningEffort}
-                            onValueChange={(value) =>
-                              value &&
-                              invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
-                            }
-                          >
-                            <SelectTrigger id="reasoning-effort" className="w-full capitalize">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {selectedEfforts.map((effort) => (
-                                <SelectItem className="capitalize" key={effort} value={effort}>
-                                  {effort}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                        <FieldDescription>
-                          {selectedEfforts.length === 0
-                            ? "This model does not accept a reasoning effort."
-                            : "Higher effort spends more subscription usage per run."}
-                        </FieldDescription>
-                      </Field>
-                    </div>
-                  ) : null}
+                      )}
+                      <FieldDescription>
+                        {selectedEfforts.length === 0
+                          ? "This model does not accept a reasoning effort."
+                          : "Higher effort spends more subscription usage per run."}
+                      </FieldDescription>
+                    </Field>
+                  </div>
+                ) : null}
 
-                  <Button type="submit" disabled={!hydrated || busy || !draft.runtime}>
-                    {busy ? (
-                      <LoaderCircle className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Search aria-hidden="true" />
-                    )}
-                    Check preflight
-                  </Button>
-                </FieldGroup>
-              </form>
-            </CardContent>
-          </Card>
+                <Button type="submit" disabled={!hydrated || busy || !draft.runtime}>
+                  {busy ? (
+                    <LoaderCircle className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Search aria-hidden="true" />
+                  )}
+                  Check preflight
+                </Button>
+              </FieldGroup>
+            </form>
+          </section>
         </div>
 
         <aside aria-label="Run preflight" className="lg:pt-20">
-          <Card className="lg:sticky lg:top-6">
-            <CardHeader>
-              <CardTitle>Run Preflight</CardTitle>
-              <CardDescription>
-                Nothing is persisted as a run until you confirm here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-5">
+          <section className="border-y py-5 lg:sticky lg:top-6">
+            <SectionHeader
+              title="Run Preflight"
+              description="Nothing is persisted as a run until you confirm here."
+              className="mb-5"
+            />
+            <div className="grid gap-5">
               {error ? (
                 <Alert variant="destructive">
                   <AlertCircle aria-hidden="true" />
@@ -596,7 +586,7 @@ export function SearchBriefPage({
                           className="flex items-start gap-2 text-sm"
                         >
                           {dependency.status === "Ready" ? (
-                            <CheckCircle2 className="mt-0.5 text-emerald-600" aria-hidden="true" />
+                            <CheckCircle2 className="mt-0.5 text-success" aria-hidden="true" />
                           ) : (
                             <AlertCircle className="mt-0.5 text-destructive" aria-hidden="true" />
                           )}
@@ -611,7 +601,7 @@ export function SearchBriefPage({
                     </ul>
                   </section>
 
-                  <section aria-labelledby="estimate-title" className="rounded-lg bg-muted p-3">
+                  <section aria-labelledby="estimate-title">
                     <h2
                       id="estimate-title"
                       className="flex items-center gap-2 text-sm font-semibold"
@@ -656,8 +646,8 @@ export function SearchBriefPage({
                   )}
                 </>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </aside>
       </div>
     </main>

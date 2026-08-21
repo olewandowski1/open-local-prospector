@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
+import { PageHeader } from "@/components/page-layout"
 import { settingsSections } from "@/components/settings/settings-navigation"
 import { cn } from "@/lib/utils"
 
@@ -16,21 +17,18 @@ export function SettingsShell({ children }: { children: ReactNode }) {
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden p-4 sm:p-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Everything here applies to this device only. The application stores no account and no
-          provider credentials.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Everything here applies to this device only. The application stores no account and no provider credentials."
+      />
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
         <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">
-          <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+          <ul className="grid grid-cols-2 gap-1 sm:flex lg:flex-col">
             {settingsSections.map((section) => {
               const active = pathname === section.href
               return (
-                <li key={section.href} className="shrink-0 lg:w-full">
+                <li key={section.href} className="min-w-0 sm:shrink-0 lg:w-full">
                   <Link
                     href={section.href}
                     aria-current={active ? "page" : undefined}

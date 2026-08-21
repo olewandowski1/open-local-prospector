@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import { Check, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import type {
   RuntimeId,
   RuntimeReadiness,
@@ -34,17 +35,14 @@ export function RuntimeSettingsSection({
   selectRuntime: (formData: FormData) => Promise<void>
 }) {
   return (
-    <div>
-      <div className="grid gap-3">
-        {runtimes.map((runtime) => {
-          const selected = runtime.runtimeId === selectedRuntime
-          const status = statusPresentation[runtime.status]
-          const StatusIcon = status.icon
-          return (
-            <div
-              key={runtime.runtimeId}
-              className="flex flex-col gap-4 rounded-xl border p-4 @sm:flex-row @sm:items-center"
-            >
+    <div className="overflow-hidden rounded-xl border">
+      {runtimes.map((runtime, index) => {
+        const selected = runtime.runtimeId === selectedRuntime
+        const status = statusPresentation[runtime.status]
+        const StatusIcon = status.icon
+        return (
+          <div key={runtime.runtimeId}>
+            <div className="flex items-center gap-3 p-4">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-md border text-foreground">
                   <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
@@ -65,7 +63,7 @@ export function RuntimeSettingsSection({
                     </p>
                   ) : null}
                   {runtime.terminalInstruction ? (
-                    <code className="mt-1 block text-xs text-muted-foreground">
+                    <code className="mt-1 block text-xs break-all text-muted-foreground">
                       {runtime.terminalInstruction}
                     </code>
                   ) : null}
@@ -90,9 +88,10 @@ export function RuntimeSettingsSection({
                 </Button>
               </form>
             </div>
-          )
-        })}
-      </div>
+            {index < runtimes.length - 1 ? <Separator /> : null}
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type {
@@ -134,9 +135,10 @@ export function RuntimeUpdatePanel() {
             role="status"
             aria-busy="true"
             aria-label="Checking Installed Runtimes"
-            className="grid gap-3"
+            className="overflow-hidden rounded-lg border"
           >
             <RuntimeCardSkeleton />
+            <Separator />
             <RuntimeCardSkeleton />
           </div>
         ) : statuses.length === 0 ? (
@@ -144,16 +146,18 @@ export function RuntimeUpdatePanel() {
             No provider CLI is installed on this device.
           </p>
         ) : (
-          <ul className="grid gap-3">
-            {statuses.map((status) => (
-              <RuntimeUpdateCard
-                key={status.runtimeId}
-                status={status}
-                result={results[status.runtimeId]}
-                busy={running === status.runtimeId}
-                disabled={running !== undefined}
-                onUpdate={() => update(status.runtimeId)}
-              />
+          <ul className="overflow-hidden rounded-lg border">
+            {statuses.map((status, index) => (
+              <li key={status.runtimeId}>
+                <RuntimeUpdateCard
+                  status={status}
+                  result={results[status.runtimeId]}
+                  busy={running === status.runtimeId}
+                  disabled={running !== undefined}
+                  onUpdate={() => update(status.runtimeId)}
+                />
+                {index < statuses.length - 1 ? <Separator /> : null}
+              </li>
             ))}
           </ul>
         )}
@@ -176,7 +180,7 @@ function RuntimeUpdateCard({
   onUpdate: () => void
 }) {
   return (
-    <li className="rounded-lg border p-3">
+    <div className="p-3">
       <div className="flex items-center gap-3">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
           <RuntimeProviderIcon runtimeId={status.runtimeId} />
@@ -214,7 +218,7 @@ function RuntimeUpdateCard({
       {result?.terminalInstruction ? (
         <TerminalCommand instruction={result.terminalInstruction} />
       ) : null}
-    </li>
+    </div>
   )
 }
 
@@ -292,7 +296,7 @@ function RuntimeVersionLine({
 
 function RuntimeCardSkeleton() {
   return (
-    <div className="rounded-lg border p-3">
+    <div className="p-3">
       <div className="flex items-center gap-3">
         <Skeleton className="size-8 shrink-0 rounded-md" />
         <div className="min-w-0 flex-1 space-y-1.5">
