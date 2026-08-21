@@ -4,12 +4,14 @@ import { CircleAlert, CircleCheck, LoaderCircle, Settings2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -152,16 +154,18 @@ export function RuntimeSteeringPanel({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {runtimes.map((runtime) => (
-                    <SelectItem
-                      key={runtime.runtimeId}
-                      value={runtime.runtimeId}
-                      disabled={runtime.status !== "Ready"}
-                    >
-                      <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                      {runtime.label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {runtimes.map((runtime) => (
+                      <SelectItem
+                        key={runtime.runtimeId}
+                        value={runtime.runtimeId}
+                        disabled={runtime.status !== "Ready"}
+                      >
+                        <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                        {runtime.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
               <FieldDescription>Only authenticated runtimes can be selected.</FieldDescription>
@@ -185,12 +189,14 @@ export function RuntimeSteeringPanel({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {models.map((model) => (
-                    <SelectItem key={model.value} value={model.value}>
-                      <RuntimeProviderIcon runtimeId={draft.runtimeId} />
-                      {model.label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {models.map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        <RuntimeProviderIcon runtimeId={draft.runtimeId} />
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
               <FieldDescription>
@@ -228,11 +234,13 @@ export function RuntimeSteeringPanel({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {efforts.map((effort) => (
-                      <SelectItem className="capitalize" key={effort} value={effort}>
-                        {effort}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {efforts.map((effort) => (
+                        <SelectItem className="capitalize" key={effort} value={effort}>
+                          {effort}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               )}
@@ -244,15 +252,13 @@ export function RuntimeSteeringPanel({
             </Field>
           </div>
         ) : (
-          <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
-            <CircleAlert aria-hidden="true" className="mt-0.5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">No Authenticated Runtime</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Sign in to Codex or Claude in their terminals, then confirm readiness in settings.
-              </p>
-            </div>
-          </div>
+          <Alert>
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>No Authenticated Runtime</AlertTitle>
+            <AlertDescription>
+              Sign in to Codex or Claude in their terminals, then confirm readiness in settings.
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="flex flex-wrap items-center gap-2">

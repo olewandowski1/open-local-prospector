@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { expectPageScroll, expectTablesDoNotScrollVertically } from "@/testing/page-scroll"
 
 function runDetail(overrides: Record<string, unknown> = {}) {
   return {
@@ -135,11 +136,11 @@ test("shows partial business failure and a separate factual Technical Run Log", 
   await expect(page.locator("body")).not.toContainText("chain-of-thought")
 })
 
-test("keeps the run detail page inside the viewport", async ({ page }) => {
+test("scrolls the complete run detail page instead of trapping the table", async ({ page }) => {
   await page.route("**/api/runs/run-e2e", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      // Far more businesses and events than fit on screen, which is exactly when the page must not grow.
+      // Far more businesses and events than fit on screen, which must lengthen the page scroller.
       body: JSON.stringify(
         runDetail({
           state: "Running",
@@ -164,9 +165,6 @@ test("keeps the run detail page inside the viewport", async ({ page }) => {
   await page.goto("/runs/run-e2e")
   await expect(page.getByRole("heading", { name: "Run Progress" })).toBeVisible()
 
-  // The panes scroll internally, so the document itself should never exceed the viewport.
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollHeight - window.innerHeight,
-  )
-  expect(overflow).toBeLessThanOrEqual(4)
+  await expectTablesDoNotScrollVertically(page)
+  await expectPageScroll(page, 240)
 })

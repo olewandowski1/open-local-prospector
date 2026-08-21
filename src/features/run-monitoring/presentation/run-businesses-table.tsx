@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Table,
   TableBody,
@@ -62,7 +61,7 @@ export function RunBusinessesTable({
   const page = businesses.slice(pageIndex * pageSize, pageIndex * pageSize + pageSize)
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+    <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           {/* This is a document section, so its title carries heading semantics. */}
@@ -83,88 +82,83 @@ export function RunBusinessesTable({
           {action}
         </div>
       </div>
-      {/* Bounded so a run with many businesses scrolls here rather than lengthening the page. */}
-      <div className="min-h-0 flex-1">
-        <ScrollArea className="h-full">
-          {businesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No per-business work has been checkpointed yet.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Business</TableHead>
-                  <TableHead className={columnClass.stage}>Stage</TableHead>
-                  {/* Score sits beside Status, so the number and the verdict it produced read together. */}
-                  <TableHead className={columnClass.score}>Score</TableHead>
-                  <TableHead className={columnClass.status}>Status</TableHead>
-                  <TableHead className={columnClass.retries}>Retries</TableHead>
-                  <TableHead className={columnClass.issue}>Issue</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {page.map((business) => {
-                  const selected = business.id === selectedBusinessId
-                  return (
-                    <TableRow
-                      key={business.id}
-                      onClick={() => onSelect(selected ? undefined : business.id)}
-                      aria-selected={selected}
-                      className={cn("cursor-pointer", selected && "bg-muted/60")}
-                    >
-                      <TableCell>
-                        <span className="block max-w-40 truncate font-medium @xl:max-w-80">
-                          {business.name ?? business.id}
-                        </span>
-                        <span className="block text-xs text-muted-foreground tabular-nums">
-                          {business.sourceEvents.length}{" "}
-                          {business.sourceEvents.length === 1 ? "Event" : "Events"}
-                        </span>
-                      </TableCell>
-                      <TableCell className={cn("text-muted-foreground", columnClass.stage)}>
-                        {humanizeStage(business.currentStage)}
-                      </TableCell>
-                      {/* The pass mark is prose above the table, not a denominator: scores run past it. */}
-                      <TableCell className={columnClass.score}>
-                        {business.score === undefined ? (
-                          <span className="text-muted-foreground">&mdash;</span>
-                        ) : (
-                          <span
-                            title={`${formatBusinessScore(business.score)} points; ${REVIEW_QUEUE_THRESHOLD} needed to reach the Review Queue`}
-                            className={cn(
-                              "font-medium tabular-nums",
-                              business.qualified ? "text-success" : "text-muted-foreground",
-                            )}
-                          >
-                            {formatBusinessScore(business.score)}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className={columnClass.status}>
-                        <Badge variant={businessStatusVariant(business.status)}>
-                          {humanizeStage(business.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className={cn("tabular-nums", columnClass.retries)}>
-                        {business.retryCount}
-                      </TableCell>
-                      <TableCell
+      {businesses.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No per-business work has been checkpointed yet.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Business</TableHead>
+              <TableHead className={columnClass.stage}>Stage</TableHead>
+              {/* Score sits beside Status, so the number and the verdict it produced read together. */}
+              <TableHead className={columnClass.score}>Score</TableHead>
+              <TableHead className={columnClass.status}>Status</TableHead>
+              <TableHead className={columnClass.retries}>Retries</TableHead>
+              <TableHead className={columnClass.issue}>Issue</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {page.map((business) => {
+              const selected = business.id === selectedBusinessId
+              return (
+                <TableRow
+                  key={business.id}
+                  onClick={() => onSelect(selected ? undefined : business.id)}
+                  aria-selected={selected}
+                  className={cn("cursor-pointer", selected && "bg-muted/60")}
+                >
+                  <TableCell>
+                    <span className="block max-w-40 truncate font-medium @xl:max-w-80">
+                      {business.name ?? business.id}
+                    </span>
+                    <span className="block text-xs text-muted-foreground tabular-nums">
+                      {business.sourceEvents.length}{" "}
+                      {business.sourceEvents.length === 1 ? "Event" : "Events"}
+                    </span>
+                  </TableCell>
+                  <TableCell className={cn("text-muted-foreground", columnClass.stage)}>
+                    {humanizeStage(business.currentStage)}
+                  </TableCell>
+                  {/* The pass mark is prose above the table, not a denominator: scores run past it. */}
+                  <TableCell className={columnClass.score}>
+                    {business.score === undefined ? (
+                      <span className="text-muted-foreground">&mdash;</span>
+                    ) : (
+                      <span
+                        title={`${formatBusinessScore(business.score)} points; ${REVIEW_QUEUE_THRESHOLD} needed to reach the Review Queue`}
                         className={cn(
-                          "text-xs whitespace-normal text-muted-foreground",
-                          columnClass.issue,
+                          "font-medium tabular-nums",
+                          business.qualified ? "text-success" : "text-muted-foreground",
                         )}
                       >
-                        {business.failureReason ?? "—"}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </ScrollArea>
-      </div>
+                        {formatBusinessScore(business.score)}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className={columnClass.status}>
+                    <Badge variant={businessStatusVariant(business.status)}>
+                      {humanizeStage(business.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className={cn("tabular-nums", columnClass.retries)}>
+                    {business.retryCount}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "text-xs whitespace-normal text-muted-foreground",
+                      columnClass.issue,
+                    )}
+                  >
+                    {business.failureReason ?? "—"}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      )}
 
       {businesses.length > 0 ? (
         <DataTablePagination

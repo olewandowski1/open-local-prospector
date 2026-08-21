@@ -12,6 +12,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
+import { PageScroller } from "@/components/page-scroller"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
@@ -61,7 +62,7 @@ export function OverviewPage({
   const metrics = calculateOverviewMetrics(runs, candidateSummary, now)
 
   return (
-    <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+    <PageScroller>
       <div className="flex flex-col gap-8">
         <PageHeader
           title="Overview"
@@ -129,6 +130,6 @@ export function OverviewPage({
           </div>
         </section>
       </div>
-    </main>
+    </PageScroller>
   )
 }

@@ -195,7 +195,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
   const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {error ? (
         <Alert variant="destructive">
           <AlertTitle>Action Not Completed</AlertTitle>
@@ -242,8 +242,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
           </EmptyContent>
         </Empty>
       ) : (
-        // The queue takes the height that is left and scrolls inside itself.
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div>
           <CandidatesTable candidates={visible} selectedId={open?.id} onOpen={openCandidate} />
         </div>
       )}

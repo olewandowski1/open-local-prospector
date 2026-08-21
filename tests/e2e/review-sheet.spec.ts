@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test"
+import {
+  expectPageScroll,
+  expectTablesDoNotScrollVertically,
+  pageCanScroll,
+} from "@/testing/page-scroll"
 
 test.describe.configure({ mode: "serial" })
 
@@ -39,6 +44,16 @@ test("keeps the review page inside the viewport while showing long evidence", as
     () => document.documentElement.scrollHeight - window.innerHeight,
   )
   expect(overflow).toBeLessThanOrEqual(4)
+})
+
+test("scrolls the review queue as one page instead of trapping its table", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 600 })
+  await page.goto("/review")
+
+  test.skip(!(await pageCanScroll(page)), "The persisted queue is not long enough to scroll")
+
+  await expectTablesDoNotScrollVertically(page)
+  await expectPageScroll(page)
 })
 
 test("keeps candidate evidence out of the queue payload", async ({ page, isMobile }) => {

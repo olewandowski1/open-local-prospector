@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
+import { PageScroller } from "@/components/page-scroller"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -180,7 +182,7 @@ export function SearchBriefPage({
   }
 
   return (
-    <main className="app-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+    <PageScroller>
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.8fr)]">
         <div className="min-w-0">
           <PageHeader
@@ -265,11 +267,13 @@ export function SearchBriefPage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {categoryPresets.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {categoryPresets.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -342,11 +346,13 @@ export function SearchBriefPage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Skip">Skip by default</SelectItem>
-                      <SelectItem value="IncludeWithoutReassessment">
-                        Include existing assessment
-                      </SelectItem>
-                      <SelectItem value="Reassess">Explicitly reassess</SelectItem>
+                      <SelectGroup>
+                        <SelectItem value="Skip">Skip by default</SelectItem>
+                        <SelectItem value="IncludeWithoutReassessment">
+                          Include existing assessment
+                        </SelectItem>
+                        <SelectItem value="Reassess">Explicitly reassess</SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldDescription>
@@ -387,12 +393,14 @@ export function SearchBriefPage({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {readyRuntimes.map((runtime) => (
-                        <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
-                          <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                          {runtime.label}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {readyRuntimes.map((runtime) => (
+                          <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
+                            <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                            {runtime.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -434,14 +442,16 @@ export function SearchBriefPage({
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {runtimeModelOptions(draft.runtime).map((model) => (
-                            <SelectItem key={model.value} value={model.value}>
-                              {draft.runtime ? (
-                                <RuntimeProviderIcon runtimeId={draft.runtime} />
-                              ) : null}
-                              {model.label}
-                            </SelectItem>
-                          ))}
+                          <SelectGroup>
+                            {runtimeModelOptions(draft.runtime).map((model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {draft.runtime ? (
+                                  <RuntimeProviderIcon runtimeId={draft.runtime} />
+                                ) : null}
+                                {model.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                       <FieldDescription>
@@ -475,11 +485,13 @@ export function SearchBriefPage({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {selectedEfforts.map((effort) => (
-                              <SelectItem className="capitalize" key={effort} value={effort}>
-                                {effort}
-                              </SelectItem>
-                            ))}
+                            <SelectGroup>
+                              {selectedEfforts.map((effort) => (
+                                <SelectItem className="capitalize" key={effort} value={effort}>
+                                  {effort}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       )}
@@ -650,6 +662,6 @@ export function SearchBriefPage({
           </section>
         </aside>
       </div>
-    </main>
+    </PageScroller>
   )
 }

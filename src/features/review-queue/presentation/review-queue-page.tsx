@@ -1,6 +1,7 @@
 import { CircleGauge, Plus } from "lucide-react"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-layout"
+import { PageScroller } from "@/components/page-scroller"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
@@ -16,7 +17,7 @@ import { getReviewQueueSummaries } from "@/features/review-queue/server/review-q
 export function ReviewQueuePage() {
   const candidates = getReviewQueueSummaries()
   return (
-    <main className="flex h-[calc(100svh-var(--shell-header))] flex-col gap-6 overflow-hidden p-4 sm:p-6">
+    <PageScroller className="flex flex-col gap-6">
       <PageHeader
         title="Review Queue"
         description="Review evidence, record decisions, and preserve machine history."
@@ -43,6 +44,6 @@ export function ReviewQueuePage() {
       ) : (
         <ReviewWorkspace candidates={candidates} />
       )}
-    </main>
+    </PageScroller>
   )
 }

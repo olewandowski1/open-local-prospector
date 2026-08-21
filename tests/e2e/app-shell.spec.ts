@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test"
+import { expectPageScroll, pageScroller } from "@/testing/page-scroll"
 
 test("renders the persisted overview without sample data", async ({ page }) => {
   await page.goto("/")
 
   await expect(page).toHaveTitle("Local Prospector")
+  await expect(page.locator("main")).toHaveCount(1)
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible()
   await expect(page.getByRole("region", { name: "Prospecting Summary" })).toContainText(
     "Businesses Discovered",
@@ -18,14 +20,27 @@ test("renders the persisted overview without sample data", async ({ page }) => {
 
 test("scrolls the overview inside the bounded app shell", async ({ page }) => {
   await page.goto("/")
-  const overview = page.locator("main.app-scrollbar")
+  await expectPageScroll(page, 160)
+})
 
-  await expect(overview).toBeVisible()
-  expect(await overview.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(
-    true,
+test("scrolls Settings as one page instead of an inner content pane", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 600 })
+  await page.goto("/settings/data")
+
+  await expectPageScroll(page)
+
+  // No descendant may become a second vertical scroll owner for the settings content.
+  const nestedOwners = await pageScroller(page).evaluate(
+    (element) =>
+      [...element.querySelectorAll("*")].filter((candidate) => {
+        const style = getComputedStyle(candidate)
+        return (
+          (style.overflowY === "auto" || style.overflowY === "scroll") &&
+          candidate.scrollHeight > candidate.clientHeight + 1
+        )
+      }).length,
   )
-  await overview.evaluate((element) => element.scrollTo({ top: 160 }))
-  await expect.poll(() => overview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  expect(nestedOwners).toBe(0)
 })
 
 // These write the single stored runtime preference. `serial` orders them within a project, and

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
 
 import { PageHeader } from "@/components/page-layout"
+import { PageScroller } from "@/components/page-scroller"
 import { settingsSections } from "@/components/settings/settings-navigation"
 import { cn } from "@/lib/utils"
 
@@ -16,13 +17,13 @@ export function SettingsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   return (
-    <main className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden p-4 sm:p-6">
+    <PageScroller className="flex flex-col gap-6">
       <PageHeader
         title="Settings"
         description="Everything here applies to this device only. The application stores no account and no provider credentials."
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         <nav aria-label="Settings sections" className="lg:w-52 lg:shrink-0">
           <ul className="grid grid-cols-2 gap-1 sm:flex lg:flex-col">
             {settingsSections.map((section) => {
@@ -49,8 +50,8 @@ export function SettingsShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
 
-        <div className="app-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
-    </main>
+    </PageScroller>
   )
 }
