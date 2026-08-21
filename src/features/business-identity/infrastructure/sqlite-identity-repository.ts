@@ -234,17 +234,40 @@ function commitEvaluation(
             .get(input.evaluation.canonicalFingerprint),
         )
       : false
+    // Several discovered pages routinely corroborate to one business. Without this, each one becomes
+    // its own candidate: the same business is inspected, assessed and scored more than once, and the
+    // run reaches its target on businesses it has already counted.
+    const duplicateOf = canonicalBusinessId
+      ? (database
+          .prepare(
+            `select id from run_businesses
+             where run_id = ? and canonical_business_id = ? and discovered_business_id <> ?
+             order by created_at, id limit 1`,
+          )
+          .pluck()
+          .get(input.runId, canonicalBusinessId, input.discoveredBusinessId) as string | undefined)
+      : undefined
     const status: CommittedIdentity["status"] =
       input.evaluation.status !== "Eligible"
         ? input.evaluation.status
         : suppressed
           ? "Excluded"
-          : recentlyAssessed && policy === "Skip"
-            ? "SkippedRecent"
-            : recentlyAssessed && policy === "IncludeWithoutReassessment"
-              ? "IncludedRecent"
-              : "Eligible"
-    const runBusinessId = upsertRunBusiness(database, input, canonicalBusinessId, status)
+          : duplicateOf
+            ? "DuplicateCandidate"
+            : recentlyAssessed && policy === "Skip"
+              ? "SkippedRecent"
+              : recentlyAssessed && policy === "IncludeWithoutReassessment"
+                ? "IncludedRecent"
+                : "Eligible"
+    const runBusinessId = upsertRunBusiness(
+      database,
+      input,
+      canonicalBusinessId,
+      status,
+      duplicateOf && status === "DuplicateCandidate"
+        ? "Already discovered in this run under another listing."
+        : undefined,
+    )
     replacePresences(database, runBusinessId, canonicalBusinessId, input.evaluation)
     if (canonicalBusinessId) {
       replaceContacts(database, runBusinessId, canonicalBusinessId, input.evaluation)
@@ -275,22 +298,43 @@ function upsertCanonical(
   const existing = database
     .prepare("select id from canonical_businesses where identity_fingerprint = ?")
     .get(fingerprint) as { id: string } | undefined
-  const id = existing?.id ?? crypto.randomUUID()
   const locality = searchBrief.searchArea.displayName.split(",")[0]?.trim() ?? searchBrief.location
+  const normalizedName = normalizeCanonicalName(evaluation.canonicalName)
+  // A business rediscovered later can key on a different signal than the one it was first recorded
+  // under — a page that listed a telephone last time may lead with a website this time, and records
+  // written before the key order changed carry the older form. Matching an established row by name
+  // and locality keeps that one business rather than opening a second, unreachable identity.
+  const established =
+    existing ??
+    (normalizedName.length >= 3
+      ? (database
+          .prepare(
+            `select id from canonical_businesses
+             where normalized_name = ? and country_code = ? and lower(locality) = lower(?)
+             order by created_at, id limit 1`,
+          )
+          .get(normalizedName, searchBrief.searchArea.countryCode, locality) as
+          | { id: string }
+          | undefined)
+      : undefined)
+  if (established) return established.id
+  const id = crypto.randomUUID()
+  // The name a business was first corroborated under is already shown against every candidate it
+  // produced, so a later listing of the same business refreshes decision scope but never the name.
   database
     .prepare(
       `insert into canonical_businesses
        (id, identity_fingerprint, name, normalized_name, locality, country_code, decision_scope,
         created_at, updated_at)
        values (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       on conflict(identity_fingerprint) do update set name = excluded.name,
+       on conflict(identity_fingerprint) do update set
         decision_scope = excluded.decision_scope, updated_at = excluded.updated_at`,
     )
     .run(
       id,
       fingerprint,
       evaluation.canonicalName,
-      evaluation.canonicalName.toLocaleLowerCase("pl").replace(/\s+/gu, " ").trim(),
+      normalizedName,
       locality,
       searchBrief.searchArea.countryCode,
       evaluation.decisionScope,
@@ -300,11 +344,17 @@ function upsertCanonical(
   return id
 }
 
+/** The stored form both the canonical row and the name-and-locality match are compared on. */
+function normalizeCanonicalName(name: string): string {
+  return name.toLocaleLowerCase("pl").replace(/\s+/gu, " ").trim()
+}
+
 function upsertRunBusiness(
   database: Database.Database,
   input: Parameters<IdentityRepository["commitEvaluation"]>[0],
   canonicalBusinessId: string | undefined,
   status: CommittedIdentity["status"],
+  exclusionReason?: string,
 ): string {
   const existing = database
     .prepare("select id from run_businesses where run_id = ? and discovered_business_id = ?")
@@ -329,8 +379,8 @@ function upsertRunBusiness(
       canonicalBusinessId ?? null,
       status,
       input.evaluation.status === "Ambiguous" ? "Ambiguous" : "Corroborated",
-      input.evaluation.exclusionCode ?? null,
-      input.evaluation.exclusionReason ?? null,
+      input.evaluation.exclusionCode ?? (exclusionReason ? "duplicate-candidate" : null),
+      exclusionReason ?? input.evaluation.exclusionReason ?? null,
       JSON.stringify(input.evaluation.signals),
       input.committedAt.getTime(),
       input.committedAt.getTime(),
@@ -394,7 +444,8 @@ function updateExclusionMetrics(database: Database.Database, runId: string, now:
     database
       .prepare(
         `select count(*) from run_businesses
-         where run_id = ? and status in ('Ambiguous', 'Excluded', 'SkippedRecent')`,
+         where run_id = ?
+         and status in ('Ambiguous', 'Excluded', 'SkippedRecent', 'DuplicateCandidate')`,
       )
       .pluck()
       .get(runId),

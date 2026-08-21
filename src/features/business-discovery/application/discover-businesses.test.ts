@@ -53,11 +53,14 @@ describe("business discovery workflow", () => {
     const checkpoint = await Effect.runPromise(execute(task))
     const repeated = await Effect.runPromise(execute(task))
 
+    // Falling short of the target is recorded, but the businesses discovered along the way are still
+    // corroborated: discarding them ended the run with no candidates at all.
     expect(checkpoint).toMatchObject({
-      completionState: "Search Exhausted",
       value: { discoveredBusinesses: 3, targetReached: false, searchExhausted: true },
     })
-    expect(repeated).toMatchObject({ completionState: "Search Exhausted" })
+    expect(checkpoint.completionState).toBeUndefined()
+    expect(checkpoint.nextTasks).toHaveLength(3)
+    expect(repeated.nextTasks).toHaveLength(3)
     expect(search).toHaveBeenCalledTimes(4)
     expect(
       readRow(

@@ -117,6 +117,11 @@ export function makeDiscoveryTaskExecutor(
       }
 
       const targetReached = progress.uniqueBusinesses >= searchBrief.targetCount
+      // Every discovered business is corroborated, for two reasons. Stopping short of the target used
+      // to discard what discovery had already found and paid for, ending the run with no candidates
+      // at all. Pursuing exactly `targetCount` left no headroom either: one business excluded
+      // downstream put the target permanently out of reach while unexplored businesses sat unused.
+      // Discovery already stops as soon as the target is met, so the surplus is bounded by one page.
       return {
         value: {
           source: source.identifier,
@@ -127,16 +132,14 @@ export function makeDiscoveryTaskExecutor(
           stoppedForRepeatedResults,
           schemaVersion: 1,
         },
-        ...(targetReached
+        ...(progress.uniqueBusinesses > 0
           ? {
-              nextTasks: progress.businessIds
-                .slice(0, searchBrief.targetCount)
-                .map((businessId) => ({
-                  stage: "CorroborateBusiness",
-                  businessId,
-                  input: { businessId },
-                  schemaVersion: 1,
-                })),
+              nextTasks: progress.businessIds.map((businessId) => ({
+                stage: "CorroborateBusiness",
+                businessId,
+                input: { businessId },
+                schemaVersion: 1,
+              })),
             }
           : { completionState: "Search Exhausted" as const }),
       }

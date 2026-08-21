@@ -19,7 +19,14 @@ export type IdentityTaskContext = Readonly<{
 export type CommittedIdentity = Readonly<{
   runBusinessId: string
   canonicalBusinessId?: string
-  status: "Eligible" | "Ambiguous" | "Excluded" | "SkippedRecent" | "IncludedRecent"
+  status:
+    | "Eligible"
+    | "Ambiguous"
+    | "Excluded"
+    | "SkippedRecent"
+    | "IncludedRecent"
+    /** Corroborated to a business this run already holds under a different discovered listing. */
+    | "DuplicateCandidate"
   websiteUrl?: string
   shouldInspect: boolean
 }>

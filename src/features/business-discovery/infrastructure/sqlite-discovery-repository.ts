@@ -72,6 +72,15 @@ function recordPage(
     const queryId = crypto.randomUUID()
     let uniqueAdded = 0
     let duplicates = 0
+    let nextRank =
+      Number(
+        database
+          .prepare(
+            "select coalesce(max(discovery_rank), 0) from discovered_businesses where run_id = ?",
+          )
+          .pluck()
+          .get(input.runId),
+      ) + 1
     const occurrences: Array<{
       businessId: string
       duplicate: boolean
@@ -93,8 +102,8 @@ function recordPage(
           .prepare(
             `insert into discovered_businesses
              (id, run_id, source, source_identifier, discovery_key, name, normalized_name,
-              result_url, description, raw_attributes, discovered_at)
-             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              result_url, description, raw_attributes, discovery_rank, discovered_at)
+             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .run(
             businessId,
@@ -107,8 +116,10 @@ function recordPage(
             resultUrl,
             result.description ?? null,
             JSON.stringify(result.attributes),
+            nextRank,
             input.recordedAt.getTime(),
           )
+        nextRank += 1
         uniqueAdded += 1
       }
       occurrences.push({
@@ -216,7 +227,9 @@ function recordPage(
 
 function readProgress(database: Database.Database, runId: string): DiscoveryProgress {
   const businessIds = database
-    .prepare("select id from discovered_businesses where run_id = ? order by discovered_at, id")
+    .prepare(
+      "select id from discovered_businesses where run_id = ? order by discovery_rank, discovered_at, id",
+    )
     .all(runId) as readonly { id: string }[]
   return { uniqueBusinesses: businessIds.length, businessIds: businessIds.map((row) => row.id) }
 }

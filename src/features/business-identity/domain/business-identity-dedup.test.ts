@@ -88,6 +88,28 @@ describe("identity fingerprint", () => {
     expect([...fingerprints][0]).toBe("tel:48693896955|PL")
   })
 
+  it("ignores www when a host is the strongest signal", () => {
+    const host = (url: string) =>
+      evaluateBusinessIdentity({
+        name: "Kwiaciarnia Orchidea",
+        searchAreaName: "Gogolin, gmina Gogolin, Polska",
+        countryCode: "PL",
+        evidence: [
+          {
+            sourceIdentifier: "subscription-runtime-web-search",
+            title: "Kwiaciarnia Orchidea",
+            url,
+            description: "Kwiaciarnia w Gogolin, 47-320, kontakt@orchidea-gogolin.pl",
+            collectedAt,
+          },
+        ],
+      }).canonicalFingerprint
+
+    expect(host("https://www.orchidea-gogolin.pl/kontakt")).toBe(
+      host("https://orchidea-gogolin.pl/kontakt"),
+    )
+  })
+
   it("still separates two businesses that share nothing but a locality", () => {
     const one = evaluate("Kwiaciarnia Margaret", "https://margaret.example.pl/")
     const two = evaluateBusinessIdentity({

@@ -141,9 +141,108 @@ describe("business identity workflow", () => {
       ),
     ).toBeGreaterThan(0)
   })
+
+  it("counts one business once when two discovered listings corroborate to it", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const first = await seedIdentityTask(database.path, "identity-duplicate")
+    const second = await addDiscoveredListing(database.path, first, "Gabinet Uśmiech Kraków 24h")
+    const executor = makeIdentityTaskExecutor(
+      { identifier: "fake-public-search", search: evidenceSource() },
+      makeSqliteIdentityRepository(database.path),
+    )
+
+    const original = await Effect.runPromise(executor(first))
+    const duplicate = await Effect.runPromise(executor(second))
+
+    expect(original).toMatchObject({ value: { status: "Eligible" } })
+    expect(original.nextTasks).toHaveLength(1)
+    // The second listing is the same business, so it must not be inspected, assessed and scored a
+    // second time, and must not count towards the run's target.
+    expect(duplicate).toMatchObject({ value: { status: "DuplicateCandidate" } })
+    expect(duplicate.nextTasks).toBeUndefined()
+    expect(readScalar(database.path, "select count(distinct id) from canonical_businesses")).toBe(1)
+    expect(
+      readRow(
+        database.path,
+        "select status, exclusion_reason from run_businesses where status = 'DuplicateCandidate'",
+      ),
+    ).toMatchObject({ exclusion_reason: "Already discovered in this run under another listing." })
+    expect(readScalar(database.path, "select exclusions from run_metrics")).toBe(1)
+  })
+
+  it("keeps one canonical business when a later run extracts a different telephone", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const repository = makeSqliteIdentityRepository(database.path)
+    const first = await seedIdentityTask(database.path, "identity-run-one")
+    const second = await seedIdentityTask(database.path, "identity-run-two")
+
+    await Effect.runPromise(
+      makeIdentityTaskExecutor(
+        { identifier: "fake-public-search", search: evidenceSource("12 345 67 89") },
+        repository,
+      )(first),
+    )
+    await Effect.runPromise(
+      makeIdentityTaskExecutor(
+        { identifier: "fake-public-search", search: evidenceSource("12 999 88 77") },
+        repository,
+      )(second),
+    )
+
+    // Two runs, two of the business's several published numbers. Keyed on the telephone alone this
+    // was a second canonical business, so nothing was recognised as recently assessed.
+    expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(1)
+    expect(
+      readScalar(database.path, "select count(distinct canonical_business_id) from run_businesses"),
+    ).toBe(1)
+  })
 })
 
-function evidenceSource() {
+/** A second discovered result in the same run, standing for the same business under another title. */
+async function addDiscoveredListing(
+  databasePath: string,
+  task: RunTask,
+  title: string,
+): Promise<RunTask> {
+  await Effect.runPromise(
+    makeSqliteDiscoveryRepository(databasePath).recordPage({
+      runId: task.runId,
+      taskId: task.id,
+      source: "fixture-discovery",
+      query: `seed ${title}`,
+      offset: 0,
+      page: {
+        results: [
+          {
+            sourceIdentifier: `fixture:${title}`,
+            title,
+            url: `https://directory.test/${encodeURIComponent(title)}`,
+            description: "Public discovery input",
+            attributes: {},
+          },
+        ],
+        moreResults: false,
+      },
+      targetCount: 5,
+      recordedAt: new Date(),
+    }),
+  )
+  const businessId = withDatabase(databasePath, (database) =>
+    String(
+      database
+        .prepare(
+          "select id from discovered_businesses where run_id = ? order by discovery_rank desc limit 1",
+        )
+        .pluck()
+        .get(task.runId),
+    ),
+  )
+  return { ...task, businessId, input: { businessId } }
+}
+
+function evidenceSource(telephone = "12 345 67 89") {
   return vi.fn<DiscoverySource["search"]>(() =>
     Effect.succeed({
       results: [
@@ -151,7 +250,7 @@ function evidenceSource() {
           sourceIdentifier: "fixture:website",
           title: "Gabinet Uśmiech Kraków",
           url: "https://usmiech.pl/kontakt",
-          description: "Kraków, tel. 12 345 67 89, kontakt@usmiech.pl",
+          description: `Kraków, tel. ${telephone}, kontakt@usmiech.pl`,
           attributes: {},
         },
         {

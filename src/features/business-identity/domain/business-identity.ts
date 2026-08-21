@@ -219,6 +219,12 @@ export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluati
  * becomes one candidate rather than four. A telephone in a country identifies a business on its own;
  * including the name would split it again, because each directory titles the page differently.
  *
+ * The website comes second, not first, even though a host is the more stable signal across runs. The
+ * discovered result is itself evidence, so a directory page that titles itself after the business
+ * confirms the *directory's* host, and keying on that would give one business a new identity per
+ * directory. Cross-run drift in which telephone gets extracted is handled where the canonical record
+ * is looked up instead, by also matching an established business on name and locality.
+ *
  * The name is the key of last resort, used only when no telephone and no confirmed website exist.
  */
 function fingerprint(
@@ -235,9 +241,19 @@ function fingerprint(
   const website = presences.find(
     (presence) => presence.type === "Website" && presence.associationState === "Confirmed",
   )
-  if (website) return `web:${normalizeWords(new URL(website.url).hostname)}|${country}`
+  const host = website ? websiteHost(website.url) : undefined
+  if (host) return `web:${host}|${country}`
 
   return `name:${normalizeWords(canonicalName)}|${normalizeWords(locality)}|${country}`
+}
+
+/** `www.` is a routing detail, not part of the identity, so both spellings key the same business. */
+function websiteHost(url: string): string | undefined {
+  try {
+    return normalizeWords(new URL(url).hostname.replace(/^www\./u, ""))
+  } catch {
+    return undefined
+  }
 }
 
 /**

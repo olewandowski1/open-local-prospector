@@ -1,0 +1,2 @@
+ALTER TABLE `discovered_businesses` ADD `discovery_rank` integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+CREATE INDEX `discovered_businesses_run_rank_idx` ON `discovered_businesses` (`run_id`,`discovery_rank`);
