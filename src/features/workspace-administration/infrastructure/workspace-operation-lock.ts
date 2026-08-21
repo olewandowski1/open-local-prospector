@@ -9,7 +9,7 @@ import {
 } from "node:fs"
 import { dirname } from "node:path"
 
-import type { LocalApplicationConfig } from "@/features/local-application"
+import { closeSharedDatabases, type LocalApplicationConfig } from "@/features/local-application"
 
 const lockPathFor = (databasePath: string) => `${databasePath}.maintenance.lock`
 
@@ -20,6 +20,10 @@ export function isWorkspaceMaintenanceActive(databasePath: string): boolean {
 export function withWorkspaceOperationLock<T>(config: LocalApplicationConfig, work: () => T): T {
   const release = tryAcquireWorkspaceOperationLease(config.databasePath)
   if (!release) throw new Error("Workspace maintenance is already in progress.")
+  // Restoring renames the live database file and a reset empties it. Windows will not rename a file
+  // this process still holds open, so the pooled handles are released before the work begins; the
+  // next read simply opens a new one.
+  closeSharedDatabases()
   try {
     const result = work()
     if (result instanceof Promise) return result.finally(release) as T

@@ -57,11 +57,17 @@ export const runWorker = (
   owner: string,
   configuration: WorkerConfiguration,
   acquireOperationLease: () => (() => void) | undefined = () => () => undefined,
+  releaseDatabases: () => void = () => undefined,
 ) =>
   Effect.forever(
     Effect.acquireUseRelease(
       Effect.sync(acquireOperationLease),
-      (release) => (release ? runWorkerCycle(owner, configuration) : Effect.succeed(0)),
+      (release) =>
+        release
+          ? runWorkerCycle(owner, configuration)
+          : // Maintenance holds the lease. It is about to rename or empty the database file, which
+            // it cannot do on Windows while this process keeps a connection open to it.
+            Effect.sync(releaseDatabases).pipe(Effect.as(0 as number)),
       (release) => Effect.sync(() => release?.()),
     ).pipe(
       // A database that is briefly unavailable is not a reason to stop working. The worker used to

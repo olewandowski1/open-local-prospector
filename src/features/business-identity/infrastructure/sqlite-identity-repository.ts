@@ -1,6 +1,5 @@
-import Database from "better-sqlite3"
+import type Database from "better-sqlite3"
 import { Effect } from "effect"
-
 import type {
   CommittedIdentity,
   IdentityRepository,
@@ -11,6 +10,7 @@ import type {
   IdentityEvaluation,
   IdentityEvidence,
 } from "@/features/business-identity/domain/business-identity"
+import { sharedDatabase } from "@/features/local-application"
 import type { SearchBrief } from "@/features/prospecting-runs"
 
 type DiscoveredRow = Readonly<{
@@ -55,16 +55,7 @@ function databaseEffect<A>(
   use: (database: Database.Database) => A,
 ) {
   return Effect.try({
-    try: () => {
-      const database = new Database(databasePath, { fileMustExist: true })
-      database.pragma("foreign_keys = ON")
-      database.pragma("busy_timeout = 5000")
-      try {
-        return use(database)
-      } finally {
-        database.close()
-      }
-    },
+    try: () => use(sharedDatabase(databasePath)),
     catch: () => new IdentityPersistenceError({ operation }),
   })
 }

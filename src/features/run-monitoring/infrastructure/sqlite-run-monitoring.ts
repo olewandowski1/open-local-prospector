@@ -1,5 +1,6 @@
-import Database from "better-sqlite3"
+import type Database from "better-sqlite3"
 import { Effect, Layer } from "effect"
+import { sharedDatabase } from "@/features/local-application"
 import type { RuntimeId, SearchBrief } from "@/features/prospecting-runs"
 
 import {
@@ -74,14 +75,7 @@ function withDatabase<A>(
   readonly: boolean,
   use: (database: Database.Database) => A,
 ): A {
-  const database = new Database(databasePath, { readonly, fileMustExist: true })
-  database.pragma("foreign_keys = ON")
-  database.pragma("busy_timeout = 5000")
-  try {
-    return use(database)
-  } finally {
-    database.close()
-  }
+  return use(sharedDatabase(databasePath, readonly))
 }
 
 const runSelect = `

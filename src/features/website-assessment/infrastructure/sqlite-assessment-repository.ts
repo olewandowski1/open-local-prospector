@@ -1,6 +1,7 @@
-import Database from "better-sqlite3"
+import type Database from "better-sqlite3"
 import { Effect } from "effect"
 
+import { sharedDatabase } from "@/features/local-application"
 import type {
   AssessmentRepository,
   AssessmentTarget,
@@ -58,16 +59,7 @@ function databaseEffect<A>(
   use: (db: Database.Database) => A,
 ) {
   return Effect.try({
-    try: () => {
-      const db = new Database(path, { fileMustExist: true })
-      db.pragma("foreign_keys = ON")
-      db.pragma("busy_timeout = 5000")
-      try {
-        return use(db)
-      } finally {
-        db.close()
-      }
-    },
+    try: () => use(sharedDatabase(path)),
     catch: () => new AssessmentPersistenceError({ operation }),
   })
 }

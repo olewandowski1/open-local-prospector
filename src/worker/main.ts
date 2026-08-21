@@ -9,7 +9,11 @@ import {
   makeIdentityTaskExecutor,
   makeSqliteIdentityRepository,
 } from "@/features/business-identity"
-import { loadLocalApplicationConfig, migrateLocalDatabase } from "@/features/local-application"
+import {
+  closeSharedDatabases,
+  loadLocalApplicationConfig,
+  migrateLocalDatabase,
+} from "@/features/local-application"
 import { makeScoreCandidateTaskExecutor } from "@/features/review-queue"
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
@@ -82,8 +86,11 @@ const program = Effect.gen(function* () {
     `Worker ready with concurrency ${worker.concurrency}; SQLite: ${localConfig.databasePath}`,
   )
   if (!process.argv.includes("--check")) {
-    yield* runWorker(`worker-${process.pid}-${crypto.randomUUID()}`, worker, () =>
-      tryAcquireWorkspaceOperationLease(localConfig.databasePath),
+    yield* runWorker(
+      `worker-${process.pid}-${crypto.randomUUID()}`,
+      worker,
+      () => tryAcquireWorkspaceOperationLease(localConfig.databasePath),
+      closeSharedDatabases,
     ).pipe(
       Effect.provide(
         Layer.merge(

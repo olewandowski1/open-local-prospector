@@ -89,14 +89,14 @@ type QueueRow = {
 
 const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,wo.opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null`
 
-/** The queue grid, without the per-candidate evidence that only the open panel reads. */
-/**
- * The queue only grows as runs accumulate, and the whole of it is serialised into the page. A read
- * failure is left to surface rather than caught: an empty queue and an unreachable database look
- * identical to a reviewer, and only one of them means there is nothing to review.
- */
+/** The queue only grows as runs accumulate, and the whole of it is serialised into the page. */
 const REVIEW_QUEUE_LIMIT = 500
 
+/**
+ * The queue grid, without the per-candidate evidence that only the open panel reads. A read failure
+ * is left to surface rather than caught: an empty queue and an unreachable database look identical to
+ * a reviewer, and only one of them means there is nothing to review.
+ */
 export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
   let db: Database.Database | undefined
   try {

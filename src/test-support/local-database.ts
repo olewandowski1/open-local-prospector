@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { migrateLocalDatabase } from "@/features/local-application"
+import { closeSharedDatabases, migrateLocalDatabase } from "@/features/local-application"
 
 export function createMigratedTestDatabase() {
   const directory = mkdtempSync(join(tmpdir(), "prospector-test-"))
@@ -10,6 +10,12 @@ export function createMigratedTestDatabase() {
   migrateLocalDatabase(path)
   return {
     path,
-    cleanup: () => rmSync(directory, { recursive: true, force: true }),
+    // Repositories hold their connection open for the life of the process, so the file cannot be
+    // removed while one is still attached — Windows answers EBUSY. Production releases them the same
+    // way before maintenance renames or empties the database.
+    cleanup: () => {
+      closeSharedDatabases()
+      rmSync(directory, { recursive: true, force: true })
+    },
   }
 }

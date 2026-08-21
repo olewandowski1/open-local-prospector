@@ -1,6 +1,7 @@
-import Database from "better-sqlite3"
+import type Database from "better-sqlite3"
 import { Effect, Layer, Option } from "effect"
 
+import { sharedDatabase } from "@/features/local-application"
 import {
   RunTaskPersistenceError,
   RunTaskRepository,
@@ -66,16 +67,7 @@ function databaseEffect<A>(
   use: (database: Database.Database) => A,
 ) {
   return Effect.try({
-    try: () => {
-      const database = new Database(databasePath, { fileMustExist: true })
-      database.pragma("foreign_keys = ON")
-      database.pragma("busy_timeout = 5000")
-      try {
-        return use(database)
-      } finally {
-        database.close()
-      }
-    },
+    try: () => use(sharedDatabase(databasePath)),
     catch: () => new RunTaskPersistenceError({ operation }),
   })
 }
