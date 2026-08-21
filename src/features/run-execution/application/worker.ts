@@ -1,9 +1,9 @@
-import { Clock, Effect, Option } from "effect"
+import { Clock, Console, Effect, Option } from "effect"
 
 import { RunTaskRepository } from "@/features/run-execution/application/run-task-repository"
 import {
   StageExecutor,
-  type TaskExecutionError,
+  TaskExecutionError,
 } from "@/features/run-execution/application/stage-executor"
 import type { RunTask, StructuredTaskFailure } from "@/features/run-execution/domain/run-task"
 
@@ -35,10 +35,21 @@ export const runWorkerCycle = (owner: string, configuration: WorkerConfiguration
       if (Option.isNone(task)) break
       claimed.push(task.value)
     }
-    yield* Effect.forEach(claimed, (task) => executeClaimedTask(task, owner, configuration), {
-      concurrency: configuration.concurrency,
-      discard: true,
-    })
+    // One task's persistence failure must not abandon the others. Without this, `forEach` fails fast:
+    // the sibling task is interrupted part-way through a subscription runtime call, and the failure
+    // travels on out of the cycle and ends the worker process.
+    yield* Effect.forEach(
+      claimed,
+      (task) =>
+        executeClaimedTask(task, owner, configuration).pipe(
+          Effect.catchAll((error) =>
+            Console.error(
+              `Task ${task.id} (${task.stage}) could not be settled: ${error.operation}`,
+            ),
+          ),
+        ),
+      { concurrency: configuration.concurrency, discard: true },
+    )
     return claimed.length
   })
 
@@ -53,6 +64,13 @@ export const runWorker = (
       (release) => (release ? runWorkerCycle(owner, configuration) : Effect.succeed(0)),
       (release) => Effect.sync(() => release?.()),
     ).pipe(
+      // A database that is briefly unavailable is not a reason to stop working. The worker used to
+      // exit here, and `pnpm dev` runs it with --kill-others, so it took the web process with it.
+      Effect.catchAll((error) =>
+        Console.error(`Worker cycle failed (${error.operation}); retrying.`).pipe(
+          Effect.as(0 as number),
+        ),
+      ),
       Effect.flatMap((claimed) =>
         claimed === 0 ? Effect.sleep(configuration.pollMilliseconds) : Effect.void,
       ),
@@ -63,28 +81,27 @@ function executeClaimedTask(task: RunTask, owner: string, configuration: WorkerC
   return Effect.gen(function* () {
     const repository = yield* RunTaskRepository
     const executor = yield* StageExecutor
-    const execution = yield* Effect.either(
-      Effect.scoped(
-        Effect.gen(function* () {
-          yield* Effect.forkScoped(
-            Effect.forever(
-              Effect.sleep(Math.max(1_000, Math.floor(configuration.leaseMilliseconds / 3))).pipe(
-                Effect.flatMap(() => Clock.currentTimeMillis),
-                Effect.flatMap((now) =>
-                  repository.renewLease(
-                    task.id,
-                    owner,
-                    new Date(now),
-                    configuration.leaseMilliseconds,
-                  ),
-                ),
-              ),
-            ),
-          )
-          return yield* executor.execute(task)
-        }),
+    // Renewal runs against the work rather than beside it. Forked into the scope, a failed renewal
+    // killed only its own fiber: the task carried on with no lease, recovery handed the same work to
+    // another claim, and it ran twice. Racing means losing the lease stops the work it protects.
+    const renewLease = Effect.forever(
+      Effect.sleep(Math.max(1_000, Math.floor(configuration.leaseMilliseconds / 3))).pipe(
+        Effect.flatMap(() => Clock.currentTimeMillis),
+        Effect.flatMap((now) =>
+          repository.renewLease(task.id, owner, new Date(now), configuration.leaseMilliseconds),
+        ),
+      ),
+    ).pipe(
+      Effect.mapError(
+        () =>
+          new TaskExecutionError({
+            classification: "Transient",
+            code: "lease-lost",
+            message: "The worker lost this task's lease while the stage was still running.",
+          }),
       ),
     )
+    const execution = yield* Effect.either(Effect.raceFirst(executor.execute(task), renewLease))
     const completedAt = new Date(yield* Clock.currentTimeMillis)
     if (execution._tag === "Right") {
       yield* repository.complete(task, owner, execution.right, completedAt)

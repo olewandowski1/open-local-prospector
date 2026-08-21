@@ -84,13 +84,6 @@ function recover(database: Database.Database, now: Date): number {
   return database.transaction(() => {
     database
       .prepare(
-        `update run_metrics set target_remaining=max(0,
-         (select json_extract(search_brief,'$.targetCount') from prospecting_runs where id=run_id) -
-         qualified_candidates), updated_at=?, version=version+1`,
-      )
-      .run(now.getTime())
-    database
-      .prepare(
         `update prospecting_runs set completion_state='Search Exhausted', updated_at=?, version=version+1
          where state='Completed' and completion_state='Target Reached'
          and exists(select 1 from run_metrics where run_id=prospecting_runs.id and target_remaining>0)`,
@@ -215,7 +208,19 @@ function complete(
         insertTask(database, task.runId, nextTask, now)
       }
     }
-    if (checkpoint.completionState && (checkpoint.nextTasks?.length ?? 0) === 0) {
+    // A stage reporting its own completion state only settles the run when nothing else is still
+    // running. Settling regardless marked runs Completed while per-business work was in flight, which
+    // `recoverAbandoned` then had to undo — a run visibly went Completed and back to Running.
+    const stillActive = Number(
+      database
+        .prepare(
+          `select count(*) from run_tasks
+           where run_id = ? and id <> ? and status in ('Pending', 'Leased')`,
+        )
+        .pluck()
+        .get(task.runId, task.id),
+    )
+    if (checkpoint.completionState && (checkpoint.nextTasks?.length ?? 0) === 0 && !stillActive) {
       database
         .prepare(
           `update prospecting_runs set state = 'Completed', completion_state = ?, current_stage = ?,
@@ -349,6 +354,17 @@ function updateRunAfterSettledTask(
   }
   if (counts.active > 0) return
 
+  // Recomputed here, for this run, at the moment the outcome is decided. A sweep across every run on
+  // every worker cycle used to keep this fresh: it rewrote each run's metrics twice a second for as
+  // long as the worker was idle, so a cancelled run's row reached version 127,093, and `version` and
+  // `updated_at` stopped meaning anything.
+  database
+    .prepare(
+      `update run_metrics set target_remaining = max(0,
+       (select json_extract(search_brief, '$.targetCount') from prospecting_runs where id = run_id)
+       - qualified_candidates), updated_at = ?, version = version + 1 where run_id = ?`,
+    )
+    .run(now.getTime(), runId)
   const targetRemaining = database
     .prepare("select target_remaining from run_metrics where run_id = ?")
     .pluck()
