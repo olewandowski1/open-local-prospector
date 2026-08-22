@@ -32,7 +32,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { CandidateStatusBadge, type RecentCandidate } from "@/features/review-queue/client"
+import {
+  CandidateStatusBadge,
+  formatScore,
+  type RecentCandidate,
+} from "@/features/review-queue/client"
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -80,7 +84,9 @@ const columns = helper.columns([
     header: "Score",
     sortFn: sortFn_basic,
     sortDescFirst: true,
-    cell: (context) => <span className="tabular-nums font-medium">{context.getValue()}</span>,
+    cell: (context) => (
+      <span className="tabular-nums font-medium">{formatScore(context.getValue())}</span>
+    ),
   }),
   helper.accessor("contactAvailable", {
     header: "Contact Route",
