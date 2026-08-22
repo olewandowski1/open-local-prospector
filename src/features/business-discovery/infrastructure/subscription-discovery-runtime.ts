@@ -202,10 +202,14 @@ function claudeModelArguments(brief: DiscoveryBrief): readonly string[] {
   ]
 }
 
-function readReportText(runtime: RuntimeId, result: RuntimeProcessResult): string {
-  if (runtime === "codex") return result.stdout
-  const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
-  if (typeof wrapper.result === "string") return wrapper.result
+/** The report call asks for prose, so stdout is the report unless a runtime wraps it in JSON. */
+function readReportText(_runtime: RuntimeId, result: RuntimeProcessResult): string {
+  try {
+    const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
+    if (typeof wrapper.result === "string") return wrapper.result
+  } catch {
+    // Plain text is the expected shape; only a wrapped runtime needs unwrapping.
+  }
   return result.stdout
 }
 
