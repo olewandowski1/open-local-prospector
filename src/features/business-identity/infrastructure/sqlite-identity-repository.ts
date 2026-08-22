@@ -1,15 +1,13 @@
 import type Database from "better-sqlite3"
 import { Effect } from "effect"
+import type { StructuredBusiness } from "@/features/business-discovery"
 import type {
   CommittedIdentity,
   IdentityRepository,
   IdentityTaskContext,
 } from "@/features/business-identity/application/identity-repository"
 import { IdentityPersistenceError } from "@/features/business-identity/application/identity-repository"
-import type {
-  IdentityEvaluation,
-  IdentityEvidence,
-} from "@/features/business-identity/domain/business-identity"
+import type { IdentityEvaluation } from "@/features/business-identity/domain/business-identity"
 import { sharedDatabase } from "@/features/local-application"
 import type { SearchBrief } from "@/features/prospecting-runs"
 
@@ -20,6 +18,7 @@ type DiscoveredRow = Readonly<{
   description: string | null
   source_identifier: string
   discovered_at: number
+  structured: string | null
   search_brief: string
 }>
 
@@ -28,21 +27,6 @@ export function makeSqliteIdentityRepository(databasePath: string): IdentityRepo
     loadContext: (runId, discoveredBusinessId) =>
       databaseEffect(databasePath, "load", (database) =>
         loadContext(database, runId, discoveredBusinessId),
-      ),
-    hasCompletedQuery: (runId, discoveredBusinessId, query) =>
-      databaseEffect(databasePath, "lookup-query", (database) =>
-        Boolean(
-          database
-            .prepare(
-              `select 1 from identity_evidence_queries
-               where run_id = ? and discovered_business_id = ? and query_text = ?`,
-            )
-            .get(runId, discoveredBusinessId, query),
-        ),
-      ),
-    recordEvidenceQuery: (input) =>
-      databaseEffect(databasePath, "record-query", (database) =>
-        recordEvidenceQuery(database, input),
       ),
     commitEvaluation: (input) =>
       databaseEffect(databasePath, "commit", (database) => commitEvaluation(database, input)),
@@ -68,136 +52,20 @@ function loadContext(
   const row = database
     .prepare(
       `select d.id, d.name, d.result_url, d.description, d.source_identifier, d.discovered_at,
-       r.search_brief
+       d.structured, r.search_brief
        from discovered_businesses d join prospecting_runs r on r.id = d.run_id
        where d.id = ? and d.run_id = ?`,
     )
     .get(discoveredBusinessId, runId) as DiscoveredRow | undefined
   if (!row) throw new Error("discovered business missing")
-  const additional = database
-    .prepare(
-      `select source_identifier, title, result_url, description, collected_at
-       from identity_evidence_results where run_id = ? and discovered_business_id = ?
-       order by collected_at, id`,
-    )
-    .all(runId, discoveredBusinessId) as readonly {
-    source_identifier: string
-    title: string
-    result_url: string
-    description: string | null
-    collected_at: number
-  }[]
-  const evidence: IdentityEvidence[] = [
-    {
-      sourceIdentifier: row.source_identifier,
-      title: row.name,
-      url: row.result_url,
-      ...(row.description ? { description: row.description } : {}),
-      collectedAt: new Date(row.discovered_at),
-    },
-    ...additional.map((item) => ({
-      sourceIdentifier: item.source_identifier,
-      title: item.title,
-      url: item.result_url,
-      ...(item.description ? { description: item.description } : {}),
-      collectedAt: new Date(item.collected_at),
-    })),
-  ]
   return {
     discoveredBusinessId: row.id,
     name: row.name,
     resultUrl: row.result_url,
     ...(row.description ? { description: row.description } : {}),
     searchBrief: JSON.parse(row.search_brief) as SearchBrief,
-    evidence,
+    ...(row.structured ? { structured: JSON.parse(row.structured) as StructuredBusiness } : {}),
   }
-}
-
-function recordEvidenceQuery(
-  database: Database.Database,
-  input: Parameters<IdentityRepository["recordEvidenceQuery"]>[0],
-): void {
-  database.transaction(() => {
-    const existing = database
-      .prepare(
-        `select 1 from identity_evidence_queries
-         where run_id = ? and discovered_business_id = ? and query_text = ?`,
-      )
-      .get(input.runId, input.discoveredBusinessId, input.query)
-    if (existing) return
-    const queryId = crypto.randomUUID()
-    database
-      .prepare(
-        `insert into identity_evidence_queries
-         (id, run_id, task_id, discovered_business_id, source, query_text, result_count, completed_at)
-         values (?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        queryId,
-        input.runId,
-        input.taskId,
-        input.discoveredBusinessId,
-        input.source,
-        input.query,
-        input.page.results.length,
-        input.collectedAt.getTime(),
-      )
-    const insertResult = database.prepare(
-      `insert into identity_evidence_results
-       (id, query_id, run_id, discovered_business_id, source_identifier, title, result_url,
-        description, collected_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    const insertEvent = database.prepare(
-      `insert into technical_run_events
-       (id, run_id, task_id, business_id, kind, source_identifier, result_url, message,
-        details, schema_version, created_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-    )
-    for (const result of input.page.results) {
-      insertResult.run(
-        crypto.randomUUID(),
-        queryId,
-        input.runId,
-        input.discoveredBusinessId,
-        result.sourceIdentifier,
-        result.title,
-        result.url,
-        result.description ?? null,
-        input.collectedAt.getTime(),
-      )
-      insertEvent.run(
-        crypto.randomUUID(),
-        input.runId,
-        input.taskId,
-        input.discoveredBusinessId,
-        "IdentitySourceResult",
-        result.sourceIdentifier,
-        result.url,
-        "A public result was retained as identity evidence text.",
-        JSON.stringify({ query: input.query }),
-        input.collectedAt.getTime(),
-      )
-    }
-    insertEvent.run(
-      crypto.randomUUID(),
-      input.runId,
-      input.taskId,
-      input.discoveredBusinessId,
-      "IdentityQuery",
-      input.source,
-      null,
-      "A bounded public identity-evidence query completed.",
-      JSON.stringify({ query: input.query, resultCount: input.page.results.length }),
-      input.collectedAt.getTime(),
-    )
-    database
-      .prepare(
-        `update run_metrics set queries = queries + 1, updated_at = ?, version = version + 1
-         where run_id = ?`,
-      )
-      .run(input.collectedAt.getTime(), input.runId)
-  })()
 }
 
 function commitEvaluation(

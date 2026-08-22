@@ -1,10 +1,7 @@
 import { Data, type Effect } from "effect"
 
-import type { DiscoveryPage } from "@/features/business-discovery"
-import type {
-  IdentityEvaluation,
-  IdentityEvidence,
-} from "@/features/business-identity/domain/business-identity"
+import type { StructuredBusiness } from "@/features/business-discovery"
+import type { IdentityEvaluation } from "@/features/business-identity/domain/business-identity"
 import type { SearchBrief } from "@/features/prospecting-runs"
 
 export type IdentityTaskContext = Readonly<{
@@ -13,7 +10,7 @@ export type IdentityTaskContext = Readonly<{
   resultUrl: string
   description?: string
   searchBrief: SearchBrief
-  evidence: readonly IdentityEvidence[]
+  structured?: StructuredBusiness
 }>
 
 export type CommittedIdentity = Readonly<{
@@ -39,20 +36,6 @@ export interface IdentityRepository {
     runId: string,
     discoveredBusinessId: string,
   ) => Effect.Effect<IdentityTaskContext, IdentityPersistenceError>
-  readonly hasCompletedQuery: (
-    runId: string,
-    discoveredBusinessId: string,
-    query: string,
-  ) => Effect.Effect<boolean, IdentityPersistenceError>
-  readonly recordEvidenceQuery: (input: {
-    runId: string
-    taskId: string
-    discoveredBusinessId: string
-    source: string
-    query: string
-    page: DiscoveryPage
-    collectedAt: Date
-  }) => Effect.Effect<void, IdentityPersistenceError>
   readonly commitEvaluation: (input: {
     runId: string
     taskId: string

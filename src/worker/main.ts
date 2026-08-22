@@ -3,7 +3,7 @@ import { Console, Effect, Layer, Option } from "effect"
 import {
   makeDiscoveryTaskExecutor,
   makeSqliteDiscoveryRepository,
-  makeSubscriptionRuntimeSearchSource,
+  makeSubscriptionDiscoveryRuntime,
 } from "@/features/business-discovery"
 import {
   makeIdentityTaskExecutor,
@@ -49,13 +49,12 @@ const program = Effect.gen(function* () {
     ...(Option.isSome(codexExecutable) ? { codex: codexExecutable.value } : {}),
     ...(Option.isSome(claudeExecutable) ? { claude: claudeExecutable.value } : {}),
   }
-  const discoverySource = makeSubscriptionRuntimeSearchSource(runtimeExecutables)
+  const discoveryRuntime = makeSubscriptionDiscoveryRuntime(runtimeExecutables)
   const executeDiscovery = makeDiscoveryTaskExecutor(
-    discoverySource,
+    discoveryRuntime,
     makeSqliteDiscoveryRepository(localConfig.databasePath),
   )
   const executeIdentity = makeIdentityTaskExecutor(
-    discoverySource,
     makeSqliteIdentityRepository(localConfig.databasePath),
   )
   const assessmentRuntimes = {

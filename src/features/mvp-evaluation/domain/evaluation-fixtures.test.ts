@@ -33,18 +33,9 @@ describe(MVP_EVALUATION_VERSION, () => {
     const results = identityFixtures.map((fixture) => ({
       fixture,
       evaluation: evaluateBusinessIdentity({
-        name: fixture.name,
-        searchAreaName: "Kraków, Polska",
+        business: fixture.business,
         countryCode: "PL",
-        evidence: [
-          {
-            sourceIdentifier: `fixture:${fixture.id}`,
-            title: fixture.title,
-            url: `https://${fixture.id}.example/`,
-            description: fixture.description,
-            collectedAt: new Date("2026-08-16T10:00:00.000Z"),
-          },
-        ],
+        collectedAt: new Date("2026-08-16T10:00:00.000Z"),
       }),
     }))
     const confirmed = results.filter((result) => result.evaluation.status === "Eligible")

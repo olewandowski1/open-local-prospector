@@ -1,7 +1,4 @@
-export {
-  evidenceQueries,
-  makeIdentityTaskExecutor,
-} from "@/features/business-identity/application/corroborate-business"
+export { makeIdentityTaskExecutor } from "@/features/business-identity/application/corroborate-business"
 export type { IdentityRepository } from "@/features/business-identity/application/identity-repository"
 export { evaluateBusinessIdentity } from "@/features/business-identity/domain/business-identity"
 export {

@@ -1,6 +1,9 @@
 import { Data, type Effect } from "effect"
 
-import type { DiscoveryPage } from "@/features/business-discovery/domain/discovered-business"
+import type {
+  StructuredBusiness,
+  VerificationRejection,
+} from "@/features/business-discovery/domain/discovery-structure"
 
 export type DiscoveryProgress = Readonly<{
   uniqueBusinesses: number
@@ -17,6 +20,21 @@ export type RecordedDiscoveryPage = Readonly<{
   progress: DiscoveryProgress
 }>
 
+export type RecordReportInput = Readonly<{
+  runId: string
+  taskId: string
+  source: string
+  query: string
+  report: string
+  runtimeId: string
+  runtimeModel?: string
+  /** How many businesses the structuring step returned, before verification removed any. */
+  returned: number
+  businesses: readonly StructuredBusiness[]
+  rejections: readonly VerificationRejection[]
+  recordedAt: Date
+}>
+
 export class DiscoveryPersistenceError extends Data.TaggedError("DiscoveryPersistenceError")<{
   readonly operation: "progress" | "lookup-page" | "record-page"
 }> {}
@@ -30,14 +48,7 @@ export interface DiscoveryRepository {
     query: string,
     offset: number,
   ) => Effect.Effect<CompletedDiscoveryPage | undefined, DiscoveryPersistenceError>
-  readonly recordPage: (input: {
-    runId: string
-    taskId: string
-    source: string
-    query: string
-    offset: number
-    page: DiscoveryPage
-    targetCount: number
-    recordedAt: Date
-  }) => Effect.Effect<RecordedDiscoveryPage, DiscoveryPersistenceError>
+  readonly recordReport: (
+    input: RecordReportInput,
+  ) => Effect.Effect<RecordedDiscoveryPage, DiscoveryPersistenceError>
 }

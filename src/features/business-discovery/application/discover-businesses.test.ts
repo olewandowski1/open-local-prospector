@@ -6,8 +6,8 @@ import {
   makeDiscoveryTaskExecutor,
   planDiscoveryQueries,
 } from "@/features/business-discovery/application/discover-businesses"
-import type { DiscoverySource } from "@/features/business-discovery/application/discovery-source"
-import type { DiscoveryResult } from "@/features/business-discovery/domain/discovered-business"
+import type { DiscoveryRuntime } from "@/features/business-discovery/application/discovery-runtime"
+import type { StructuredBusiness } from "@/features/business-discovery/domain/discovery-structure"
 import { makeSqliteDiscoveryRepository } from "@/features/business-discovery/infrastructure/sqlite-discovery-repository"
 import type { SearchBrief } from "@/features/prospecting-runs"
 import {
@@ -31,108 +31,78 @@ describe("business discovery workflow", () => {
     const oversized = planDiscoveryQueries(
       brief({ category: "word ".repeat(100), mode: "Thorough" }),
     )
-    expect(plan.queries).toHaveLength(8)
-    expect(plan.pagesPerQuery).toBe(1)
+    expect(plan.queries).toHaveLength(4)
+    expect(planDiscoveryQueries(brief({ mode: "Quick" })).queries).toHaveLength(2)
     expect(
       oversized.queries.every((query) => query.length <= 400 && query.split(/\s+/u).length <= 50),
     ).toBe(true)
   })
 
-  it("persists source history, duplicate inputs, exhaustion, and progress", async () => {
+  it("keeps only what the report supports and records what it dropped", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
-    const task = await discoveryTask(database.path, "discovery-exhausted")
-    const pages = [[result("A"), result("B")], [result("A"), result("C")], [result("C")], []]
-    const search = vi.fn<DiscoverySource["search"]>((_request) =>
-      Effect.succeed({ results: pages.shift() ?? [], moreResults: false }),
-    )
-    const execute = makeDiscoveryTaskExecutor(
-      { identifier: "fake-runtime-search", search },
-      makeSqliteDiscoveryRepository(database.path),
-    )
-
-    const checkpoint = await Effect.runPromise(execute(task))
-    const repeated = await Effect.runPromise(execute(task))
-
-    // Falling short of the target must not discard the businesses discovery already paid for.
-    expect(checkpoint).toMatchObject({
-      value: { discoveredBusinesses: 3, targetReached: false, searchExhausted: true },
-    })
-    expect(checkpoint.completionState).toBeUndefined()
-    expect(checkpoint.nextTasks).toHaveLength(3)
-    expect(repeated.nextTasks).toHaveLength(3)
-    expect(search).toHaveBeenCalledTimes(4)
-    expect(
-      readRow(
-        database.path,
-        "select queries, discoveries, duplicates, target_remaining from run_metrics",
-      ),
-    ).toEqual({
-      queries: 4,
-      discoveries: 3,
-      duplicates: 2,
-      target_remaining: 5,
-    })
-    expect(readScalar(database.path, "select count(*) from discovery_occurrences")).toBe(5)
-    expect(
-      readScalar(
-        database.path,
-        "select count(*) from discovery_occurrences where duplicate_input = 1",
-      ),
-    ).toBe(2)
-    expect(
-      readScalar(
-        database.path,
-        "select count(*) from technical_run_events where kind = 'DiscoveryQuery'",
-      ),
-    ).toBe(4)
-    const raw = readRow(
-      database.path,
-      "select raw_attributes from discovered_businesses order by name limit 1",
-    ) as { raw_attributes: string }
-    expect(JSON.parse(raw.raw_attributes)).toEqual({ title: "A", url: "https://example.test/a" })
-  })
-
-  it("uses bounded query variants and stops as soon as the requested target is reached", async () => {
-    const database = createMigratedTestDatabase()
-    databases.push(database)
-    const task = await discoveryTask(database.path, "discovery-target", { mode: "Thorough" })
-    const pages = [[result("A"), result("B")], [result("C"), result("D")], [result("E")]]
-    const search = vi.fn<DiscoverySource["search"]>(() =>
-      Effect.succeed({ results: pages.shift() ?? [], moreResults: false }),
+    const task = await discoveryTask(database.path, "discovery-verified")
+    const runtime = fakeRuntime(
+      ["https://a.test/ tel. 111 222 333", "https://b.test/ no telephone published"].join("\n\n"),
+      [
+        structured("A", "https://a.test/", [
+          { type: "BusinessTelephone", value: "+48111222333", sourceUrl: "https://a.test/" },
+        ]),
+        // Claims a telephone written beside a different business, and a source nobody reported.
+        structured("B", "https://b.test/", [
+          { type: "BusinessTelephone", value: "+48111222333", sourceUrl: "https://b.test/" },
+        ]),
+        structured("C", "https://invented.test/", []),
+      ],
     )
 
     const checkpoint = await Effect.runPromise(
-      makeDiscoveryTaskExecutor(
-        { identifier: "fake-runtime-search", search },
-        makeSqliteDiscoveryRepository(database.path),
-      )(task),
+      makeDiscoveryTaskExecutor(runtime, makeSqliteDiscoveryRepository(database.path))(task),
     )
 
-    expect(search.mock.calls.map(([request]) => request.offset)).toEqual([0, 0, 0])
-    expect(checkpoint.completionState).toBeUndefined()
-    expect(checkpoint.nextTasks).toHaveLength(5)
-    expect(new Set(checkpoint.nextTasks?.map((next) => next.businessId)).size).toBe(5)
+    expect(checkpoint.value.discoveredBusinesses).toBe(2)
+    const contacts = readRow(
+      database.path,
+      "select structured from discovered_businesses where name = 'B'",
+    ) as { structured: string }
+    expect((JSON.parse(contacts.structured) as StructuredBusiness).contacts).toEqual([])
     expect(
-      readRow(database.path, "select queries, discoveries, target_remaining from run_metrics"),
-    ).toEqual({
-      queries: 3,
-      discoveries: 5,
-      target_remaining: 5,
-    })
+      readScalar(
+        database.path,
+        "select count(*) from technical_run_events where kind = 'DiscoveryRejected'",
+      ),
+    ).toBeGreaterThanOrEqual(2)
+    expect(readScalar(database.path, "select businesses_returned from discovery_reports")).toBe(3)
+    expect(readScalar(database.path, "select businesses_verified from discovery_reports")).toBe(2)
+  })
+
+  it("counts one business once when two reports name it", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const task = await discoveryTask(database.path, "discovery-duplicate", { mode: "Thorough" })
+    const runtime = fakeRuntime("https://a.test/ tel. 111 222 333", [
+      structured("A", "https://a.test/", [
+        { type: "BusinessTelephone", value: "+48111222333", sourceUrl: "https://a.test/" },
+      ]),
+    ])
+
+    const checkpoint = await Effect.runPromise(
+      makeDiscoveryTaskExecutor(runtime, makeSqliteDiscoveryRepository(database.path))(task),
+    )
+
+    expect(checkpoint.value.discoveredBusinesses).toBe(1)
+    expect(checkpoint.value.stoppedForRepeatedResults).toBe(true)
+    expect(checkpoint.nextTasks).toHaveLength(1)
+    // Two consecutive reports adding nothing new is what stops the run, so both are counted.
+    expect(readScalar(database.path, "select duplicates from run_metrics")).toBe(2)
   })
 
   it("drives a persisted run to visible search exhaustion through the durable worker", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const run = await createTestProspectingRun(database.path, "worker-discovery-exhausted")
-    const search = vi.fn<DiscoverySource["search"]>(() =>
-      Effect.succeed({ results: [], moreResults: false }),
-    )
-    const execute = makeDiscoveryTaskExecutor(
-      { identifier: "fake-runtime-search", search },
-      makeSqliteDiscoveryRepository(database.path),
-    )
+    const runtime = fakeRuntime("nothing was found", [])
+    const execute = makeDiscoveryTaskExecutor(runtime, makeSqliteDiscoveryRepository(database.path))
     const workerLayer = Layer.merge(
       sqliteRunTaskRepositoryLive(database.path),
       stageExecutorLive({
@@ -152,7 +122,6 @@ describe("business discovery workflow", () => {
       runWorkerCycle("worker-test", configuration).pipe(Effect.provide(workerLayer)),
     )
 
-    expect(search).toHaveBeenCalledTimes(3)
     expect(
       readDatabase(database.path, (sqlite) =>
         sqlite
@@ -166,15 +135,34 @@ describe("business discovery workflow", () => {
       completion_state: "Search Exhausted",
       current_stage: "DiscoverBusinesses",
     })
-    expect(
-      readScalar(database.path, "select count(*) from run_tasks where status = 'Completed'"),
-    ).toBe(2)
   })
 })
 
-function result(name: string): DiscoveryResult {
-  const url = `https://example.test/${name.toLowerCase()}`
-  return { sourceIdentifier: `web:${url}`, title: name, url, attributes: { title: name, url } }
+function fakeRuntime(report: string, businesses: readonly StructuredBusiness[]): DiscoveryRuntime {
+  return {
+    identifier: "fake-discovery-runtime",
+    report: vi.fn(() => Effect.succeed(report)),
+    structure: vi.fn(() =>
+      Effect.succeed({ schemaVersion: "discovery-structure-v1" as const, businesses }),
+    ),
+  }
+}
+
+function structured(
+  name: string,
+  url: string,
+  contacts: StructuredBusiness["contacts"],
+): StructuredBusiness {
+  return {
+    name,
+    locality: "Kraków",
+    decisionScope: "Local",
+    centrallyControlled: false,
+    onlineOnly: false,
+    sourceUrls: [url],
+    presences: [{ type: "Website", url }],
+    contacts,
+  }
 }
 
 function brief(overrides: Partial<SearchBrief> = {}): SearchBrief {

@@ -1,11 +1,15 @@
 import { Effect } from "effect"
 import type { DiscoveryRepository } from "@/features/business-discovery/application/discovery-repository"
-import type { DiscoverySource } from "@/features/business-discovery/application/discovery-source"
+import type {
+  DiscoveryBrief,
+  DiscoveryRuntime,
+} from "@/features/business-discovery/application/discovery-runtime"
+import { normalizeDiscoveryUrl } from "@/features/business-discovery/domain/discovered-business"
+import { verifyAgainstReport } from "@/features/business-discovery/domain/discovery-structure"
 import type { SearchBrief } from "@/features/prospecting-runs"
 import { type RunTask, type TaskCheckpoint, TaskExecutionError } from "@/features/run-execution"
 
-const RESULTS_PER_PAGE = 20
-const MAX_CONSECUTIVE_EMPTY_PAGES = 3
+const MAX_CONSECUTIVE_EMPTY_REPORTS = 2
 
 export type DiscoveryPlan = Readonly<{
   queries: readonly string[]
@@ -20,17 +24,15 @@ export function planDiscoveryQueries(searchBrief: SearchBrief): DiscoveryPlan {
       ? locality
       : `w promieniu ${searchBrief.radiusKm} km od ${locality}`
   const category = searchBrief.category
+  // The runtime searches several ways within one report, so these are angles rather than a
+  // substitute for a search engine's paging.
   const variations = [
     `${category} ${location}`,
-    `${category} firma ${location}`,
-    `${category} usługi ${location}`,
     `${category} kontakt ${location}`,
-    `${category} Facebook ${location}`,
-    `${category} Instagram ${location}`,
+    `${category} Facebook Instagram ${location}`,
     `${category} katalog firm ${location}`,
-    `${category} lokalna firma ${location}`,
   ]
-  const queryLimit = searchBrief.mode === "Thorough" ? 8 : 4
+  const queryLimit = searchBrief.mode === "Thorough" ? 4 : 2
   return {
     queries: [...new Set(variations.map(boundQuery))].slice(0, queryLimit),
     pagesPerQuery: 1,
@@ -38,7 +40,7 @@ export function planDiscoveryQueries(searchBrief: SearchBrief): DiscoveryPlan {
 }
 
 export function makeDiscoveryTaskExecutor(
-  source: DiscoverySource,
+  runtime: DiscoveryRuntime,
   repository: DiscoveryRepository,
 ) {
   return (task: RunTask): Effect.Effect<TaskCheckpoint, TaskExecutionError> =>
@@ -56,63 +58,51 @@ export function makeDiscoveryTaskExecutor(
       let progress = yield* repository
         .getProgress(task.runId)
         .pipe(Effect.mapError(persistenceError))
-      let consecutiveEmptyPages = 0
+      let consecutiveEmptyReports = 0
       let stoppedForRepeatedResults = false
 
-      outer: for (const query of plan.queries) {
-        for (let offset = 0; offset < plan.pagesPerQuery; offset += 1) {
-          if (progress.uniqueBusinesses >= searchBrief.targetCount) break outer
+      for (const query of plan.queries) {
+        if (progress.uniqueBusinesses >= searchBrief.targetCount) break
 
-          const completed = yield* repository
-            .getCompletedPage(task.runId, query, offset)
-            .pipe(Effect.mapError(persistenceError))
-          if (completed) {
-            if (!completed.moreResults) break
-            continue
-          }
+        const completed = yield* repository
+          .getCompletedPage(task.runId, query, 0)
+          .pipe(Effect.mapError(persistenceError))
+        if (completed) continue
 
-          const page = yield* source
-            .search({
-              runtime: searchBrief.runtime,
-              ...(searchBrief.runtimeConfiguration
-                ? { runtimeConfiguration: searchBrief.runtimeConfiguration }
-                : {}),
-              query,
-              count: RESULTS_PER_PAGE,
-              offset,
-              country: searchBrief.searchArea.countryCode,
-              searchLanguage: searchBrief.searchArea.countryCode === "PL" ? "pl" : "en",
-            })
-            .pipe(
-              Effect.mapError(
-                (error) =>
-                  new TaskExecutionError({
-                    classification: error.classification,
-                    code: error.code,
-                    message: error.message,
-                  }),
-              ),
-            )
+        const brief = discoveryBrief(searchBrief, query)
+        const report = yield* runtime.report(brief).pipe(Effect.mapError(runtimeError))
+        const structure = yield* runtime
+          .structure(brief, report)
+          .pipe(Effect.mapError(runtimeError))
+        const verified = verifyAgainstReport(
+          structure,
+          report,
+          searchBrief.searchArea.countryCode,
+          isPublicUrl,
+        )
 
-          const recorded = yield* repository
-            .recordPage({
-              runId: task.runId,
-              taskId: task.id,
-              source: source.identifier,
-              query,
-              offset,
-              page,
-              targetCount: searchBrief.targetCount,
-              recordedAt: new Date(),
-            })
-            .pipe(Effect.mapError(persistenceError))
-          progress = recorded.progress
-          consecutiveEmptyPages = recorded.uniqueAdded === 0 ? consecutiveEmptyPages + 1 : 0
-          if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) {
-            stoppedForRepeatedResults = true
-            break outer
-          }
-          if (!page.moreResults) break
+        const recorded = yield* repository
+          .recordReport({
+            runId: task.runId,
+            taskId: task.id,
+            source: runtime.identifier,
+            query,
+            report,
+            runtimeId: searchBrief.runtime,
+            ...(searchBrief.runtimeConfiguration
+              ? { runtimeModel: searchBrief.runtimeConfiguration.model }
+              : {}),
+            returned: structure.businesses.length,
+            businesses: verified.businesses,
+            rejections: verified.rejections,
+            recordedAt: new Date(),
+          })
+          .pipe(Effect.mapError(persistenceError))
+        progress = recorded.progress
+        consecutiveEmptyReports = recorded.uniqueAdded === 0 ? consecutiveEmptyReports + 1 : 0
+        if (consecutiveEmptyReports >= MAX_CONSECUTIVE_EMPTY_REPORTS) {
+          stoppedForRepeatedResults = true
+          break
         }
       }
 
@@ -120,7 +110,7 @@ export function makeDiscoveryTaskExecutor(
       // Pursuing exactly the target left no headroom for downstream exclusions.
       return {
         value: {
-          source: source.identifier,
+          source: runtime.identifier,
           discoveredBusinesses: progress.uniqueBusinesses,
           targetCount: searchBrief.targetCount,
           targetReached,
@@ -142,6 +132,37 @@ export function makeDiscoveryTaskExecutor(
     })
 }
 
+function discoveryBrief(searchBrief: SearchBrief, query: string): DiscoveryBrief {
+  return {
+    runtime: searchBrief.runtime,
+    ...(searchBrief.runtimeConfiguration
+      ? { runtimeConfiguration: searchBrief.runtimeConfiguration }
+      : {}),
+    query,
+    category: searchBrief.category,
+    searchAreaName: searchBrief.searchArea.displayName,
+    countryCode: searchBrief.searchArea.countryCode,
+    searchLanguage: searchBrief.searchArea.countryCode === "PL" ? "pl" : "en",
+    wanted: Math.max(searchBrief.targetCount, 10),
+  }
+}
+
+function isPublicUrl(value: string): boolean {
+  return normalizeDiscoveryUrl(value) !== undefined
+}
+
+function runtimeError(error: {
+  classification: "Transient" | "Permanent" | "Blocked" | "Infrastructure"
+  code: string
+  message: string
+}) {
+  return new TaskExecutionError({
+    classification: error.classification,
+    code: error.code,
+    message: error.message,
+  })
+}
+
 function persistenceError() {
   return new TaskExecutionError({
     classification: "Infrastructure",
@@ -149,7 +170,6 @@ function persistenceError() {
     message: "Discovery progress could not be persisted safely.",
   })
 }
-
 function boundQuery(value: string): string {
   const words = value.trim().split(/\s+/u).slice(0, 50)
   let result = words.join(" ")

@@ -6,12 +6,22 @@ import {
   type DiscoveryProgress,
   type DiscoveryRepository,
   type RecordedDiscoveryPage,
+  type RecordReportInput,
 } from "@/features/business-discovery/application/discovery-repository"
 import {
   normalizeBusinessName,
   normalizeDiscoveryUrl,
 } from "@/features/business-discovery/domain/discovered-business"
+import {
+  DISCOVERY_REPORT_PROMPT_VERSION,
+  DISCOVERY_STRUCTURE_PROMPT_VERSION,
+  DISCOVERY_STRUCTURE_SCHEMA_VERSION,
+  MAX_REPORT_CHARACTERS,
+  type StructuredBusiness,
+} from "@/features/business-discovery/domain/discovery-structure"
 import { sharedDatabase } from "@/features/local-application"
+
+const MAX_RECORDED_REJECTIONS = 50
 
 export function makeSqliteDiscoveryRepository(databasePath: string): DiscoveryRepository {
   return {
@@ -29,8 +39,8 @@ export function makeSqliteDiscoveryRepository(databasePath: string): DiscoveryRe
           ? ({ moreResults: row.more_results === 1 } satisfies CompletedDiscoveryPage)
           : undefined
       }),
-    recordPage: (input) =>
-      databaseEffect(databasePath, "record-page", (database) => recordPage(database, input)),
+    recordReport: (input) =>
+      databaseEffect(databasePath, "record-page", (database) => recordReport(database, input)),
   }
 }
 
@@ -45,22 +55,23 @@ function databaseEffect<A>(
   })
 }
 
-function recordPage(
+function recordReport(
   database: Database.Database,
-  input: Parameters<DiscoveryRepository["recordPage"]>[0],
+  input: RecordReportInput,
 ): RecordedDiscoveryPage {
   return database.transaction(() => {
     const existing = database
       .prepare(
         `select more_results from discovery_queries
-         where run_id = ? and query_text = ? and page_offset = ?`,
+         where run_id = ? and query_text = ? and page_offset = 0`,
       )
-      .get(input.runId, input.query, input.offset) as { more_results: number } | undefined
+      .get(input.runId, input.query) as { more_results: number } | undefined
     if (existing) {
       return { uniqueAdded: 0, duplicates: 0, progress: readProgress(database, input.runId) }
     }
 
     const queryId = crypto.randomUUID()
+    const timestamp = input.recordedAt.getTime()
     let uniqueAdded = 0
     let duplicates = 0
     let nextRank =
@@ -72,16 +83,21 @@ function recordPage(
           .pluck()
           .get(input.runId),
       ) + 1
-    const occurrences: Array<{
-      businessId: string
-      duplicate: boolean
-      result: (typeof input.page.results)[number]
-    }> = []
 
-    for (const result of input.page.results) {
-      const resultUrl = normalizeDiscoveryUrl(result.url)
+    const occurrences: Array<{ businessId: string; resultUrl: string; duplicate: boolean }> = []
+    const insertEvent = database.prepare(
+      `insert into technical_run_events
+       (id, run_id, task_id, business_id, kind, source_identifier, result_url, message,
+        details, schema_version, created_at)
+       values (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+    )
+
+    for (const business of input.businesses) {
+      const resultUrl = primaryUrl(business)
       if (!resultUrl) continue
-      const discoveryKey = `${input.source}:${resultUrl}`
+      // Keyed on the business rather than on a page, because one business is reached through
+      // several addresses and the structuring step has already told them apart.
+      const discoveryKey = `${input.source}:${normalizeBusinessName(business.name)}|${normalizeBusinessName(business.locality)}`
       const existingBusiness = database
         .prepare("select id from discovered_businesses where run_id = ? and discovery_key = ?")
         .get(input.runId, discoveryKey) as { id: string } | undefined
@@ -93,31 +109,48 @@ function recordPage(
           .prepare(
             `insert into discovered_businesses
              (id, run_id, source, source_identifier, discovery_key, name, normalized_name,
-              result_url, description, raw_attributes, discovery_rank, discovered_at)
-             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              result_url, description, raw_attributes, structured, discovery_rank, discovered_at)
+             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .run(
             businessId,
             input.runId,
             input.source,
-            result.sourceIdentifier,
-            discoveryKey,
-            result.title,
-            normalizeBusinessName(result.title),
             resultUrl,
-            result.description ?? null,
-            JSON.stringify(result.attributes),
+            discoveryKey,
+            business.name,
+            normalizeBusinessName(business.name),
+            resultUrl,
+            null,
+            "{}",
+            JSON.stringify(business),
             nextRank,
-            input.recordedAt.getTime(),
+            timestamp,
           )
         nextRank += 1
         uniqueAdded += 1
       }
-      occurrences.push({
+
+      occurrences.push({ businessId, resultUrl, duplicate: Boolean(existingBusiness) })
+      insertEvent.run(
+        crypto.randomUUID(),
+        input.runId,
+        input.taskId,
         businessId,
-        duplicate: Boolean(existingBusiness),
-        result: { ...result, url: resultUrl },
-      })
+        "DiscoveryResult",
+        input.source,
+        resultUrl,
+        existingBusiness
+          ? "The structured report named a business this run already holds."
+          : "The structured report named a business.",
+        JSON.stringify({
+          query: input.query,
+          sources: business.sourceUrls.length,
+          contacts: business.contacts.length,
+          decisionScope: business.decisionScope,
+        }),
+        timestamp,
+      )
     }
 
     database
@@ -125,7 +158,7 @@ function recordPage(
         `insert into discovery_queries
          (id, run_id, task_id, source, query_text, page_offset, result_count, unique_count,
           duplicate_count, more_results, completed_at)
-         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         values (?, ?, ?, ?, ?, 0, ?, ?, ?, 0, ?)`,
       )
       .run(
         queryId,
@@ -133,25 +166,17 @@ function recordPage(
         input.taskId,
         input.source,
         input.query,
-        input.offset,
-        input.page.results.length,
+        input.returned,
         uniqueAdded,
         duplicates,
-        input.page.moreResults ? 1 : 0,
-        input.recordedAt.getTime(),
+        timestamp,
       )
 
     const insertOccurrence = database.prepare(
       `insert into discovery_occurrences
        (id, run_id, query_id, business_id, source_identifier, result_url, duplicate_input,
         raw_attributes, discovered_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    const insertEvent = database.prepare(
-      `insert into technical_run_events
-       (id, run_id, task_id, business_id, kind, source_identifier, result_url, message,
-        details, schema_version, created_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+       values (?, ?, ?, ?, ?, ?, ?, '{}', ?)`,
     )
     for (const occurrence of occurrences) {
       insertOccurrence.run(
@@ -159,31 +184,38 @@ function recordPage(
         input.runId,
         queryId,
         occurrence.businessId,
-        occurrence.result.sourceIdentifier,
-        occurrence.result.url,
+        occurrence.resultUrl,
+        occurrence.resultUrl,
         occurrence.duplicate ? 1 : 0,
-        JSON.stringify(occurrence.result.attributes),
-        input.recordedAt.getTime(),
+        timestamp,
       )
-      insertEvent.run(
+    }
+
+    database
+      .prepare(
+        `insert into discovery_reports
+         (id, run_id, task_id, query_text, report_text, report_prompt_version,
+          structure_prompt_version, structure_schema_version, runtime_id, runtime_model,
+          businesses_returned, businesses_verified, rejections, created_at)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
         crypto.randomUUID(),
         input.runId,
         input.taskId,
-        occurrence.businessId,
-        "DiscoveryResult",
-        occurrence.result.sourceIdentifier,
-        occurrence.result.url,
-        occurrence.duplicate
-          ? "Web-search result matched an earlier discovery input."
-          : "Web-search result created a discovery input.",
-        JSON.stringify({
-          query: input.query,
-          offset: input.offset,
-          duplicateInput: occurrence.duplicate,
-        }),
-        input.recordedAt.getTime(),
+        input.query,
+        input.report.slice(0, MAX_REPORT_CHARACTERS),
+        DISCOVERY_REPORT_PROMPT_VERSION,
+        DISCOVERY_STRUCTURE_PROMPT_VERSION,
+        DISCOVERY_STRUCTURE_SCHEMA_VERSION,
+        input.runtimeId,
+        input.runtimeModel ?? null,
+        input.returned,
+        input.businesses.length,
+        JSON.stringify(input.rejections.slice(0, MAX_RECORDED_REJECTIONS)),
+        timestamp,
       )
-    }
+
     insertEvent.run(
       crypto.randomUUID(),
       input.runId,
@@ -192,17 +224,34 @@ function recordPage(
       "DiscoveryQuery",
       input.source,
       null,
-      "A bounded subscription-runtime web search completed.",
+      "A bounded public search was reported and structured into businesses.",
       JSON.stringify({
         query: input.query,
-        offset: input.offset,
-        resultCount: input.page.results.length,
+        returned: input.returned,
+        verified: input.businesses.length,
         uniqueAdded,
         duplicates,
-        moreResults: input.page.moreResults,
+        rejected: input.rejections.length,
       }),
-      input.recordedAt.getTime(),
+      timestamp,
     )
+
+    // Every rejection is a claim the report did not support. Saying so is the only way a reader can
+    // tell a quiet model from a quiet run.
+    for (const rejection of input.rejections.slice(0, MAX_RECORDED_REJECTIONS)) {
+      insertEvent.run(
+        crypto.randomUUID(),
+        input.runId,
+        input.taskId,
+        null,
+        "DiscoveryRejected",
+        input.source,
+        null,
+        "A structured claim was dropped because the report did not support it.",
+        JSON.stringify(rejection),
+        timestamp,
+      )
+    }
 
     const progress = readProgress(database, input.runId)
     database
@@ -211,9 +260,20 @@ function recordPage(
          duplicates = duplicates + ?, updated_at = ?, version = version + 1
          where run_id = ?`,
       )
-      .run(progress.uniqueBusinesses, duplicates, input.recordedAt.getTime(), input.runId)
+      .run(progress.uniqueBusinesses, duplicates, timestamp, input.runId)
     return { uniqueAdded, duplicates, progress }
   })()
+}
+
+function primaryUrl(business: StructuredBusiness): string | undefined {
+  const candidates = [business.websiteUrl, ...business.sourceUrls].filter(
+    (value): value is string => value !== undefined,
+  )
+  for (const candidate of candidates) {
+    const normalized = normalizeDiscoveryUrl(candidate)
+    if (normalized) return normalized
+  }
+  return undefined
 }
 
 function readProgress(database: Database.Database, runId: string): DiscoveryProgress {
