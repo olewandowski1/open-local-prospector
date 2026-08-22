@@ -22,6 +22,7 @@ import {
   eventSourceLabel,
   filterTechnicalLog,
   safeHttpUrl,
+  troubleKinds,
 } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import { humanizeStage } from "@/features/run-monitoring/presentation/run-presentation"
 import { cn } from "@/lib/utils"
@@ -31,8 +32,6 @@ const timestampFormat = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "medium",
 })
-
-const troubleKinds = ["InspectionBlock", "Failure", "Retry", "Error"]
 
 export function TechnicalLogSheet({
   events,

@@ -10,11 +10,15 @@ export type RunCountItem = Readonly<{
   value: number
 }>
 
+/**
+ * Every step here is work the run carried out, so each fall is explained by an adjustment beside it.
+ * Websites is not a step: most local businesses have none, which is the opportunity being looked
+ * for, so counting them between Discoveries and Assessments read as a pipeline that had collapsed.
+ */
 export function runFunnel(progress: RunProgressCounts): readonly RunCountItem[] {
   return [
     { key: "queries", label: "Queries", value: progress.queries },
     { key: "discoveries", label: "Discoveries", value: progress.discoveries },
-    { key: "websites", label: "Websites", value: progress.websites },
     { key: "assessments", label: "Assessments", value: progress.assessments },
     { key: "qualifiedCandidates", label: "Qualified", value: progress.qualifiedCandidates },
   ]
@@ -22,6 +26,7 @@ export function runFunnel(progress: RunProgressCounts): readonly RunCountItem[] 
 
 export function runAdjustments(progress: RunProgressCounts): readonly RunCountItem[] {
   return [
+    { key: "websites", label: "Websites Found", value: progress.websites },
     { key: "duplicates", label: "Duplicates", value: progress.duplicates },
     { key: "exclusions", label: "Exclusions", value: progress.exclusions },
     { key: "blockedInspections", label: "Blocked Inspections", value: progress.blockedInspections },
@@ -51,6 +56,21 @@ export function isRunTerminal(run?: RunDetail): boolean {
 
 export type EventKindCount = Readonly<{ kind: string; count: number }>
 
+// Kinds that record something going wrong, so the eye is drawn to them first.
+export const troubleKinds = ["InspectionBlock", "Failure", "Retry", "Error"]
+
+/** Scheduler bookkeeping: one per task, always the same sentence, and never why something happened. */
+const LIFECYCLE_KINDS = new Set(["TaskCreated", "TaskClaimed", "CheckpointCommitted", "RunSettled"])
+
+function kindRank(kind: string): number {
+  if (troubleKinds.includes(kind)) return 0
+  return LIFECYCLE_KINDS.has(kind) ? 2 : 1
+}
+
+/**
+ * Ordered by what a reader came for, not by how many there are. A run of eleven businesses carries a
+ * hundred task transitions, so counting first buried every event that says what the run found.
+ */
 export function eventKindCounts(events: readonly TechnicalRunEvent[]): readonly EventKindCount[] {
   const counts = new Map<string, number>()
   for (const event of events) {
@@ -58,7 +78,12 @@ export function eventKindCounts(events: readonly TechnicalRunEvent[]): readonly 
   }
   return [...counts.entries()]
     .map(([kind, count]) => ({ kind, count }))
-    .sort((left, right) => right.count - left.count || left.kind.localeCompare(right.kind))
+    .sort(
+      (left, right) =>
+        kindRank(left.kind) - kindRank(right.kind) ||
+        right.count - left.count ||
+        left.kind.localeCompare(right.kind),
+    )
 }
 
 export type TechnicalLogFilter = Readonly<{ kind?: string; businessId?: string }>

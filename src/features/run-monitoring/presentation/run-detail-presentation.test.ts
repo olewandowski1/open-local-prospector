@@ -53,14 +53,15 @@ describe("run detail presentation", () => {
     expect(runFunnel(progress).map((step) => [step.label, step.value])).toEqual([
       ["Queries", 21],
       ["Discoveries", 16],
-      ["Websites", 8],
       ["Assessments", 8],
       ["Qualified", 2],
     ])
   })
 
   it("keeps the counts that explain narrowing out of the pipeline itself", () => {
+    // Websites belongs here: most local businesses have none, which is the opportunity itself.
     expect(runAdjustments(progress).map((item) => item.label)).toEqual([
+      "Websites Found",
       "Duplicates",
       "Exclusions",
       "Blocked Inspections",
@@ -108,6 +109,26 @@ describe("run detail presentation", () => {
     expect(eventKindCounts(events)).toEqual([
       { kind: "DiscoveryResult", count: 2 },
       { kind: "IdentityQuery", count: 1 },
+    ])
+  })
+
+  // A run of eleven businesses carries a hundred task transitions, so ordering by count alone put
+  // every event that says what the run found behind the scheduler's bookkeeping.
+  it("offers the kinds a reader came for before the scheduler's bookkeeping", () => {
+    const events = [
+      ...Array.from({ length: 34 }, (_, index) =>
+        event({ id: `claim-${index}`, kind: "TaskClaimed" }),
+      ),
+      ...Array.from({ length: 11 }, (_, index) =>
+        event({ id: `found-${index}`, kind: "DiscoveryResult" }),
+      ),
+      event({ id: "failure", kind: "Failure" }),
+    ]
+
+    expect(eventKindCounts(events).map((item) => item.kind)).toEqual([
+      "Failure",
+      "DiscoveryResult",
+      "TaskClaimed",
     ])
   })
 
