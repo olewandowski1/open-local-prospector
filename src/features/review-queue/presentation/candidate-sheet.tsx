@@ -6,12 +6,14 @@ import {
   ArrowRight01Icon,
   ArrowTurnBackwardIcon,
   CancelCircleIcon,
+  ChartLineData01Icon,
   CheckmarkCircle02Icon,
   MapPinIcon,
   SentIcon,
 } from "@hugeicons/core-free-icons"
 import { useEffect, useRef, useState } from "react"
 import { Icon } from "@/components/icon"
+import { IconButton } from "@/components/icon-button"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -29,9 +31,9 @@ import {
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { REJECTION_REASONS } from "@/features/review-queue/domain/review-policy"
-import { CandidateDecision } from "@/features/review-queue/presentation/candidate-decision"
+import { CandidateAdmin } from "@/features/review-queue/presentation/candidate-admin"
+import { CandidateDangerZone } from "@/features/review-queue/presentation/candidate-danger-zone"
 import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
-import { CandidateHistory } from "@/features/review-queue/presentation/candidate-history"
 import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
 import type {
   QueueCandidate,
@@ -89,19 +91,24 @@ export function CandidateSheet({
           <>
             <SheetHeader className="gap-3 p-4">
               <div className="min-w-0 pr-8">
-                <div className="min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <SheetTitle className="truncate">{candidate.name}</SheetTitle>
-                  <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="inline-flex items-center gap-1">
-                      <Icon icon={MapPinIcon} className="size-3.5" />
-                      {candidate.locality}
+                  {/* The one number the whole panel exists to justify, beside the name it belongs to. */}
+                  <span className="inline-flex shrink-0 items-center gap-1 text-success">
+                    <Icon icon={ChartLineData01Icon} className="size-4" />
+                    <span className="text-sm font-semibold tabular-nums">
+                      Score {formatScore(candidate.score)}
                     </span>
-                    <span aria-hidden="true">·</span>
-                    <span>{humanizeTerm(candidate.primaryOpportunity)}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="tabular-nums">Score {formatScore(candidate.score)}</span>
-                  </SheetDescription>
+                  </span>
                 </div>
+                <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="inline-flex items-center gap-1">
+                    <Icon icon={MapPinIcon} className="size-3.5" />
+                    {candidate.locality}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>{humanizeTerm(candidate.primaryOpportunity)}</span>
+                </SheetDescription>
               </div>
 
               {/* Keyed on the candidate so a half-written rejection never carries over to the next. */}
@@ -124,11 +131,15 @@ export function CandidateSheet({
                 ) : (
                   <>
                     <CandidateEvidence candidate={detail} />
-                    <CandidateDecision candidate={detail} busy={busy} onSubmit={onSaveReview} />
-                    <CandidateHistory
+                    <CandidateAdmin
                       candidate={detail}
                       busy={busy}
+                      onSaveReview={onSaveReview}
                       onCorrect={onCorrect}
+                    />
+                    <CandidateDangerZone
+                      candidate={detail}
+                      busy={busy}
                       onSuppress={onSuppress}
                       onDeleteBusiness={onDeleteBusiness}
                     />
@@ -139,22 +150,27 @@ export function CandidateSheet({
 
             <SheetFooter className="flex-row items-center justify-between gap-3 border-t p-3">
               <span className="text-xs text-muted-foreground tabular-nums">
-                {position} of {total}
+                Review {position} / {total}
               </span>
               <div className="flex items-center gap-1">
-                <Button
+                <IconButton
+                  label="Previous Candidate"
                   variant="outline"
-                  size="sm"
+                  size="icon-sm"
                   disabled={!canPrevious || busy}
                   onClick={onPrevious}
                 >
-                  <Icon icon={ArrowLeft01Icon} data-icon="inline-start" />
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm" disabled={!canNext || busy} onClick={onNext}>
-                  Next
-                  <Icon icon={ArrowRight01Icon} data-icon="inline-end" />
-                </Button>
+                  <Icon icon={ArrowLeft01Icon} />
+                </IconButton>
+                <IconButton
+                  label="Next Candidate"
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={!canNext || busy}
+                  onClick={onNext}
+                >
+                  <Icon icon={ArrowRight01Icon} />
+                </IconButton>
               </div>
             </SheetFooter>
           </>

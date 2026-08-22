@@ -311,7 +311,10 @@ function QueueFilterSelect({
     <Select value={value} onValueChange={(next) => onChange(next ?? ALL)}>
       <SelectTrigger size="sm" aria-label={`${label} Filter`} className="w-[12rem]">
         <span className="text-muted-foreground">{label}</span>
-        <SelectValue />
+        {/* An opportunity is stored as `NoDedicatedWebsite`; the trigger must not say that. */}
+        <SelectValue>
+          {(option: string) => (option === ALL ? allLabel : format ? format(option) : option)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>

@@ -16,6 +16,9 @@ import {
 } from "@/features/review-queue/presentation/review-presentation"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
+const SEVERITY_STEPS = [1, 2, 3, 4, 5] as const
+const MAX_SEVERITY = SEVERITY_STEPS.length
+
 export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) {
   const components = scoreComponents(candidate)
   const presences = groupPresences(candidate.presences)
@@ -45,41 +48,48 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
 
       <Separator />
       <section aria-labelledby="opportunities-heading" className="flex flex-col gap-4">
-        <SectionHeader title={<span id="opportunities-heading">Opportunities</span>} />
-        <div className="grid gap-4">
+        <SectionHeader
+          title={<span id="opportunities-heading">Opportunities</span>}
+          description="What the assessment found wrong, worst first."
+        />
+        <ul className="grid divide-y rounded-lg border">
           {candidate.opportunities.map((opportunity) => (
-            <div key={`${opportunity.opportunityClass}-${opportunity.explanation}`}>
-              <p className="text-xs font-medium text-muted-foreground">
-                {humanizeTerm(opportunity.opportunityClass)} · Severity {opportunity.severity}
-              </p>
-              <p className="mt-1.5 text-sm text-pretty">{opportunity.explanation}</p>
-            </div>
+            <li
+              key={`${opportunity.opportunityClass}-${opportunity.explanation}`}
+              className="grid gap-1.5 p-3"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-medium">
+                  {humanizeTerm(opportunity.opportunityClass)}
+                </h3>
+                <SeverityMeter severity={opportunity.severity} />
+              </div>
+              <p className="text-sm text-pretty text-muted-foreground">{opportunity.explanation}</p>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       <Separator />
       <section aria-labelledby="supporting-evidence-heading" className="flex flex-col gap-4">
         <SectionHeader
           title={<span id="supporting-evidence-heading">Supporting Evidence</span>}
-          description="Every statement carries the public source it was observed on."
+          description="Every statement carries the public page it was observed on."
         />
         <ul className="grid gap-3">
           {candidate.observations.map((observation) => (
             <li
               key={`${observation.sourceUrl}-${observation.statement}`}
-              className="border-b pb-3 text-sm last:border-0 last:pb-0"
+              className="grid gap-1.5 border-b pb-3 last:border-0 last:pb-0"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  {humanizeTerm(observation.evidenceState)}
-                </span>
-                <time className="text-xs text-muted-foreground">
-                  {formatObservedAt(observation.observedAt)}
-                </time>
+              <p className="text-sm text-pretty">{observation.statement}</p>
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <span className="font-medium">{humanizeTerm(observation.evidenceState)}</span>
+                <span aria-hidden="true">·</span>
+                <time>{formatObservedAt(observation.observedAt)}</time>
+                <span aria-hidden="true">·</span>
+                <SourceLink url={observation.sourceUrl} />
               </div>
-              <p className="mt-1.5 text-pretty">{observation.statement}</p>
-              <SourceLink url={observation.sourceUrl} />
             </li>
           ))}
         </ul>
@@ -87,93 +97,118 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
 
       <Separator />
       <section aria-labelledby="presence-heading" className="flex flex-col gap-4">
-        <header>
-          <h2 id="presence-heading" className="font-heading text-base font-semibold tracking-tight">
-            Online Presence and Contact
-          </h2>
-          <p className="mt-0.5 text-sm text-pretty text-muted-foreground">
-            Inspection state {humanizeTerm(candidate.inspectionState)}
+        <SectionHeader
+          title={<span id="presence-heading">Online Presence and Contact</span>}
+          description="Where this business is reachable, and what the inspection could see."
+        />
+
+        <dl className="grid divide-y rounded-lg border text-sm">
+          <Fact label="Inspection State">{humanizeTerm(candidate.inspectionState)}</Fact>
+          <Fact label="Limitations">
             {candidate.limitations.length > 0
-              ? ` · Limitations: ${candidate.limitations.map(humanizeTerm).join(", ")}`
-              : " · No recorded limitations"}
-          </p>
-        </header>
-        <div className="grid gap-4">
-          {candidate.contacts.length > 0 ? (
-            <div>
-              <h3 className="text-xs font-medium text-muted-foreground">Contact Routes</h3>
-              <ul className="mt-1.5 grid gap-1 text-sm">
-                {candidate.contacts.map((contact) => (
-                  <li key={`${contact.type}-${contact.value}`}>
-                    <span className="text-muted-foreground">{humanizeTerm(contact.type)}: </span>
-                    {contact.value}
-                    <SourceLink url={contact.sourceUrl} label="Source" inline />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {presences.map((group) => (
-            <div key={group.type}>
-              <h3 className="text-xs font-medium text-muted-foreground">
-                {humanizeTerm(group.type)} ({group.urls.length})
-              </h3>
-              <ul className="mt-1.5 grid gap-1">
-                {group.urls.map((url) => (
-                  <li key={url} className="min-w-0">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={url}
-                      className="block truncate text-sm underline underline-offset-4"
-                    >
-                      {displayUrl(url)}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-
+              ? candidate.limitations.map(humanizeTerm).join(", ")
+              : "None recorded"}
+          </Fact>
           {candidate.measurements.length > 0 ? (
-            <div>
-              <h3 className="text-xs font-medium text-muted-foreground">Measurements</h3>
-              <p className="mt-1.5 font-mono text-xs text-muted-foreground">
-                {candidate.measurements.join(" · ")}
-              </p>
-            </div>
+            <Fact label="Measurements">
+              <span className="font-mono text-xs">{candidate.measurements.join(" · ")}</span>
+            </Fact>
           ) : null}
-        </div>
+        </dl>
+
+        {candidate.contacts.length > 0 ? (
+          <div className="grid gap-2">
+            <h3 className="text-xs font-medium text-muted-foreground">Contact Routes</h3>
+            <ul className="grid divide-y rounded-lg border">
+              {candidate.contacts.map((contact) => (
+                <li
+                  key={`${contact.type}-${contact.value}`}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 p-3"
+                >
+                  <span className="text-xs text-muted-foreground">
+                    {humanizeTerm(contact.type)}
+                  </span>
+                  <span className="flex min-w-0 items-baseline gap-2">
+                    <span className="truncate text-sm font-medium">{contact.value}</span>
+                    <SourceLink url={contact.sourceUrl} label="Source" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {presences.map((group) => (
+          <div key={group.type} className="grid gap-2">
+            <h3 className="text-xs font-medium text-muted-foreground">
+              {humanizeTerm(group.type)} <span className="tabular-nums">({group.urls.length})</span>
+            </h3>
+            <ul className="grid divide-y rounded-lg border">
+              {group.urls.map((url) => (
+                <li key={url} className="min-w-0 p-3">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={url}
+                    className="block truncate text-sm underline underline-offset-4"
+                  >
+                    {displayUrl(url)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
     </div>
   )
 }
 
-function SourceLink({
-  url,
-  label = "View Source",
-  inline = false,
-}: {
-  url: string
-  label?: string
-  inline?: boolean
-}) {
+function Fact({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 p-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 truncate">{children}</dd>
+    </div>
+  )
+}
+
+/** Severity is an integer from one to five, so it reads as a position on that scale, not a number. */
+function SeverityMeter({ severity }: { severity: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
+      title={`Severity ${severity} of ${MAX_SEVERITY}`}
+    >
+      Severity {severity}
+      <span aria-hidden="true" className="flex gap-0.5">
+        {SEVERITY_STEPS.map((step) => (
+          <span
+            key={step}
+            className={
+              step <= severity
+                ? "h-1 w-2.5 rounded-full bg-muted-foreground"
+                : "h-1 w-2.5 rounded-full bg-border"
+            }
+          />
+        ))}
+      </span>
+    </span>
+  )
+}
+
+function SourceLink({ url, label }: { url: string; label?: string }) {
   return (
     <a
       href={url}
       target="_blank"
       rel="noreferrer"
       title={url}
-      className={
-        inline
-          ? "ml-1.5 text-xs text-muted-foreground underline underline-offset-4"
-          : "mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-4"
-      }
+      className="inline-flex min-w-0 shrink-0 items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
     >
-      {label}
-      {inline ? null : <Icon icon={LinkSquare02Icon} className="size-3" />}
+      <span className="truncate">{label ?? displayUrl(url)}</span>
+      <Icon icon={LinkSquare02Icon} className="size-3 shrink-0" />
     </a>
   )
 }
