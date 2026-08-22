@@ -1,0 +1,12 @@
+# Biome formats to LF, so the working tree must be LF on every platform. Without this, a Windows
+# checkout with core.autocrlf=true fails `pnpm check` on every tracked file.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.node binary
+*.sqlite binary
+*.tgz binary
+pnpm-lock.yaml -diff linguist-generated
