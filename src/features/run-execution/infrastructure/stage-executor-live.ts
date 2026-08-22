@@ -8,11 +8,6 @@ import type { RunTask, TaskCheckpoint } from "@/features/run-execution/domain/ru
 
 export type StageTaskExecutor = (task: RunTask) => Effect.Effect<TaskCheckpoint, TaskExecutionError>
 
-/**
- * The stages this worker can run, named. Previously five positional parameters, all optional, paired
- * with an if-cascade that repeated each stage name and re-checked that its executor had been passed —
- * so a caller could put assessment where inspection belonged and nothing would say so.
- */
 export type StageExecutors = Readonly<{
   DiscoverBusinesses: StageTaskExecutor
   CorroborateBusiness: StageTaskExecutor

@@ -39,9 +39,7 @@ const buttonVariants = cva(
         "icon-lg": "size-9",
       },
     },
-    // Chrome affordances (search, sidebar toggle, settings, theme, runtime updates) sit at muted
-    // strength so they never compete with page content, and come up to full strength on hover.
-    // Scoped to the icon sizes so ghost text buttons keep reading as labels.
+    // Chrome affordances sit muted so they never compete with page content, on icon sizes only.
     compoundVariants: [
       {
         variant: ["ghost", "subtle"],

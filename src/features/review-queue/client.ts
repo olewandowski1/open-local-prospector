@@ -1,9 +1,4 @@
-/**
- * Client-safe surface of the Review Queue. The feature's main index also exports server-only work
- * (SQLite read models, task executors), so client components must import from here instead — a
- * value import from the main index would pull `better-sqlite3` and `node:child_process` into the
- * browser bundle.
- */
+// Client-safe surface: importing the feature index instead pulls `better-sqlite3` into the browser bundle.
 export { REVIEW_QUEUE_THRESHOLD } from "@/features/review-queue/domain/opportunity-score"
 export { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 export type {

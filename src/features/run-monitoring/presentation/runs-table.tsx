@@ -51,8 +51,7 @@ const columns = helper.columns([
     header: "Run",
     sortFn: sortFn_text,
     cell: (context) => (
-      // Search Areas resolve to long administrative names, so this is an explicit width that truncates
-      // rather than a maximum, which automatic table layout is free to overrule.
+      // An explicit width, not a maximum, which automatic table layout is free to overrule.
       <div className="w-[124px] @sm:w-[152px] @xl:w-[184px]">
         <span className="block truncate font-medium" title={context.getValue()}>
           {context.getValue()}
@@ -68,7 +67,6 @@ const columns = helper.columns([
     header: "Status",
     sortFn: sortFn_text,
     cell: (context) => (
-      // The accessor exposes the label for sorting; the badge needs the whole presentation.
       <Badge
         variant={context.row.original.status.variant}
         title={context.row.original.status.detail}
@@ -129,20 +127,15 @@ const initialState = {
   pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE },
 }
 
-/** The Run column is pinned so long area names cannot push the numbers out of view. */
-/**
- * Column priority as the viewport narrows. Run, Status and the actions are always present; the rest
- * drop away in ascending order of usefulness so the grid never has to scroll sideways.
- */
+// Columns drop away in ascending order of usefulness, so the grid never scrolls sideways.
 const columnClassNames: Readonly<Record<string, string>> = {
-  // The content box inside is 16px narrower, matching the cell padding either side.
+  // The content box is 16px narrower, matching the cell padding either side.
   category: "w-[140px] @sm:w-[168px] @xl:w-[200px]",
   completion: "hidden @2xl:table-cell",
   updatedAt: "hidden @2xl:table-cell",
   stage: "hidden @4xl:table-cell",
   discovered: "hidden @4xl:table-cell",
-  // A status badge never wraps, so at the narrowest the actions step aside; the row click still opens
-  // the run, so nothing becomes unreachable.
+  // At the narrowest the actions step aside; the row click still opens the run.
   actions: "hidden text-right @sm:table-cell",
 }
 const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
@@ -230,7 +223,6 @@ export function RunsTable({ runs }: { runs: readonly RunRow[] }) {
   )
 }
 
-/** Explicit shortcuts for a row. The row click yields to these rather than firing as well. */
 function RunActions({ run }: { run: RunRow }) {
   return (
     <div className="flex items-center justify-end gap-1">

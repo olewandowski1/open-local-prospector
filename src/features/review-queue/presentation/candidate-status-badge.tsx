@@ -19,7 +19,6 @@ const statusIcons: Readonly<Record<string, IconSvg>> = {
   Archived: ArchiveIcon,
 }
 
-/** One badge for a review decision, so every surface reads the same status the same way. */
 export function CandidateStatusBadge({
   status,
   className,

@@ -7,14 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-/**
- * What a reviewer writes down, separate from what they decide. The decision itself is a click in the
- * panel header, so this holds only the two things that outlive it: a private note and a date to come
- * back on.
- *
- * The status and rejection fields are sent back unchanged. The write replaces every column it is
- * given, so omitting them here would erase a decision made above.
- */
+// The write replaces every column it is given, so the status and rejection fields are sent back unchanged.
 export function CandidateDecision({
   candidate,
   busy,

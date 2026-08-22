@@ -44,17 +44,8 @@ export type QuickDecision = Readonly<{
   rejectionNote?: string
 }>
 
-/** Statuses that are real outcomes but not the two a reviewer reaches for constantly. */
 const secondaryStatuses = ["Contacted", "Archived"] as const
 
-/**
- * One candidate at full size, over the queue rather than beside it.
- *
- * Deciding is never behind a tab or a form: the evidence is on screen the moment the panel opens, the
- * two decisions that dominate reviewing sit above it, and rejecting is picking the reason. Recording
- * one moves straight on to the next candidate, so a long queue can be worked through without
- * returning to the list.
- */
 export function CandidateSheet({
   candidate,
   detail,
@@ -73,7 +64,6 @@ export function CandidateSheet({
   onDeleteBusiness,
 }: {
   candidate?: QueueCandidateSummary
-  /** The evidence, which arrives after the panel opens. */
   detail?: QueueCandidate
   position: number
   total: number
@@ -127,8 +117,6 @@ export function CandidateSheet({
 
             <Separator />
 
-            {/* One column, in the order a reviewer works: read the evidence, note anything, look back
-                at the history. The panel owns the scrolling so the header and footer stay put. */}
             <ScrollArea className="min-h-0 flex-1">
               <div className="grid gap-8 p-4">
                 {detail === undefined ? (
@@ -176,14 +164,6 @@ export function CandidateSheet({
   )
 }
 
-/**
- * Shortlisting is one click. Rejecting is two: the button reveals the reasons, and choosing one is the
- * decision — there is no form to fill and nothing to confirm, because every reason is a complete
- * answer on its own. "Other" is the exception the write insists on a note for.
- *
- * Mounted per candidate so its state resets by remounting rather than by an effect watching the
- * selection.
- */
 function CandidateDecisionBar({
   reviewStatus,
   busyOrLoading: busy,
@@ -323,10 +303,7 @@ function CandidateDecisionBar({
   )
 }
 
-/**
- * Single-key shortcuts for the actions a reviewer repeats most. They stand down while a field has
- * focus so typing a note never records a decision.
- */
+// Shortcuts stand down while a field has focus, so typing a note never records a decision.
 function useKeyboardShortcuts({
   enabled,
   onShortlist,
@@ -342,8 +319,7 @@ function useKeyboardShortcuts({
   onPrevious: () => void
   onNext: () => void
 }) {
-  // The handlers are fresh closures on every render. Held in a ref, the window listener subscribes
-  // once per open panel instead of being torn down and rebuilt on each render.
+  // Held in a ref so the window listener subscribes once per open panel rather than on every render.
   const handlers = useRef({ onShortlist, onReject, onCancel, onPrevious, onNext })
   handlers.current = { onShortlist, onReject, onCancel, onPrevious, onNext }
 
@@ -354,7 +330,6 @@ function useKeyboardShortcuts({
       const target = event.target as HTMLElement | null
       const typing = target?.closest("input,textarea,select,[contenteditable=true],[role=combobox]")
       const current = handlers.current
-      // Escape still closes the reason list while a note is being typed.
       if (event.key === "Escape") {
         current.onCancel()
         return
@@ -379,7 +354,6 @@ function useKeyboardShortcuts({
   }, [enabled])
 }
 
-/** Stands in for the evidence while it is fetched, so the panel does not resize when it lands. */
 function EvidenceSkeleton() {
   return (
     // A bare div takes no accessible name, so the status role carries it.

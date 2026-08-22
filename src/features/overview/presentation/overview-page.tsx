@@ -31,14 +31,13 @@ import {
 import { RecentCandidatesGrid } from "@/features/overview/presentation/recent-candidates-grid"
 import type { RecentCandidate } from "@/features/review-queue"
 
-/** An arrow is only shown for a measured week-over-week change. */
+// An arrow means a measured week-over-week change; standing facts get a subject icon instead.
 const trendIcons: Partial<Record<OverviewTrend, IconSvg>> = {
   up: ChartUpIcon,
   down: ChartDownIcon,
   flat: MinusSignIcon,
 }
 
-/** Standing facts get a subject icon instead, so every tile reads the same without faking a trend. */
 const standingIcons: Record<string, IconSvg> = {
   "awaiting-review": ClipboardCheckIcon,
   "active-runs": ActivityIcon,
@@ -54,9 +53,7 @@ export function OverviewPage({
   runs: readonly OverviewRunSnapshot[]
   candidateSummary: OverviewCandidateSummary
   recentCandidates: readonly RecentCandidate[]
-  /** Rendered inside the steering region; the route streams it in once runtime readiness resolves. */
   steeringPanel: ReactNode
-  /** Reference point for the week-over-week comparisons. */
   now: Date
 }) {
   const metrics = calculateOverviewMetrics(runs, candidateSummary, now)
@@ -75,7 +72,6 @@ export function OverviewPage({
           }
         />
 
-        {/* Rules between the figures carry the structure a card used to, without boxing each one in. */}
         <section
           aria-label="Prospecting Summary"
           className="grid gap-x-8 gap-y-6 border-y py-5 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-border"
@@ -112,9 +108,7 @@ export function OverviewPage({
                     <Icon icon={CircleGaugeIcon} />
                   </EmptyMedia>
                   <EmptyTitle>No Qualified Candidates Yet</EmptyTitle>
-                  {/* The promise here is the one `app-shell.spec.ts` guards. It must not be worded
-                      with the phrase that guard searches for, or an empty workspace fails the very
-                      assertion this sentence is describing. */}
+                  {/* `app-shell.spec.ts` asserts "sample data" appears nowhere on this page. */}
                   <EmptyDescription>
                     Candidates appear here once a prospecting run has scored them. Nothing on this
                     page is estimated, seeded or invented.

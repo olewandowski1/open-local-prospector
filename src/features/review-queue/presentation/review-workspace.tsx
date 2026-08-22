@@ -51,7 +51,6 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     if (stored) setFilter(stored)
   }, [])
 
-  // A candidate named in the address opens straight away: arriving from a link is a deliberate choice.
   useEffect(() => {
     if (requestedId === null) return
     if (!candidates.some((candidate) => candidate.id === requestedId)) return
@@ -71,8 +70,6 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
   const index = openId ? visible.findIndex((candidate) => candidate.id === openId) : -1
   const open = index >= 0 ? visible[index] : undefined
 
-  // The evidence is fetched for the one candidate on screen instead of shipped for the whole queue,
-  // and React Query keeps it for a candidate revisited while stepping back and forth.
   const detail = useQuery({
     queryKey: ["review-candidate", open?.id],
     queryFn: () => fetchCandidate(open?.id ?? ""),
@@ -95,7 +92,6 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     if (next) openCandidate(next.id)
   }
 
-  /** Re-renders the server component that reads SQLite, rather than reloading the whole document. */
   const refresh = () => router.refresh()
 
   const post = async (path: string, body: Record<string, unknown>): Promise<boolean> => {
@@ -120,14 +116,9 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     }
   }
 
-  /**
-   * Records one of the two decisions that dominate reviewing and moves on. The stored notes and
-   * follow-up date are sent back untouched because the write replaces every column it is given, so
-   * omitting them would quietly erase work done in the Decision tab.
-   */
+  // Notes and follow-up date are sent back untouched: the write replaces every column it is given.
   const quickDecision = async (decision: QuickDecision) => {
     if (!open) return
-    // The write replaces every column it is given, so a decision waits for the values it must return.
     const loaded = detail.data
     if (!loaded) return
     const nextCandidate = visible[index + 1]
@@ -141,7 +132,6 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     })
     if (!saved) return
 
-    // Advancing keeps a long queue moving; at the end the panel stays on the last candidate.
     if (nextCandidate) openCandidate(nextCandidate.id)
   }
 

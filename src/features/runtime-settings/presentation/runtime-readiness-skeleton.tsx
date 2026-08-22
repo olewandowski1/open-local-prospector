@@ -1,14 +1,9 @@
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 
-/**
- * Placeholder shown while provider CLIs are probed. Probing spawns subprocesses, so the section list
- * and the rest of the page render without waiting for it.
- */
 export function RuntimeReadinessSkeleton() {
   return (
-    // Deliberately not named "Subscription Runtimes": the placeholder must not stand in for the
-    // real region for assistive technology or for tests waiting on it.
+    // Deliberately not named "Subscription Runtimes": a placeholder must not stand in for the real region.
     <div
       role="status"
       aria-busy="true"

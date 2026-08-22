@@ -10,10 +10,6 @@ import { PageScroller } from "@/components/page-scroller"
 import { settingsSections } from "@/components/settings/settings-navigation"
 import { cn } from "@/lib/utils"
 
-/**
- * Two-pane settings layout: a persistent section list beside the active section. The list is a
- * horizontal strip on small screens so it never eats the reading width.
- */
 export function SettingsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 

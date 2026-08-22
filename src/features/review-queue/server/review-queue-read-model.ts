@@ -1,10 +1,7 @@
 import Database from "better-sqlite3"
 import { loadLocalApplicationConfig } from "@/features/local-application"
 
-/**
- * What the queue grid renders. The evidence a reviewer reads is deliberately absent: sending it for
- * every candidate put the whole queue's observations, screenshots and measurements into the page.
- */
+// The evidence is deliberately absent: sending it per candidate put the whole queue's screenshots into the page.
 export type QueueCandidateSummary = Readonly<{
   id: string
   name: string
@@ -89,14 +86,10 @@ type QueueRow = {
 
 const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,wo.opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null`
 
-/** The queue only grows as runs accumulate, and the whole of it is serialised into the page. */
+// The queue only grows, and the whole of it is serialised into the page.
 const REVIEW_QUEUE_LIMIT = 500
 
-/**
- * The queue grid, without the per-candidate evidence that only the open panel reads. A read failure
- * is left to surface rather than caught: an empty queue and an unreachable database look identical to
- * a reviewer, and only one of them means there is nothing to review.
- */
+// A read failure is left to surface: an empty queue and an unreachable database look identical otherwise.
 export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
   let db: Database.Database | undefined
   try {
@@ -122,7 +115,6 @@ export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
   }
 }
 
-/** One candidate with the evidence the review panel reads, fetched only when that panel opens. */
 export function getQueueCandidate(scoreId: string): QueueCandidate | undefined {
   return readQueue(scoreId)[0]
 }
@@ -272,7 +264,6 @@ export type CandidateSummary = Readonly<{
   unreviewed: number
   shortlisted: number
   topScore: number
-  /** Qualified candidates scored in the last seven days, and in the seven days before those. */
   qualifiedThisWeek: number
   qualifiedLastWeek: number
 }>
@@ -300,12 +291,9 @@ type SummaryRow = {
 
 const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
 
-/** Deliberately larger than one page: the grid pages through these client-side. */
+// Deliberately larger than one page: the grid pages through these client-side.
 const RECENT_CANDIDATE_LIMIT = 50
 
-/**
- * The most recently scored qualified candidates, newest first. Suppressed businesses never appear.
- */
 export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): readonly RecentCandidate[] {
   return readCandidates([], (database) =>
     (
@@ -328,9 +316,6 @@ export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): readonly Re
   )
 }
 
-/**
- * Aggregate counts over the same qualified, unsuppressed candidates the Review Queue exposes.
- */
 export function getCandidateSummary(now = new Date()): CandidateSummary {
   const weekAgo = now.getTime() - WEEK_IN_MILLISECONDS
   const twoWeeksAgo = weekAgo - WEEK_IN_MILLISECONDS

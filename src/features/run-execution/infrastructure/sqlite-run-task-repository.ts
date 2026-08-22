@@ -200,9 +200,7 @@ function complete(
         insertTask(database, task.runId, nextTask, now)
       }
     }
-    // A stage reporting its own completion state only settles the run when nothing else is still
-    // running. Settling regardless marked runs Completed while per-business work was in flight, which
-    // `recoverAbandoned` then had to undo — a run visibly went Completed and back to Running.
+    // A stage's own completion state settles the run only when nothing else is still running.
     const stillActive = Number(
       database
         .prepare(
@@ -346,10 +344,7 @@ function updateRunAfterSettledTask(
   }
   if (counts.active > 0) return
 
-  // Recomputed here, for this run, at the moment the outcome is decided. A sweep across every run on
-  // every worker cycle used to keep this fresh: it rewrote each run's metrics twice a second for as
-  // long as the worker was idle, so a cancelled run's row reached version 127,093, and `version` and
-  // `updated_at` stopped meaning anything.
+  // Recomputed for this run when its outcome is decided, rather than swept across every run each cycle.
   database
     .prepare(
       `update run_metrics set target_remaining = max(0,

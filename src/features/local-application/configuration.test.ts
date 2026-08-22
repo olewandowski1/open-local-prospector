@@ -3,12 +3,7 @@ import { describe, expect, it } from "vitest"
 
 import { loadLocalApplicationConfig } from "@/features/local-application/configuration"
 
-/**
- * An absolute directory for whichever platform is running the tests: `C:\workspace` on Windows and
- * `/workspace` elsewhere. Writing the Windows form literally made this suite pass only on Windows —
- * on Linux `C:/workspace` is a relative path, so every resolved path grew the real working
- * directory in front of it and the assertions failed.
- */
+// Absolute on whichever platform runs the tests; the literal Windows form passed only on Windows.
 const workingDirectory = resolve("/workspace")
 
 describe("local application configuration", () => {

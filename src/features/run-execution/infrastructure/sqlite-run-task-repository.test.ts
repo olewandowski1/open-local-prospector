@@ -49,8 +49,7 @@ describe("SQLite durable task repository", () => {
     const run = await createTestProspectingRun(database.path, "target-run")
     const connection = new Database(database.path)
     try {
-      // Target Reached is derived from the qualified candidates the run actually produced, so that
-      // is what the fixture states; `target_remaining` is recomputed from it when the run settles.
+      // `target_remaining` is recomputed from the qualified candidates when the run settles.
       connection
         .prepare(
           `update run_metrics set qualified_candidates =

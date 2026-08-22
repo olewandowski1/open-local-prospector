@@ -68,8 +68,7 @@ function isChromiumReady(): boolean {
 
 function installChromium(): void {
   const require = createRequire(import.meta.url)
-  // Playwright stopped exporting the "playwright/cli" subpath, so ask the package where its own
-  // executable lives instead of guessing at an internal path that may move again.
+  // Playwright no longer exports the "playwright/cli" subpath, so the package is asked where its executable is.
   const packageManifestPath = require.resolve("playwright/package.json")
   const { bin } = require(packageManifestPath) as { bin: Readonly<Record<string, string>> }
   const cliPath = join(dirname(packageManifestPath), bin.playwright)

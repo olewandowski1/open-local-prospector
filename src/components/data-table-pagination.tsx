@@ -18,16 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-/** The page sizes offered unless a grid asks for its own. */
 export const DEFAULT_PAGE_SIZES = [10, 25, 50, 100] as const
 
-/** The page size every paged grid starts on. */
 export const DEFAULT_PAGE_SIZE = 25
 
-/**
- * The 1-based range of rows on show. Derived from how many rows the page actually rendered rather than
- * the page size, so a final short page reports its real end instead of an optimistic one.
- */
+// Derived from the rows actually rendered, so a short final page reports its real end.
 export function visibleRange(
   pageIndex: number,
   pageSize: number,
@@ -41,7 +36,6 @@ export function visibleRange(
 
 export type PaginationSlot = number | "ellipsis"
 
-/** Pairs each slot with a stable key: a gap is named for the page that follows it. */
 function keyedSlots(
   slots: readonly PaginationSlot[],
 ): readonly Readonly<{ slot: PaginationSlot; key: string }>[] {
@@ -51,10 +45,6 @@ function keyedSlots(
   }))
 }
 
-/**
- * Which page links to show. The first, last and current pages are always reachable, with the pages
- * either side of the current one for stepping, and a gap marker wherever pages were left out.
- */
 export function paginationWindow(
   pageIndex: number,
   pageCount: number,
@@ -73,7 +63,7 @@ export function paginationWindow(
   let previous: number | undefined
   for (const page of [...shown].sort((left, right) => left - right)) {
     const gap = previous === undefined ? 0 : page - previous - 1
-    // A marker standing in for a single page costs the same room as the page itself, so show the page.
+    // A gap marker costs the same room as the page it hides, so show the page.
     if (gap === 1) slots.push(page - 1)
     else if (gap > 1) slots.push("ellipsis")
     slots.push(page)
@@ -82,11 +72,6 @@ export function paginationWindow(
   return slots
 }
 
-/**
- * The pager for every client-paged table in the workspace: a page size, the visible range, and the
- * page links themselves. It takes plain numbers rather than a table instance so each grid can share it
- * regardless of which TanStack features that grid registers.
- */
 export function DataTablePagination({
   pageIndex,
   pageSize,
@@ -141,7 +126,6 @@ export function DataTablePagination({
           {first}&ndash;{last} / {total}
         </span>
 
-        {/* The nav is width-fit here rather than centred, because it shares a row with the range. */}
         <Pagination className="mx-0 w-fit justify-end">
           <PaginationContent>
             <PaginationItem>

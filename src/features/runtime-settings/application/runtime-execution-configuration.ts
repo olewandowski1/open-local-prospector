@@ -14,11 +14,6 @@ export type RuntimeExecutionConfiguration = Readonly<{
   reasoningEffort: RuntimeReasoningEffort
 }>
 
-/**
- * A model a subscription runtime can be pinned to, together with the reasoning efforts that model
- * actually accepts. Effort ladders differ per provider and per model, so they are declared here
- * rather than shared across runtimes.
- */
 export type RuntimeModelOption = Readonly<{
   value: string
   label: string
@@ -26,7 +21,7 @@ export type RuntimeModelOption = Readonly<{
   reasoningEfforts: readonly RuntimeReasoningEffort[]
 }>
 
-/** Codex CLI passes the effort through as `model_reasoning_effort`. */
+// Codex CLI passes the effort through as `model_reasoning_effort`.
 const codexEfforts: readonly RuntimeReasoningEffort[] = [
   "none",
   "minimal",
@@ -36,7 +31,7 @@ const codexEfforts: readonly RuntimeReasoningEffort[] = [
   "xhigh",
 ]
 
-/** Claude Code passes the effort through as `--effort`. */
+// Claude Code passes the effort through as `--effort`.
 const claudeEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
 
 const models: Readonly<Record<RuntimeId, readonly RuntimeModelOption[]>> = {
@@ -91,10 +86,6 @@ export function runtimeModelOptions(runtimeId: RuntimeId): readonly RuntimeModel
   return models[runtimeId]
 }
 
-/**
- * The reasoning efforts the given model accepts. An empty list means the runtime must be invoked
- * without an effort argument for that model.
- */
 export function runtimeReasoningEfforts(
   runtimeId: RuntimeId,
   model: string,
@@ -112,10 +103,6 @@ export function defaultRuntimeExecutionConfiguration(
   return defaults[runtimeId]
 }
 
-/**
- * Pairs a model with an effort it actually accepts, keeping the preferred effort when the model
- * supports it. Models without an effort ladder resolve to `none`.
- */
 export function resolveRuntimeConfiguration(
   runtimeId: RuntimeId,
   model: string,

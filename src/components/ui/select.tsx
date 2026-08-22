@@ -72,8 +72,7 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  // Open below the trigger rather than covering it: aligning the selected item over the trigger hides
-  // the field being changed. Still overridable per usage.
+  // Opens below the trigger rather than covering the field being changed.
   alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &

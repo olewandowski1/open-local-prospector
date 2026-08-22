@@ -1,10 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
-/**
- * Stands in for the steering panel while runtime readiness is probed. It mirrors the panel's real
- * shape — heading, status badge, three fields, footer actions — so nothing shifts when the streamed
- * content arrives.
- */
 export function RuntimeSteeringSkeleton() {
   return (
     <div aria-busy="true" className="flex flex-col gap-4">

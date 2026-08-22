@@ -1,20 +1,15 @@
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-/** Persisted vocabularies are PascalCase identifiers; readers get spaced words. */
 export function humanizeTerm(value: string): string {
   return (
     value
-      // A run of capitals ends where the next word begins, so "NotALocalDecision" does not become
-      // "Not ALocal Decision".
+      // A run of capitals ends where the next word begins, so "NotALocalDecision" keeps its "A".
       .replace(/([A-Z]+)([A-Z][a-z])/gu, "$1 $2")
       .replace(/([a-z0-9])([A-Z])/gu, "$1 $2")
   )
 }
 
-/**
- * Scores are stored as floats. Reviewers compare candidates, so one decimal is the most precision
- * that carries meaning — `24.666666666666668` reads as noise, not as evidence.
- */
+// Scores are stored as floats; `24.666666666666668` reads as noise rather than evidence.
 export function formatScore(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
@@ -22,11 +17,9 @@ export function formatScore(value: number): string {
 export type ScoreComponent = Readonly<{
   label: string
   value: number
-  /** Highest score this component can contribute, from the deterministic rubric. */
   max: number
 }>
 
-/** Component maxima come from the v1 opportunity-score rubric weights. */
 export function scoreComponents(candidate: QueueCandidate): readonly ScoreComponent[] {
   return [
     { label: "Severity", value: candidate.breakdown.severity, max: 40 },
@@ -39,13 +32,11 @@ export function scoreComponents(candidate: QueueCandidate): readonly ScoreCompon
 
 const observedFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" })
 
-/** ISO timestamps are storage detail; reviewers only need the day evidence was observed. */
 export function formatObservedAt(isoDate: string): string {
   const timestamp = Date.parse(isoDate)
   return Number.isNaN(timestamp) ? "Unknown Date" : observedFormat.format(new Date(timestamp))
 }
 
-/** A readable stand-in for a long URL. Falls back to the raw value when it will not parse. */
 export function displayUrl(value: string): string {
   try {
     const url = new URL(value)
@@ -58,7 +49,6 @@ export function displayUrl(value: string): string {
 
 export type PresenceGroup = Readonly<{ type: string; urls: readonly string[] }>
 
-/** Groups presences by type so ten "Website:" lines become one labelled block. */
 export function groupPresences(presences: QueueCandidate["presences"]): readonly PresenceGroup[] {
   const groups = new Map<string, string[]>()
   for (const presence of presences) {
@@ -77,11 +67,6 @@ export type ReviewStatusVariant =
   | "secondary"
   | "outline"
 
-/**
- * Each review decision reads as its own outcome: a shortlisted candidate is progress, a rejected one
- * is closed, and an archived one is out of the way. Unreviewed stays neutral because it is the state
- * every candidate starts in, not a result.
- */
 const statusVariants: Readonly<Record<string, ReviewStatusVariant>> = {
   Unreviewed: "outline",
   Shortlisted: "success",

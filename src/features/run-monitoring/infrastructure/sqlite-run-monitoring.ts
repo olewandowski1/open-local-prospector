@@ -89,7 +89,6 @@ const runSelect = `
     coalesce(m.target_remaining, json_extract(r.search_brief, '$.targetCount')) as target_remaining
   from prospecting_runs r left join run_metrics m on m.run_id = r.id`
 
-/** Every run ever created was shipped to the client on each visit to Prospecting Runs. */
 const RUN_LIST_LIMIT = 200
 
 function list(database: Database.Database): readonly RunSummary[] {
@@ -113,10 +112,7 @@ function get(database: Database.Database, runId: string): RunDetail {
   }
 }
 
-/**
- * The run detail page polls while a run is live, and the log grows with every result a query returns.
- * Unbounded, one ten-business run already answered with 184 KB every 1.5 seconds.
- */
+// The detail page polls while a run is live, and unbounded this answered with 184 KB every 1.5 seconds.
 const TECHNICAL_LOG_LIMIT = 200
 
 function mapSummary(row: RunRow): RunSummary {
@@ -148,9 +144,7 @@ function progress(row: RunRow): RunProgressCounts {
 }
 
 function readBusinesses(database: Database.Database, runId: string): readonly BusinessProgress[] {
-  // The table shows how many log entries name each business, not the entries themselves. Shipping the
-  // entries here sent the whole Technical Run Log a second time, and pairing them meant scanning the
-  // full log once per task row.
+  // Counts only: shipping the entries here sent the whole Technical Run Log a second time.
   const eventCounts = new Map(
     (
       database
@@ -213,8 +207,7 @@ function readTechnicalLog(
   database: Database.Database,
   runId: string,
 ): readonly TechnicalRunEvent[] {
-  // One more than the cap from each source, so the merged list can still tell the caller that older
-  // entries exist without reading a run's entire history to find out.
+  // One more than the cap from each source, so the merged list can still report that older entries exist.
   const readLimit = TECHNICAL_LOG_LIMIT + 1
   const transitions = database
     .prepare(

@@ -15,14 +15,7 @@ import { RunDetailHeader } from "@/features/run-monitoring/presentation/run-deta
 import { isRunTerminal } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import { TechnicalLogSheet } from "@/features/run-monitoring/presentation/technical-log-panel"
 
-export function RunDetailPage({
-  runId,
-  initialRun,
-}: {
-  runId: string
-  /** The snapshot the server already read, so the first paint is the run rather than a spinner. */
-  initialRun?: RunDetail
-}) {
+export function RunDetailPage({ runId, initialRun }: { runId: string; initialRun?: RunDetail }) {
   const queryClient = useQueryClient()
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>()
   const query = useQuery({
@@ -36,8 +29,6 @@ export function RunDetailPage({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["run", runId] }),
   })
 
-  // Only reachable when the server could not read the run, since otherwise its snapshot is the
-  // first render.
   if (!query.data) {
     return (
       <PageScroller className="flex items-center justify-center p-8">
@@ -61,8 +52,7 @@ export function RunDetailPage({
 
   return (
     <PageScroller className="flex flex-col gap-6">
-      {/* A failed refresh leaves the last committed snapshot on screen and says it is stale, rather
-          than replacing a run being watched with an error page. */}
+      {/* A failed refresh keeps the last committed snapshot on screen and says it is stale. */}
       {query.isError ? (
         <Alert variant="destructive">
           <Icon icon={AlertCircleIcon} />

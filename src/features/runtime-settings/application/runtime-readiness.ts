@@ -224,10 +224,6 @@ function isSupportedClaudeStatus(
   )
 }
 
-/**
- * The parts of a runtime the update flow needs, without running the full readiness sequence: a label,
- * the version probe, and the manual commands to fall back on when the CLI cannot update itself.
- */
 export function runtimeDescriptor(runtimeId: RuntimeId): Readonly<{
   label: string
   versionArguments: readonly string[]
@@ -243,7 +239,6 @@ export function runtimeDescriptor(runtimeId: RuntimeId): Readonly<{
   }
 }
 
-/** The installed version a CLI reported, or undefined when it reported nothing readable. */
 export function parseRuntimeVersion(result: RuntimeCommandResult): string | undefined {
   return parseVersion(result)?.display
 }

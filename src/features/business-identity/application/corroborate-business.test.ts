@@ -157,8 +157,7 @@ describe("business identity workflow", () => {
 
     expect(original).toMatchObject({ value: { status: "Eligible" } })
     expect(original.nextTasks).toHaveLength(1)
-    // The second listing is the same business, so it must not be inspected, assessed and scored a
-    // second time, and must not count towards the run's target.
+    // The same business twice must not be inspected, scored, and counted towards the target twice.
     expect(duplicate).toMatchObject({ value: { status: "DuplicateCandidate" } })
     expect(duplicate.nextTasks).toBeUndefined()
     expect(readScalar(database.path, "select count(distinct id) from canonical_businesses")).toBe(1)
@@ -191,8 +190,7 @@ describe("business identity workflow", () => {
       )(second),
     )
 
-    // Two runs, two of the business's several published numbers. Keyed on the telephone alone this
-    // was a second canonical business, so nothing was recognised as recently assessed.
+    // Keyed on the telephone alone, a second published number opened a second canonical business.
     expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(1)
     expect(
       readScalar(database.path, "select count(distinct canonical_business_id) from run_businesses"),
@@ -200,7 +198,6 @@ describe("business identity workflow", () => {
   })
 })
 
-/** A second discovered result in the same run, standing for the same business under another title. */
 async function addDiscoveredListing(
   databasePath: string,
   task: RunTask,

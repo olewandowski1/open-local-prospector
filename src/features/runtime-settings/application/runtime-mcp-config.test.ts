@@ -4,8 +4,6 @@ import { EMPTY_MCP_CONFIG } from "@/features/runtime-settings/application/runtim
 
 describe("EMPTY_MCP_CONFIG", () => {
   it("satisfies the shape the CLI validates against", () => {
-    // A bare "{}" is rejected with "mcpServers: expected record, received undefined", and the process
-    // exits without a result — which took down every Claude-backed run at its first step.
     expect(JSON.parse(EMPTY_MCP_CONFIG)).toEqual({ mcpServers: {} })
   })
 

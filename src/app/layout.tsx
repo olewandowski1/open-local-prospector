@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* Applies the system preference before paint so the first frame is never the wrong theme. */}
+        {/* Applies the preference before paint, so the first frame is never wrong. */}
         <script suppressHydrationWarning>{themeResolverScript}</script>
       </head>
       <body className="flex min-h-full flex-col">

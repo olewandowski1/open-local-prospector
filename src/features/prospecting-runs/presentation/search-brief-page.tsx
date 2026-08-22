@@ -51,7 +51,6 @@ import {
 } from "@/features/runtime-settings/client"
 import { cn } from "@/lib/utils"
 
-/** Keeps a label, its control, and its description reading as one field. */
 const fieldSpacing = "gap-1.5"
 
 const categoryPresets = [

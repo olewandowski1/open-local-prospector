@@ -11,9 +11,7 @@ import type {
 import { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"
 import { cn } from "@/lib/utils"
 
-/**
- * Readiness is the one place this interface uses colour: a runtime is either usable or it is not.
- */
+// Readiness is the one place this interface uses colour: a runtime is either usable or it is not.
 const statusPresentation: Record<
   RuntimeReadinessStatus,
   Readonly<{ className: string; icon: IconSvg }>

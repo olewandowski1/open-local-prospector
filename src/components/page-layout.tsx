@@ -15,9 +15,7 @@ export function PageHeader({
   actions?: ReactNode
   className?: string
 }) {
-  // The container is a wrapper rather than the header itself, because an element cannot query the
-  // container it declares. Measuring the header rather than the viewport matters here: the sidebar
-  // appears at 768px, which makes this column narrower at 768px than it was at 640px.
+  // Measured on the header, not the viewport: the sidebar makes this column narrower at 768px than at 640px.
   return (
     <div className={cn("@container", className)}>
       <header className="flex flex-col gap-4 @md:flex-row @md:items-start @md:justify-between">

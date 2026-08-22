@@ -4,10 +4,7 @@ import { getPersistedRun } from "@/features/run-monitoring/server/run-services"
 
 export default async function RunRoute({ params }: { params: Promise<{ runId: string }> }) {
   const { runId } = await params
-  // The run is a local SQLite read of a few milliseconds, so the server hands the first snapshot
-  // over rather than letting every visit render a spinner and wait a round trip for it. A head
-  // start, not a requirement: if the read fails, the page fetches for itself as it always did, and
-  // polling takes over either way.
+  // A head start, not a requirement: on failure the page fetches for itself as it always did.
   const initialRun = await getPersistedRun(runId).catch(() => undefined)
   return (
     <AppShell>

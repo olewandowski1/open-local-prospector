@@ -37,7 +37,6 @@ async function selectRuntime(formData: FormData): Promise<void> {
   revalidatePath("/settings/subscription")
 }
 
-/** Probes every provider CLI, so it is streamed in rather than blocking the section list. */
 async function RuntimeReadinessCards() {
   const config = loadLocalApplicationConfig()
   const [runtimes, selected] = await Promise.all([

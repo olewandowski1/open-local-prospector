@@ -10,10 +10,6 @@ export type RunCountItem = Readonly<{
   value: number
 }>
 
-/**
- * The pipeline a Prospecting Run moves work through, in order. Presenting these as a funnel shows
- * where work was lost between stages, which nine equal tiles cannot.
- */
 export function runFunnel(progress: RunProgressCounts): readonly RunCountItem[] {
   return [
     { key: "queries", label: "Queries", value: progress.queries },
@@ -24,7 +20,6 @@ export function runFunnel(progress: RunProgressCounts): readonly RunCountItem[] 
   ]
 }
 
-/** Counts that explain why the funnel narrowed, kept apart from the pipeline itself. */
 export function runAdjustments(progress: RunProgressCounts): readonly RunCountItem[] {
   return [
     { key: "duplicates", label: "Duplicates", value: progress.duplicates },
@@ -56,7 +51,6 @@ export function isRunTerminal(run?: RunDetail): boolean {
 
 export type EventKindCount = Readonly<{ kind: string; count: number }>
 
-/** Event kinds present in the log, most frequent first, for filtering the log down. */
 export function eventKindCounts(events: readonly TechnicalRunEvent[]): readonly EventKindCount[] {
   const counts = new Map<string, number>()
   for (const event of events) {
@@ -80,7 +74,7 @@ export function filterTechnicalLog(
   )
 }
 
-/** Only http(s) URLs are ever turned into links; Source Content is untrusted. */
+// Only http(s) URLs are ever turned into links; Source Content is untrusted.
 export function safeHttpUrl(value?: string): string | undefined {
   if (!value) return undefined
   try {
@@ -93,27 +87,19 @@ export function safeHttpUrl(value?: string): string | undefined {
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu
 
-/**
- * A readable stand-in for an event source. Identifiers that are plainly internal ids are shortened,
- * because 36 characters of UUID tell a reader nothing while crowding out the rest of the row.
- */
 export function eventSourceLabel(sourceIdentifier: string): string {
   return uuidPattern.test(sourceIdentifier) ? `#${sourceIdentifier.slice(0, 8)}` : sourceIdentifier
 }
 
-/** Semantic emphasis for a per-business status when it is presented as text, not a badge. */
 export function businessStatusTone(
   status: string,
 ): "muted" | "destructive" | "warning" | "success" {
   if (["FailedPermanent", "Failed"].includes(status)) return "destructive"
-  // Blocked or unreachable work may still succeed on a later attempt, so it warns rather than reading
-  // as a settled failure.
   if (["Blocked", "Unreachable", "Retrying"].includes(status)) return "warning"
   if (["Qualified", "Completed", "Scored"].includes(status)) return "success"
   return "muted"
 }
 
-/** Scores are stored as raw floats; a reader wants at most one decimal. */
 export function formatBusinessScore(score: number): string {
   return Number.isInteger(score) ? String(score) : score.toFixed(1)
 }

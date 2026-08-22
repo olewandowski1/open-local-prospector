@@ -25,7 +25,6 @@ export type CommittedIdentity = Readonly<{
     | "Excluded"
     | "SkippedRecent"
     | "IncludedRecent"
-    /** Corroborated to a business this run already holds under a different discovered listing. */
     | "DuplicateCandidate"
   websiteUrl?: string
   shouldInspect: boolean

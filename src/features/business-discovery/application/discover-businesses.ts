@@ -117,11 +117,7 @@ export function makeDiscoveryTaskExecutor(
       }
 
       const targetReached = progress.uniqueBusinesses >= searchBrief.targetCount
-      // Every discovered business is corroborated, for two reasons. Stopping short of the target used
-      // to discard what discovery had already found and paid for, ending the run with no candidates
-      // at all. Pursuing exactly `targetCount` left no headroom either: one business excluded
-      // downstream put the target permanently out of reach while unexplored businesses sat unused.
-      // Discovery already stops as soon as the target is met, so the surplus is bounded by one page.
+      // Pursuing exactly the target left no headroom for downstream exclusions.
       return {
         value: {
           source: source.identifier,

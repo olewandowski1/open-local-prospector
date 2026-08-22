@@ -26,14 +26,12 @@ import {
 import { humanizeStage } from "@/features/run-monitoring/presentation/run-presentation"
 import { cn } from "@/lib/utils"
 
-/** Rows only need the time; the full stamp stays available as the title. */
 const timeFormat = new Intl.DateTimeFormat("en-GB", { timeStyle: "medium" })
 const timestampFormat = new Intl.DateTimeFormat("en-GB", {
   dateStyle: "medium",
   timeStyle: "medium",
 })
 
-/** Kinds that record something going wrong, so the eye is drawn to them first. */
 const troubleKinds = ["InspectionBlock", "Failure", "Retry", "Error"]
 
 export function TechnicalLogSheet({
@@ -45,9 +43,7 @@ export function TechnicalLogSheet({
   onClearBusiness,
 }: {
   events: readonly TechnicalRunEvent[]
-  /** How many entries the run detail request returns at most. */
   limit: number
-  /** True when the run holds older entries than these. */
   truncated: boolean
   businessId?: string
   businessLabel?: string
@@ -55,15 +51,13 @@ export function TechnicalLogSheet({
 }) {
   const [kind, setKind] = useState<string>()
 
-  // Counted after the business filter so the chip totals always reconcile with the list below.
   const inScope = useMemo(() => filterTechnicalLog(events, { businessId }), [events, businessId])
   const kinds = useMemo(() => eventKindCounts(inScope), [inScope])
   const filtered = useMemo(() => filterTechnicalLog(inScope, { kind }), [inScope, kind])
 
   const selectKind = (next?: string) => setKind(next)
 
-  // Every event of a kind carries the same sentence, so it is stated once here rather than on each of
-  // the hundreds of rows below.
+  // Every event of a kind carries the same sentence, so it is stated once rather than on every row.
   const kindMessage = kind ? filtered[0]?.message : undefined
 
   return (
@@ -142,16 +136,9 @@ export function TechnicalLogSheet({
   )
 }
 
-/**
- * The run as a sequence of machine events, one line each. Every event of a kind repeats the same
- * sentence, so a row carries only what actually differs — when it happened, which source it came from
- * and where the result lives. Only the rows in view are rendered, so a run that checkpointed thousands
- * costs the same as one that checkpointed ten.
- */
 function EventRows({ events }: { events: readonly TechnicalRunEvent[] }) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  // Derived rather than passed: when every row shares one kind, the label repeats the filter above it.
-  // A caller cannot then disagree with the data about whether the column is worth its width.
+  // Derived rather than passed, so a caller cannot disagree with the data about the column's worth.
   const showKind = useMemo(() => new Set(events.map((event) => event.kind)).size > 1, [events])
   const virtualizer = useVirtualizer({
     count: events.length,

@@ -22,17 +22,12 @@ import {
 import { humanizeStage } from "@/features/run-monitoring/presentation/run-presentation"
 import { cn } from "@/lib/utils"
 
-/**
- * Column priority as the viewport narrows. The business and its status always stay; the rest drop away
- * so the table never has to scroll sideways.
- */
+// Columns drop away in ascending order of usefulness, so the table never scrolls sideways.
 const columnClass = {
-  // Only at the very narrowest does status step aside; the Issue column still explains failures.
   status: "hidden @sm:table-cell",
   score: "whitespace-nowrap",
   stage: "hidden @2xl:table-cell",
   retries: "hidden @4xl:table-cell",
-  // The Issue column always stays: a failure reason is the whole point of looking at this table.
   issue: "max-w-40 @2xl:max-w-72",
 } as const
 
@@ -52,7 +47,6 @@ export function RunBusinessesTable({
   businesses: readonly BusinessProgress[]
   selectedBusinessId?: string
   onSelect: (businessId?: string) => void
-  /** Sits with the heading, because what it opens is scoped by the selection made here. */
   action?: React.ReactNode
 }) {
   const [pageIndex, setPageIndex] = useState(0)
@@ -60,7 +54,7 @@ export function RunBusinessesTable({
 
   const pageCount = Math.max(1, Math.ceil(businesses.length / pageSize))
 
-  // A polling run keeps adding businesses, so the page has to stay inside the range that still exists.
+  // A polling run keeps adding businesses, so the page must stay inside the range that still exists.
   useEffect(() => {
     setPageIndex((current) => Math.min(current, pageCount - 1))
   }, [pageCount])
@@ -98,7 +92,6 @@ export function RunBusinessesTable({
             <TableRow>
               <TableHead>Business</TableHead>
               <TableHead className={columnClass.stage}>Stage</TableHead>
-              {/* Score sits beside Status, so the number and the verdict it produced read together. */}
               <TableHead className={columnClass.score}>Score</TableHead>
               <TableHead className={columnClass.status}>Status</TableHead>
               <TableHead className={columnClass.retries}>Retries</TableHead>

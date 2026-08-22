@@ -29,7 +29,6 @@ import { ThemeToggle } from "@/features/local-application/presentation/theme-tog
 import { RuntimeUpdatePanel } from "@/features/runtime-settings/presentation/runtime-update-panel"
 import { cn } from "@/lib/utils"
 
-/** Page content stays readable on wide displays instead of stretching across the full inset. */
 const workspaceWidth = "mx-auto w-full max-w-5xl"
 
 function NavigationGroup({ label, items }: { label: string; items: readonly NavigationItem[] }) {

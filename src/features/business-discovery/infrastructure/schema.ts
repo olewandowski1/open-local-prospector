@@ -45,11 +45,7 @@ export const discoveredBusinesses = sqliteTable(
     resultUrl: text("result_url").notNull(),
     description: text(),
     rawAttributes: text("raw_attributes").notNull(),
-    /**
-     * Position in the order results were returned, counted across the whole run. Every business on
-     * one page shares a `discovered_at`, so without this the only tiebreak is the random primary
-     * key: the run pursued an arbitrary subset and discarded search relevance.
-     */
+    // A page shares one `discovered_at`, so without this the only tiebreak is the random primary key.
     discoveryRank: integer("discovery_rank").notNull().default(0),
     discoveredAt: integer("discovered_at", { mode: "timestamp_ms" }).notNull(),
   },

@@ -41,10 +41,6 @@ const formats: readonly Readonly<{
   },
 ]
 
-/**
- * Confirms what leaves the device before it leaves. The export itself is a plain link, so the browser
- * performs the download and nothing is buffered or sent anywhere by the application.
- */
 export function ExportDialog({
   statusFilter,
   count,

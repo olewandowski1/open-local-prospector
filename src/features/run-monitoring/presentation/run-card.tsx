@@ -6,11 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import type { RunRow } from "@/features/run-monitoring/presentation/run-presentation"
 
-/**
- * One run at a glance. Built from the same parts as the rest of the workspace — a heading, muted
- * supporting text and rules for structure — rather than nested card chrome, so the two views of the
- * runs list read as the same system.
- */
 export function RunCard({ run }: { run: RunRow }) {
   return (
     <Link

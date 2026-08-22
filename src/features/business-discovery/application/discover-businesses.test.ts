@@ -54,8 +54,7 @@ describe("business discovery workflow", () => {
     const checkpoint = await Effect.runPromise(execute(task))
     const repeated = await Effect.runPromise(execute(task))
 
-    // Falling short of the target is recorded, but the businesses discovered along the way are still
-    // corroborated: discarding them ended the run with no candidates at all.
+    // Falling short of the target must not discard the businesses discovery already paid for.
     expect(checkpoint).toMatchObject({
       value: { discoveredBusinesses: 3, targetReached: false, searchExhausted: true },
     })
@@ -136,8 +135,6 @@ describe("business discovery workflow", () => {
     )
     const workerLayer = Layer.merge(
       sqliteRunTaskRepositoryLive(database.path),
-      // This run never gets past discovery, so the later stages stand as executors that would fail
-      // loudly if it did.
       stageExecutorLive({
         DiscoverBusinesses: execute,
         CorroborateBusiness: unreachableStage,

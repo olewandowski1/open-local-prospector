@@ -146,6 +146,6 @@ function writeCacheSafely(databasePath: string, query: string, areas: readonly S
   try {
     writeCache(databasePath, query, areas)
   } catch {
-    // A transient cache write failure must not discard a valid geocoding response.
+    // A cache write failure must not discard a valid geocoding response.
   }
 }

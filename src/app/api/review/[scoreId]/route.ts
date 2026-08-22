@@ -49,7 +49,6 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
   }
 }
 
-/** The evidence for one candidate, read only when its review panel opens. */
 export async function GET(_request: Request, context: { params: Promise<{ scoreId: string }> }) {
   const { scoreId } = await context.params
   const candidate = getQueueCandidate(scoreId)

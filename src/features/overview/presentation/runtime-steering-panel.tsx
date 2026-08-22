@@ -34,16 +34,12 @@ import {
 } from "@/features/runtime-settings/client"
 import { cn } from "@/lib/utils"
 
-/**
- * The workspace-wide runtime, model, and reasoning effort that seed every new Prospecting Run.
- */
 export type RuntimeSteering = Readonly<{
   runtimeId: RuntimeId
   model: string
   reasoningEffort: RuntimeReasoningEffort
 }>
 
-/** Keeps a label, its control, and its description reading as one field. */
 const fieldSpacing = "gap-1.5"
 
 const steeringOf = (runtimeId: RuntimeId): RuntimeSteering => ({

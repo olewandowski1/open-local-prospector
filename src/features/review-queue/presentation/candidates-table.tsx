@@ -42,7 +42,6 @@ const features = tableFeatures({
   paginatedRowModel: createPaginatedRowModel(),
 })
 
-/** The row carries its own open handler so the column definitions can stay module-level. */
 type ReviewRow = QueueCandidateSummary & Readonly<{ onOpen: () => void }>
 
 const helper = createColumnHelper<typeof features, ReviewRow>()
@@ -52,7 +51,7 @@ const columns = helper.columns([
     header: "Business",
     sortFn: sortFn_text,
     cell: (context) => (
-      // An explicit width, so a long trading name truncates instead of widening the whole queue.
+      // An explicit width, so a long trading name truncates instead of widening the queue.
       <div className="w-[152px] @xl:w-[224px]">
         <span className="block truncate font-medium" title={context.getValue()}>
           {context.getValue()}
@@ -108,12 +107,9 @@ const columns = helper.columns([
   }),
 ])
 
-/**
- * Column priority as the viewport narrows. The business, its score and the actions always stay; the
- * supporting columns drop away so the queue never has to scroll sideways.
- */
+// Columns drop away in ascending order of usefulness, so the queue never scrolls sideways.
 const columnClassNames: Readonly<Record<string, string>> = {
-  // The content box inside is 16px narrower, matching the cell padding either side.
+  // The content box is 16px narrower, matching the cell padding either side.
   name: "w-[168px] @xl:w-[240px]",
   reviewStatus: "hidden @md:table-cell",
   primaryOpportunity: "hidden @2xl:table-cell",
@@ -128,10 +124,6 @@ const initialState = {
 
 const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
 
-/**
- * The whole queue as one sortable, paged grid. Reviewing happens in a side panel rather than in a
- * second column, so the list keeps its full width however many candidates a run produces.
- */
 export function CandidatesTable({
   candidates,
   selectedId,

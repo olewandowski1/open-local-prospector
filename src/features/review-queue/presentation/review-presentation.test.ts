@@ -29,7 +29,7 @@ describe("review presentation", () => {
     expect(humanizeTerm("NoDedicatedWebsite")).toBe("No Dedicated Website")
     expect(humanizeTerm("BrokenOrUnusable")).toBe("Broken Or Unusable")
     expect(humanizeTerm("AlreadyHasStrongWebsite")).toBe("Already Has Strong Website")
-    // A single-letter word is still a word: this read as "Not ALocal Decision" on the reject buttons.
+    // A single-letter word is still a word: this read as "Not ALocal Decision".
     expect(humanizeTerm("NotALocalDecision")).toBe("Not A Local Decision")
     expect(humanizeTerm("NotABusinessFit")).toBe("Not A Business Fit")
   })
@@ -48,7 +48,6 @@ describe("review presentation", () => {
       { label: "Local Decision", value: 10, max: 10 },
       { label: "Commercial Value", value: 5.8, max: 10 },
     ])
-    // The maxima sum to the rubric's full 100 points.
     expect(scoreComponents(candidate()).reduce((total, item) => total + item.max, 0)).toBe(100)
   })
 

@@ -8,8 +8,7 @@ import type { ThemePreference } from "@/features/local-application/application/t
 import { useTheme } from "@/features/local-application/presentation/use-theme"
 
 export function AppearanceSection({ theme }: { theme: ThemePreference }) {
-  // A stored `system` preference resolves to the current surface; the control intentionally exposes
-  // only the two concrete outcomes and persists one only after the operator chooses it.
+  // A stored `system` preference resolves to a surface; the control offers only the two concrete outcomes.
   const { resolved, select } = useTheme(theme)
   const resolvedIcon = resolved === "dark" ? Moon02Icon : Sun01Icon
 

@@ -1,10 +1,4 @@
-/**
- * Presentation-agnostic summary tiles for the Overview. Everything here is derived from persisted
- * Run Progress counts and qualified Candidate Businesses; nothing is estimated or invented.
- *
- * A tile only carries a direction when two comparable periods exist, so an arrow always stands for
- * a measured week-over-week change rather than a mood.
- */
+// A tile carries a direction only when two comparable periods exist, so an arrow is always a measured change.
 export type OverviewTrend = "up" | "down" | "flat" | "none"
 
 export type OverviewMetric = Readonly<{
@@ -12,7 +6,6 @@ export type OverviewMetric = Readonly<{
   label: string
   value: string
   trend: OverviewTrend
-  /** Short Title Cased phrase describing the trend, or the tile's standing fact. */
   note: string
 }>
 
@@ -88,10 +81,6 @@ export function calculateOverviewMetrics(
   ]
 }
 
-/**
- * Turns two comparable weekly counts into a direction and a phrase. `emptyNote` replaces both when
- * there is nothing to compare, so a fresh workspace never shows a meaningless arrow.
- */
 function change(
   thisWeek: number,
   lastWeek: number,

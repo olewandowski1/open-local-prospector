@@ -25,7 +25,6 @@ describe("theme preference", () => {
   it("only forces the dark class for an explicit dark preference", () => {
     expect(themeClassName("dark")).toBe("dark")
     expect(themeClassName("light")).toBeUndefined()
-    // `system` is resolved in the browser, so the server must not guess.
     expect(themeClassName("system")).toBeUndefined()
   })
 

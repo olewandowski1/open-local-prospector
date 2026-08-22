@@ -11,16 +11,11 @@ type TooltipSide = ComponentProps<typeof TooltipContent>["side"]
 
 type IconButtonProps = ComponentProps<typeof Button> &
   Readonly<{
-    /** Names the action for both the accessible name and the tooltip, so the two cannot drift. */
+    // One label feeds the accessible name and the tooltip, so the two cannot drift.
     label: string
     side?: TooltipSide
   }>
 
-/**
- * An icon-only button that says what it does on hover and to a screen reader. Icons alone carry no
- * reliable meaning, so every icon control in the workspace goes through here rather than relying on a
- * native `title`, which is slow to appear and invisible to keyboard users.
- */
 export function IconButton({ label, side = "top", children, ...props }: IconButtonProps) {
   return (
     <Tooltip>
@@ -45,11 +40,6 @@ type IconLinkProps = Omit<ComponentProps<typeof Link>, "children"> &
     children: React.ReactNode
   }>
 
-/**
- * The navigating counterpart of {@link IconButton}. It renders a real anchor rather than a button
- * behaving like one: assistive technology announces it as a link, and it keeps the behaviours readers
- * expect of one, such as opening in a new tab.
- */
 export function IconLink({
   label,
   side = "top",

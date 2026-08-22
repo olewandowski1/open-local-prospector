@@ -19,8 +19,6 @@ describe("Local Application scripts", () => {
     expect(packageJson.scripts[script]).toContain(`pnpm ${script}:worker`)
   })
 
-  // Only the development worker reloads on change. A file save must never restart a worker that is
-  // executing a Prospecting Run.
   it("watches for changes in the development worker only", () => {
     expect(packageJson.scripts["dev:worker"]).toContain("--watch")
     expect(packageJson.scripts["start:worker"]).not.toContain("--watch")

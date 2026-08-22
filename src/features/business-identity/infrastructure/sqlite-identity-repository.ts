@@ -225,9 +225,7 @@ function commitEvaluation(
             .get(input.evaluation.canonicalFingerprint),
         )
       : false
-    // Several discovered pages routinely corroborate to one business. Without this, each one becomes
-    // its own candidate: the same business is inspected, assessed and scored more than once, and the
-    // run reaches its target on businesses it has already counted.
+    // Several discovered pages routinely corroborate to one business; without this each becomes its own candidate.
     const duplicateOf = canonicalBusinessId
       ? (database
           .prepare(
@@ -291,10 +289,7 @@ function upsertCanonical(
     .get(fingerprint) as { id: string } | undefined
   const locality = searchBrief.searchArea.displayName.split(",")[0]?.trim() ?? searchBrief.location
   const normalizedName = normalizeCanonicalName(evaluation.canonicalName)
-  // A business rediscovered later can key on a different signal than the one it was first recorded
-  // under — a page that listed a telephone last time may lead with a website this time, and records
-  // written before the key order changed carry the older form. Matching an established row by name
-  // and locality keeps that one business rather than opening a second, unreachable identity.
+  // A rediscovered business can key on a different signal, so name and locality also match.
   const established =
     existing ??
     (normalizedName.length >= 3
@@ -310,8 +305,7 @@ function upsertCanonical(
       : undefined)
   if (established) return established.id
   const id = crypto.randomUUID()
-  // The name a business was first corroborated under is already shown against every candidate it
-  // produced, so a later listing of the same business refreshes decision scope but never the name.
+  // The first corroborated name is already shown against every candidate, so a later listing never renames it.
   database
     .prepare(
       `insert into canonical_businesses
@@ -335,7 +329,6 @@ function upsertCanonical(
   return id
 }
 
-/** The stored form both the canonical row and the name-and-locality match are compared on. */
 function normalizeCanonicalName(name: string): string {
   return name.toLocaleLowerCase("pl").replace(/\s+/gu, " ").trim()
 }

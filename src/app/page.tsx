@@ -25,11 +25,7 @@ import {
 import { runtimePreferenceLive } from "@/features/runtime-settings/infrastructure/runtime-preference-live"
 import { RuntimeProbeLive } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
 
-/**
- * Stores the workspace steering choice. Readiness is deliberately not re-probed here: run preflight
- * refuses to start a run whose runtime is not Ready, so probing a CLI on a preference write only
- * adds seconds of latency to the control.
- */
+// Readiness is not re-probed here: preflight already refuses a run whose runtime is not Ready.
 async function saveSteering(steering: RuntimeSteering): Promise<void> {
   "use server"
 
@@ -44,10 +40,8 @@ async function saveSteering(steering: RuntimeSteering): Promise<void> {
       Effect.provide(runtimePreferenceLive(config.databasePath)),
     ),
   )
-  // Both readers of this preference are dynamic routes, so there is no cached render to invalidate.
 }
 
-/** Probes every provider CLI, so it is streamed in rather than blocking the Overview. */
 async function SteeringPanel() {
   const config = loadLocalApplicationConfig()
   const [runtimes, preference] = await Promise.all([

@@ -38,17 +38,14 @@ export type RunSummary = Readonly<{
 
 export type BusinessProgress = Readonly<{
   id: string
-  /** Discovered name, absent for runs checkpointed before names were recorded. */
+  // Absent for runs checkpointed before names were recorded.
   name?: string
   currentStage: string
   status: string
   retryCount: number
   failureReason?: string
-  /** The opportunity score this business was judged on, absent until scoring has run. */
   score?: number
-  /** True when the score cleared the review threshold. */
   qualified?: boolean
-  /** How many Technical Run Log entries name this business. The entries themselves live in the log. */
   sourceEventCount: number
 }>
 
@@ -67,9 +64,7 @@ export type RunDetail = RunSummary &
   Readonly<{
     requestedControl: string
     businesses: readonly BusinessProgress[]
-    /** The most recent entries, newest first, capped at `technicalLogLimit`. */
     technicalLog: readonly TechnicalRunEvent[]
     technicalLogLimit: number
-    /** True when the run holds older entries than the ones returned. */
     technicalLogTruncated: boolean
   }>

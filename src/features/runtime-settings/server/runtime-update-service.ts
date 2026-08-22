@@ -22,11 +22,7 @@ import {
   resolveRuntimeExecutable,
 } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
 
-/**
- * Runs a provider CLI's own update command. The executable is resolved from the application-owned
- * candidate paths and the arguments are fixed, so nothing a user or a source can influence reaches
- * the command line.
- */
+// Application-owned path and fixed arguments, so nothing external reaches the command line.
 export async function updateRuntime(runtimeId: RuntimeId): Promise<RuntimeUpdateResult> {
   const { installInstruction, updateInstruction } = runtimeDescriptor(runtimeId)
   const executable = await Effect.runPromise(resolveRuntimeExecutable(runtimeId))
@@ -61,19 +57,12 @@ export async function updateRuntime(runtimeId: RuntimeId): Promise<RuntimeUpdate
     getRuntimeReadiness(runtimeId).pipe(Effect.provide(RuntimeProbeLive)),
   )
   const interpreted = interpretUpdateResult(result.value, readiness.version)
-  // A CLI can exit non-zero because it could not work out how it was installed, which is recoverable
-  // by hand; the manual command is offered alongside whatever the CLI reported.
   if (interpreted.outcome !== "Failed") return interpreted
   return { ...interpreted, terminalInstruction: updateInstruction }
 }
 
 const REGISTRY_TIMEOUT_MILLISECONDS = 8_000
 
-/**
- * Compares each installed CLI against the version published to npm. Neither CLI can be asked whether
- * an update exists without installing one, so the registry is read directly; when either side cannot
- * be read the runtime is reported as unchecked rather than assumed current or stale.
- */
 export async function checkRuntimeUpdates(): Promise<readonly RuntimeUpdateStatus[]> {
   const statuses = await Promise.all(runtimeIds.map(checkRuntime))
   return statuses.filter((status): status is RuntimeUpdateStatus => status !== undefined)
@@ -81,7 +70,6 @@ export async function checkRuntimeUpdates(): Promise<readonly RuntimeUpdateStatu
 
 async function checkRuntime(runtimeId: RuntimeId): Promise<RuntimeUpdateStatus | undefined> {
   const executable = await Effect.runPromise(resolveRuntimeExecutable(runtimeId))
-  // A runtime that is not installed has nothing to update; it is left out rather than shown as stale.
   if (Option.isNone(executable)) return undefined
 
   const { label, versionArguments } = runtimeDescriptor(runtimeId)
@@ -113,7 +101,7 @@ async function probeInstalledVersion(
   return Option.isNone(result) ? undefined : parseRuntimeVersion(result.value)
 }
 
-/** Read-only, unauthenticated, and never cached — a stale answer here would misreport an update. */
+// Never cached: a stale answer here would misreport an update.
 async function latestPublishedVersion(packageName: string): Promise<string | undefined> {
   try {
     const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {

@@ -7,7 +7,7 @@ import {
 
 const collectedAt = new Date("2026-08-20T10:00:00.000Z")
 
-/** The same florist as four different directories titled it, all listing the same telephone. */
+// One florist as four directories titled it, all listing the same telephone.
 const sameFloristEverywhere = [
   {
     name: "Kwiaciarnia Koniczynka Agnieszka Jasińska - Kwiatyyy.pl",

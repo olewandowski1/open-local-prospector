@@ -10,9 +10,7 @@ export function createMigratedTestDatabase() {
   migrateLocalDatabase(path)
   return {
     path,
-    // Repositories hold their connection open for the life of the process, so the file cannot be
-    // removed while one is still attached — Windows answers EBUSY. Production releases them the same
-    // way before maintenance renames or empties the database.
+    // A held-open connection makes the file unremovable on Windows, which answers EBUSY.
     cleanup: () => {
       closeSharedDatabases()
       rmSync(directory, { recursive: true, force: true })

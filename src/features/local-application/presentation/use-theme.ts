@@ -8,7 +8,6 @@ import {
   type ThemePreference,
 } from "@/features/local-application/application/theme-preference"
 
-/** The surface actually being displayed once `system` has been resolved against the device. */
 export type ResolvedTheme = "light" | "dark"
 
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
@@ -16,23 +15,12 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
-/**
- * Single writer for the appearance preference. The cookie is intentionally readable by the client so
- * the pre-paint script and the server render agree, so it is written here rather than through a
- * server action.
- */
 export function writeThemePreference(preference: ThemePreference): void {
-  // The Cookie Store API is asynchronous, but the pre-paint resolver script reads this cookie
-  // synchronously; deferring the write reintroduces a flash of the previous theme.
-  // biome-ignore lint/suspicious/noDocumentCookie: must be written synchronously before paint
+  // biome-ignore lint/suspicious/noDocumentCookie: the pre-paint script reads this synchronously
   document.cookie = `${THEME_COOKIE}=${preference};path=/;max-age=${THEME_COOKIE_MAX_AGE_SECONDS};samesite=lax`
   document.documentElement.classList.toggle("dark", resolveTheme(preference) === "dark")
 }
 
-/**
- * Tracks the stored preference and the surface it resolves to. Starts from the value the server
- * rendered so the first paint never disagrees with the markup.
- */
 export function useTheme(initial: ThemePreference) {
   const [preference, setPreference] = useState<ThemePreference>(initial)
   const [resolved, setResolved] = useState<ResolvedTheme>(initial === "dark" ? "dark" : "light")

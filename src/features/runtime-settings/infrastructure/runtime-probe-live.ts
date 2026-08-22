@@ -86,9 +86,7 @@ export function resolveRuntimeExecutable(
       try {
         await access(candidate, constants.X_OK)
         return Option.some(candidate)
-      } catch {
-        // Continue through application-owned candidate paths.
-      }
+      } catch {}
     }
     return Option.none()
   })

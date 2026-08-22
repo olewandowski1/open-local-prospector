@@ -92,7 +92,6 @@ function DialogFooter({
       data-slot="dialog-footer"
       className={cn(
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
-        // The primary action is the last child, so it is the one that grows.
         layout === "stretch" && "[&>*:last-child]:flex-1 sm:[&>*:not(:last-child)]:w-28",
         className,
       )}

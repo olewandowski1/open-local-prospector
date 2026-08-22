@@ -1,10 +1,7 @@
 import { SectionHeader } from "@/components/page-layout"
 import type { LocalApplicationConfig } from "@/features/local-application/configuration"
 
-/**
- * Where the Local Application keeps its data. Paths are non-secret configuration; no credential,
- * token, or provider cache is ever surfaced here.
- */
+// Paths are non-secret configuration; no credential or provider cache is ever surfaced here.
 export function StorageLocationsSection({ config }: { config: LocalApplicationConfig }) {
   const locations = [
     { label: "SQLite Database", value: config.databasePath },

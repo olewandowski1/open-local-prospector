@@ -214,19 +214,7 @@ export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluati
   }
 }
 
-/**
- * The strongest identity a business has, so the same business found through four different directories
- * becomes one candidate rather than four. A telephone in a country identifies a business on its own;
- * including the name would split it again, because each directory titles the page differently.
- *
- * The website comes second, not first, even though a host is the more stable signal across runs. The
- * discovered result is itself evidence, so a directory page that titles itself after the business
- * confirms the *directory's* host, and keying on that would give one business a new identity per
- * directory. Cross-run drift in which telephone gets extracted is handled where the canonical record
- * is looked up instead, by also matching an established business on name and locality.
- *
- * The name is the key of last resort, used only when no telephone and no confirmed website exist.
- */
+// Telephone, then website, then name: each directory titles the same business differently.
 function fingerprint(
   canonicalName: string,
   locality: string,
@@ -247,7 +235,7 @@ function fingerprint(
   return `name:${normalizeWords(canonicalName)}|${normalizeWords(locality)}|${country}`
 }
 
-/** `www.` is a routing detail, not part of the identity, so both spellings key the same business. */
+// `www.` is routing, not identity, so both spellings key the same business.
 function websiteHost(url: string): string | undefined {
   try {
     return normalizeWords(new URL(url).hostname.replace(/^www\./u, ""))
@@ -256,11 +244,7 @@ function websiteHost(url: string): string | undefined {
   }
 }
 
-/**
- * Search results are often titled "<Business> - <Publisher>", and the publisher is not part of the
- * name. Only a trailing segment naming a site that actually published one of the results is removed,
- * so a business whose own name contains a dash keeps it.
- */
+// Only a trailing segment naming a publisher of these results is removed, so a name containing a dash keeps it.
 export function businessNameWithoutPublisher(
   name: string,
   evidence: readonly IdentityInput["evidence"][number][],
@@ -270,7 +254,6 @@ export function businessNameWithoutPublisher(
     evidence.flatMap((item) => {
       try {
         const host = new URL(item.url).hostname.toLocaleLowerCase("en").replace(/^www\./u, "")
-        // Both the full host and its brand, so "Kwiatyyy.pl" and "Orły Florystyki" both match.
         return [normalizeWords(host), normalizeWords(host.split(".")[0] ?? host)]
       } catch {
         return []
@@ -287,7 +270,7 @@ export function businessNameWithoutPublisher(
   const tail = segments.at(-1) ?? ""
   const normalizedTail = normalizeWords(tail)
   if (normalizedTail === "") return trimmed
-  // A publisher suffix may carry a year or extra words, so a containment match either way counts.
+  // A publisher suffix may carry a year or extra words, so containment counts either way.
   const isPublisher = [...publishers].some(
     (publisher) =>
       publisher.length >= 4 &&

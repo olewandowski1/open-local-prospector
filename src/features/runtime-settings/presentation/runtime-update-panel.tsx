@@ -36,17 +36,11 @@ import { cn } from "@/lib/utils"
 
 type UpdateState = Readonly<Partial<Record<RuntimeId, RuntimeUpdateResult>>>
 
-/** The check spawns both CLIs and reaches the network, so it is paid for once per browser session. */
+// The check spawns both CLIs and reaches the network, so it is paid for once per browser session.
 const STATUS_CACHE_KEY = "v1:runtime-update-status"
 
-/** How long the idle check will wait before going ahead on a page that never falls quiet. */
 const IDLE_TIMEOUT_MILLISECONDS = 3_000
 
-/**
- * Compares each installed provider CLI against its published release and runs the CLI's own update
- * command. An update is only ever flagged when both versions were read successfully; the install
- * itself is always performed by the provider CLI, never by this application.
- */
 export function RuntimeUpdatePanel() {
   const [open, setOpen] = useState(false)
   const [statuses, setStatuses] = useState<readonly RuntimeUpdateStatus[]>()
@@ -60,8 +54,7 @@ export function RuntimeUpdatePanel() {
       return
     }
     let cancelled = false
-    // This panel sits on every page, and the check spawns both provider CLIs. Knowing about an update
-    // is never urgent, so it waits for an idle moment rather than competing with page load.
+    // Knowing about an update is never urgent, so it waits for an idle moment rather than page load.
     const idle = whenIdle(() => {
       void (async () => {
         const loaded = await fetchStatuses()
@@ -90,8 +83,6 @@ export function RuntimeUpdatePanel() {
       }
       setResults((current) => ({ ...current, [runtimeId]: outcome }))
       if (outcome.outcome === "Failed") return
-      // The installed version stays on show so the panel can keep displaying what changed; only the
-      // flag that drives the sidebar affordance is cleared.
       setStatuses((current) =>
         current?.map((status) =>
           status.runtimeId === runtimeId ? { ...status, updateAvailable: false } : status,
@@ -223,7 +214,6 @@ function RuntimeUpdateCard({
   )
 }
 
-/** The manual fallback, shown ready to copy rather than to read. */
 function TerminalCommand({ instruction }: { instruction: string }) {
   const command = terminalCommand(instruction)
 
@@ -250,9 +240,7 @@ function CopyButton({ value }: { value: string }) {
     try {
       await navigator.clipboard.writeText(value)
       setCopied(true)
-    } catch {
-      // A refused clipboard leaves the command on screen to be selected by hand.
-    }
+    } catch {}
   }
 
   return (
@@ -267,7 +255,6 @@ function CopyButton({ value }: { value: string }) {
   )
 }
 
-/** Shows `installed -> target` once a newer version is known, and the plain version otherwise. */
 function RuntimeVersionLine({
   status,
   result,
@@ -327,7 +314,6 @@ function readCachedStatuses(): readonly RuntimeUpdateStatus[] | undefined {
   }
 }
 
-/** Runs a task once the browser is idle, with a timeout so it still happens on a busy page. */
 function whenIdle(task: () => void): Readonly<{ cancel: () => void }> {
   if (typeof requestIdleCallback === "function") {
     const handle = requestIdleCallback(task, { timeout: IDLE_TIMEOUT_MILLISECONDS })

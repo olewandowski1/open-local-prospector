@@ -45,12 +45,10 @@ const helper = createColumnHelper<typeof features, RecentCandidate>()
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" })
 
-/** Opportunity classes are persisted as PascalCase identifiers; readers get spaced words. */
 function humanizeClassName(value: string): string {
   return value.replace(/([a-z0-9])([A-Z])/gu, "$1 $2")
 }
 
-/** Deep link that opens the Review Queue with this candidate already selected. */
 function reviewHref(candidateId: string): string {
   return `/review?candidate=${encodeURIComponent(candidateId)}`
 }
@@ -60,8 +58,7 @@ const columns = helper.columns([
     header: "Business",
     sortFn: sortFn_text,
     cell: (context) => (
-      // An explicit width, rather than a maximum, so truncation is not at the mercy of automatic
-      // table layout deciding the column deserves more room.
+      // An explicit width, not a maximum, which automatic table layout is free to overrule.
       <div className="w-[152px] @xl:w-[224px]">
         <span className="block truncate font-medium" title={context.getValue()}>
           {context.getValue()}
@@ -114,16 +111,9 @@ const columns = helper.columns([
   }),
 ])
 
-/**
- * Business names run long, so that column is pinned to a fixed width and truncated rather than being
- * allowed to push the rest of the grid sideways.
- */
-/**
- * Column priority as the viewport narrows. The business, its score and the actions always stay; the
- * supporting columns drop away so the grid never has to scroll sideways.
- */
+// Columns drop away in ascending order of usefulness, so the grid never scrolls sideways.
 const columnClassNames: Readonly<Record<string, string>> = {
-  // The content box inside is 16px narrower, matching the cell padding either side.
+  // The content box is 16px narrower, matching the cell padding either side.
   name: "w-[168px] @xl:w-[240px]",
   reviewStatus: "hidden @md:table-cell",
   primaryOpportunity: "hidden @2xl:table-cell",
@@ -222,7 +212,6 @@ export function RecentCandidatesGrid({ candidates }: { candidates: readonly Rece
   )
 }
 
-/** Navigation shortcuts for a single candidate, so the grid is a launch point rather than a list. */
 function RowActions({ candidate }: { candidate: RecentCandidate }) {
   return (
     <div className="flex items-center justify-end gap-1">
