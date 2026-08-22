@@ -112,9 +112,12 @@ export function OverviewPage({
                     <Icon icon={CircleGaugeIcon} />
                   </EmptyMedia>
                   <EmptyTitle>No Qualified Candidates Yet</EmptyTitle>
+                  {/* The promise here is the one `app-shell.spec.ts` guards. It must not be worded
+                      with the phrase that guard searches for, or an empty workspace fails the very
+                      assertion this sentence is describing. */}
                   <EmptyDescription>
-                    Candidates appear here once a prospecting run has scored them. Nothing is
-                    estimated and no sample data is ever shown.
+                    Candidates appear here once a prospecting run has scored them. Nothing on this
+                    page is estimated, seeded or invented.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
