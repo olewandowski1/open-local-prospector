@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   classifyRuntimeFailure,
+  describeUnreadableOutput,
   executeRuntimeProcess,
 } from "@/features/runtime-settings/infrastructure/runtime-process"
 
@@ -64,4 +65,19 @@ describe("executeRuntimeProcess", () => {
     expect(result.exitCode).toBe(0)
     expect(result.stdout.trim()).toBe("done")
   }, 20_000)
+})
+
+describe("describeUnreadableOutput", () => {
+  it("tells silence apart from prose and from a cut-off answer", () => {
+    expect(describeUnreadableOutput("")).toBe("the runtime wrote nothing")
+    expect(describeUnreadableOutput("I could not assess this.")).toBe(
+      "24 bytes, holding no JSON object",
+    )
+    expect(describeUnreadableOutput('{"a": 1')).toBe(
+      "7 bytes, holding an object that was never closed",
+    )
+    expect(describeUnreadableOutput('{"a": }')).toBe(
+      "7 bytes, holding an object that did not parse",
+    )
+  })
 })

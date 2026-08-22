@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  onlyJsonObject,
   parseStructuredOutput,
   readReportText,
-  withoutTerminalColour,
 } from "@/features/business-discovery/infrastructure/subscription-discovery-runtime"
+import { onlyJsonObject, withoutTerminalColour } from "@/features/runtime-settings"
 
 const ESC = String.fromCharCode(27)
 

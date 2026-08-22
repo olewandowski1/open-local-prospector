@@ -3,11 +3,14 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { Effect } from "effect"
 import {
+  describeUnreadableOutput,
   EMPTY_MCP_CONFIG,
   executeRuntimeProcess,
+  onlyJsonObject,
   type RuntimeProcess,
   type RuntimeProcessResult,
   supportsReasoningEffort,
+  withoutTerminalColour,
 } from "@/features/runtime-settings"
 import {
   type AssessmentRuntime,
@@ -79,10 +82,14 @@ export function makeOpencodeAssessmentRuntime(
         directory,
       ],
       cwd: directory,
+      // The hosted model drives its work one step at a time; the default two minutes cuts it off.
+      timeoutMilliseconds: 900_000,
       // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
       settleOnExitMilliseconds: 2_000,
     }),
-    (result) => JSON.parse(stripCodeFence(result.stdout)),
+    // OpenCode writes to a terminal and prints a banner and its tool trace before answering, so
+    // the fence rule the other runtimes need is not enough on its own.
+    (result) => JSON.parse(onlyJsonObject(withoutTerminalColour(result.stdout))),
   )
 }
 
@@ -96,7 +103,7 @@ function makeRuntime(
     configuration?: Readonly<{ model: string; reasoningEffort: string }>,
   ) => Pick<
     Parameters<RuntimeProcess>[0],
-    "arguments" | "cwd" | "environment" | "settleOnExitMilliseconds"
+    "arguments" | "cwd" | "environment" | "settleOnExitMilliseconds" | "timeoutMilliseconds"
   >,
   parse: (result: RuntimeProcessResult) => unknown,
 ): AssessmentRuntime {
@@ -121,13 +128,23 @@ function makeRuntime(
             const raw = yield* Effect.try({
               try: () => parse(result),
               catch: () =>
-                transient("malformed-output", "The runtime returned malformed structured output."),
+                transient(
+                  "malformed-output",
+                  `The runtime returned structured output that could not be read: ${describeUnreadableOutput(result.stdout)}.`,
+                ),
             })
             return yield* decodeAssessmentOutput(raw, assessmentSourceUrls(evidence)).pipe(
               Effect.mapError((error) => transient(error.code, error.message)),
             )
           }),
-        (directory) => Effect.promise(() => rm(directory, { recursive: true, force: true })),
+        // A runtime that leaves a helper behind still holds this directory open, and Windows
+        // answers EBUSY. Losing a scratch directory is not worth failing an assessment for.
+        (directory) =>
+          Effect.promise(() =>
+            rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }).catch(
+              () => undefined,
+            ),
+          ),
       ),
   }
 }
@@ -139,11 +156,6 @@ function parseClaude(result: RuntimeProcessResult): unknown {
   return wrapper
 }
 
-/** OpenCode has no schema flag, so it answers in prose fences; the object inside is the answer. */
-function stripCodeFence(text: string): string {
-  const fenced = text.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/u)
-  return fenced ? fenced[1] : text
-}
 function transient(code: string, message: string) {
   return new AssessmentRuntimeError({ classification: "Transient", code, message })
 }

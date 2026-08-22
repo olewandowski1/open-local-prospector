@@ -162,3 +162,34 @@ function runtimeError(
 ) {
   return new RuntimeProcessError({ classification, code, message })
 }
+/** OpenCode writes to a terminal, so its answer arrives wrapped in colour codes. */
+export function withoutTerminalColour(text: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching the escape is the point
+  return text.replace(/[[0-9;]*[a-zA-Z]/gu, "")
+}
+
+/**
+ * A runtime with no output-schema flag prints its banner and its tool trace before answering, and
+ * may fence the answer. The object between the outermost braces is the answer in every case.
+ */
+export function onlyJsonObject(text: string): string {
+  const start = text.indexOf("{")
+  const end = text.lastIndexOf("}")
+  if (start < 0 || end <= start) throw new Error("the runtime output held no JSON object")
+  return text.slice(start, end + 1)
+}
+
+/**
+ * Why a runtime's answer could not be read, in terms of its shape rather than its content. The
+ * output is untrusted and is never persisted, so a failure that says only "malformed" leaves
+ * nothing to tell truncation apart from prose the next time it happens.
+ */
+export function describeUnreadableOutput(stdout: string): string {
+  const bytes = Buffer.byteLength(stdout, "utf8")
+  if (bytes === 0) return "the runtime wrote nothing"
+  const start = stdout.indexOf("{")
+  const end = stdout.lastIndexOf("}")
+  if (start < 0) return `${bytes} bytes, holding no JSON object`
+  if (end <= start) return `${bytes} bytes, holding an object that was never closed`
+  return `${bytes} bytes, holding an object that did not parse`
+}

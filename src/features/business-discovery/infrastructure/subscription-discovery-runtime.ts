@@ -20,9 +20,11 @@ import type { RuntimeId } from "@/features/runtime-settings"
 import {
   EMPTY_MCP_CONFIG,
   executeRuntimeProcess,
+  onlyJsonObject,
   type RuntimeProcess,
   type RuntimeProcessResult,
   supportsReasoningEffort,
+  withoutTerminalColour,
 } from "@/features/runtime-settings"
 
 /**
@@ -270,23 +272,6 @@ export function parseStructuredOutput(runtime: RuntimeId, result: RuntimeProcess
   if (wrapper.structured_output) return wrapper.structured_output
   if (typeof wrapper.result === "string") return JSON.parse(wrapper.result)
   return wrapper
-}
-
-/** OpenCode writes to a terminal, so its answer arrives wrapped in colour codes. */
-export function withoutTerminalColour(text: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching the escape is the point
-  return text.replace(/[[0-9;]*[a-zA-Z]/gu, "")
-}
-
-/**
- * A runtime with no output-schema flag prints its banner and its tool trace before answering, and
- * may fence the answer. The object between the outermost braces is the answer in every case.
- */
-export function onlyJsonObject(text: string): string {
-  const start = text.indexOf("{")
-  const end = text.lastIndexOf("}")
-  if (start < 0 || end <= start) throw new Error("the runtime output held no JSON object")
-  return text.slice(start, end + 1)
 }
 
 function withExecutable<A>(

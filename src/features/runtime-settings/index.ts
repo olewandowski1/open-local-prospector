@@ -33,10 +33,13 @@ export {
   resolveRuntimeExecutable,
 } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
 export {
+  describeUnreadableOutput,
   executeRuntimeProcess,
+  onlyJsonObject,
   type RuntimeProcess,
   RuntimeProcessError,
   type RuntimeProcessRequest,
   type RuntimeProcessResult,
+  withoutTerminalColour,
 } from "@/features/runtime-settings/infrastructure/runtime-process"
 export { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"
