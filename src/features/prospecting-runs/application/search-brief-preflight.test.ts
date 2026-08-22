@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest"
 import type { DependencyReadiness } from "@/features/local-application"
 import {
   defaultPoland,
+  estimateWorkload,
   prepareSearchBrief,
   SearchAreaGeocoder,
 } from "@/features/prospecting-runs/application/search-brief-preflight"
-import type { SearchArea } from "@/features/prospecting-runs/domain/search-brief"
+import type { SearchArea, SearchBriefDraft } from "@/features/prospecting-runs/domain/search-brief"
 import type { RuntimeReadiness } from "@/features/runtime-settings"
 
 const krakow: SearchArea = {
@@ -70,5 +71,27 @@ describe("Search Brief preflight", () => {
   it("does not claim a precise subscription cost", async () => {
     const result = await run([krakow])
     expect(result.estimate.note).toContain("not a provider subscription cost quote")
+  })
+})
+
+describe("workload estimate", () => {
+  const draft = (overrides: Partial<SearchBriefDraft> = {}): SearchBriefDraft => ({
+    location: "Reda",
+    category: "Hair salons and barbers",
+    targetCount: 5,
+    mode: "Quick",
+    runtime: "claude",
+    ...overrides,
+  })
+
+  it("counts the queries the plan actually issues", () => {
+    expect(estimateWorkload(draft()).discoveryQueries).toBe(2)
+    expect(estimateWorkload(draft({ mode: "Thorough" })).discoveryQueries).toBe(4)
+  })
+
+  // Claude finished this brief in seven minutes; OpenCode had not finished discovery in fifteen.
+  it("quotes a longer run for a slower runtime rather than one number for all", () => {
+    expect(estimateWorkload(draft()).duration).toBe("3–6 minutes")
+    expect(estimateWorkload(draft({ runtime: "opencode" })).duration).toBe("18–33 minutes")
   })
 })

@@ -67,11 +67,16 @@ export function defaultPoland(location: string): string {
   return location.includes(",") ? location : `${location}, Poland`
 }
 
+/**
+ * Quick asks two angles of the runtime and Thorough four, matching `planDiscoveryQueries`. A count
+ * that disagrees with the plan is worse than no count: it is a promise the run will not keep.
+ */
 export function estimateWorkload(draft: SearchBriefDraft): WorkloadEstimate {
   const thorough = draft.mode === "Thorough"
-  const discoveryQueries = Math.max(3, Math.ceil(draft.targetCount / (thorough ? 4 : 7)))
+  const discoveryQueries = thorough ? 4 : 2
   const likelyInspections = Math.ceil(draft.targetCount * (thorough ? 2.5 : 1.5))
-  const lowerMinutes = Math.max(3, Math.ceil(likelyInspections * (thorough ? 0.8 : 0.35)))
+  const base = Math.max(3, Math.ceil(likelyInspections * (thorough ? 0.8 : 0.35)))
+  const lowerMinutes = Math.ceil(base * runtimePace(draft.runtime))
   const upperMinutes = Math.ceil(lowerMinutes * 1.8)
   return {
     discoveryQueries,
@@ -79,4 +84,14 @@ export function estimateWorkload(draft: SearchBriefDraft): WorkloadEstimate {
     duration: `${lowerMinutes}–${upperMinutes} minutes`,
     note: "An operational estimate, not a provider subscription cost quote.",
   }
+}
+
+/**
+ * How much longer than a Claude run to expect. OpenCode's hosted model drives its fetches one at a
+ * time: measured against the same brief, Claude finished a whole run in seven minutes while
+ * OpenCode had not finished discovery alone in fifteen. Quoting one number for every runtime would
+ * promise a reader something the run cannot keep.
+ */
+function runtimePace(runtime: SearchBriefDraft["runtime"]): number {
+  return runtime === "opencode" ? 6 : 1
 }

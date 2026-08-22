@@ -25,8 +25,24 @@ import {
   supportsReasoningEffort,
 } from "@/features/runtime-settings"
 
-const REPORT_TIMEOUT_MILLISECONDS = 900_000
-const STRUCTURE_TIMEOUT_MILLISECONDS = 300_000
+/**
+ * A report searches the public web and reads the pages it finds, so minutes are normal. OpenCode's
+ * hosted model drives its fetches one at a time and is far slower than the others — measured at
+ * ninety-seven seconds for three businesses — so it is given room rather than cut off. One number
+ * for every runtime would mean either failing OpenCode or letting a hung Claude hold a worker slot
+ * for three quarters of an hour.
+ */
+const REPORT_TIMEOUT_MILLISECONDS: Readonly<Record<RuntimeId, number>> = {
+  claude: 900_000,
+  codex: 900_000,
+  opencode: 2_700_000,
+}
+
+const STRUCTURE_TIMEOUT_MILLISECONDS: Readonly<Record<RuntimeId, number>> = {
+  claude: 300_000,
+  codex: 300_000,
+  opencode: 900_000,
+}
 
 type RuntimeExecutableMap = Readonly<Partial<Record<RuntimeId, string>>>
 
@@ -44,7 +60,7 @@ export function makeSubscriptionDiscoveryRuntime(
               executable,
               ...reportCommand(brief, directory),
               input: buildReportPrompt(brief),
-              timeoutMilliseconds: REPORT_TIMEOUT_MILLISECONDS,
+              timeoutMilliseconds: REPORT_TIMEOUT_MILLISECONDS[brief.runtime],
             }).pipe(Effect.mapError(processError))
             const report = yield* Effect.try({
               try: () => readReportText(brief.runtime, result),
@@ -65,8 +81,10 @@ export function makeSubscriptionDiscoveryRuntime(
             const result = yield* runProcess({
               executable,
               ...command,
-              input: buildStructurePrompt(brief, report),
-              timeoutMilliseconds: STRUCTURE_TIMEOUT_MILLISECONDS,
+              input: buildStructurePrompt(brief, report, {
+                schema: brief.runtime === "opencode" ? promptSchema : undefined,
+              }),
+              timeoutMilliseconds: STRUCTURE_TIMEOUT_MILLISECONDS[brief.runtime],
             }).pipe(Effect.mapError(processError))
             const raw = yield* Effect.try({
               try: () => parseStructuredOutput(brief.runtime, result),
@@ -132,6 +150,9 @@ function reportCommand(brief: DiscoveryBrief, directory: string) {
     cwd: directory,
   }
 }
+
+/** Spelled out for a runtime that cannot be handed a schema file. */
+const promptSchema = JSON.stringify(discoveryStructureJsonSchema, null, 1)
 
 /** Structuring reads the report it is given and nothing else, so every tool is withdrawn. */
 function structureCommand(brief: DiscoveryBrief, directory: string) {
