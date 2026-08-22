@@ -32,8 +32,6 @@ describe("business identity workflow", () => {
     ])
     expect(readScalar(database.path, "select count(*) from contact_routes")).toBe(1)
     expect(readScalar(database.path, "select count(*) from online_presences")).toBe(1)
-    // Corroboration no longer searches: the structuring step already told the businesses apart.
-    expect(readScalar(database.path, "select count(*) from identity_evidence_queries")).toBe(0)
   })
 
   it("reuses one canonical identity across runs keyed on the telephone", async () => {

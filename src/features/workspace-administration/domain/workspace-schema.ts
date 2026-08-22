@@ -11,8 +11,6 @@ export const PROSPECTING_DATA_TABLES = [
   "website_inspections",
   "contact_routes",
   "online_presences",
-  "identity_evidence_results",
-  "identity_evidence_queries",
   "run_businesses",
   "canonical_businesses",
   "discovery_occurrences",

@@ -2,7 +2,6 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 
 import { discoveredBusinesses } from "@/features/business-discovery"
 import { prospectingRuns } from "@/features/prospecting-runs"
-import { runTasks } from "@/features/run-execution"
 
 export const canonicalBusinesses = sqliteTable(
   "canonical_businesses",
@@ -45,58 +44,6 @@ export const runBusinesses = sqliteTable(
   (table) => [
     uniqueIndex("run_businesses_discovery_idx").on(table.runId, table.discoveredBusinessId),
     index("run_businesses_run_status_idx").on(table.runId, table.status),
-  ],
-)
-
-export const identityEvidenceQueries = sqliteTable(
-  "identity_evidence_queries",
-  {
-    id: text().primaryKey(),
-    runId: text("run_id")
-      .notNull()
-      .references(() => prospectingRuns.id, { onDelete: "cascade" }),
-    taskId: text("task_id").references(() => runTasks.id, { onDelete: "set null" }),
-    discoveredBusinessId: text("discovered_business_id")
-      .notNull()
-      .references(() => discoveredBusinesses.id, { onDelete: "cascade" }),
-    source: text().notNull(),
-    queryText: text("query_text").notNull(),
-    resultCount: integer("result_count").notNull(),
-    completedAt: integer("completed_at", { mode: "timestamp_ms" }).notNull(),
-  },
-  (table) => [
-    uniqueIndex("identity_evidence_query_idx").on(
-      table.runId,
-      table.discoveredBusinessId,
-      table.queryText,
-    ),
-  ],
-)
-
-export const identityEvidenceResults = sqliteTable(
-  "identity_evidence_results",
-  {
-    id: text().primaryKey(),
-    queryId: text("query_id")
-      .notNull()
-      .references(() => identityEvidenceQueries.id, { onDelete: "cascade" }),
-    runId: text("run_id")
-      .notNull()
-      .references(() => prospectingRuns.id, { onDelete: "cascade" }),
-    discoveredBusinessId: text("discovered_business_id")
-      .notNull()
-      .references(() => discoveredBusinesses.id, { onDelete: "cascade" }),
-    sourceIdentifier: text("source_identifier").notNull(),
-    title: text().notNull(),
-    resultUrl: text("result_url").notNull(),
-    description: text(),
-    collectedAt: integer("collected_at", { mode: "timestamp_ms" }).notNull(),
-  },
-  (table) => [
-    index("identity_evidence_results_business_idx").on(
-      table.discoveredBusinessId,
-      table.collectedAt,
-    ),
   ],
 )
 

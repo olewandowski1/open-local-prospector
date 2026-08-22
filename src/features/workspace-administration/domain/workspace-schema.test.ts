@@ -7,10 +7,10 @@ import {
 } from "@/features/workspace-administration/domain/workspace-schema"
 
 describe("workspace schema classification", () => {
-  it("classifies all 30 application tables exactly once", () => {
-    expect(CLASSIFIED_WORKSPACE_TABLES).toHaveLength(30)
-    expect(new Set(CLASSIFIED_WORKSPACE_TABLES).size).toBe(30)
-    expect(PROSPECTING_DATA_TABLES).toHaveLength(25)
+  it("classifies all 28 application tables exactly once", () => {
+    expect(CLASSIFIED_WORKSPACE_TABLES).toHaveLength(28)
+    expect(new Set(CLASSIFIED_WORKSPACE_TABLES).size).toBe(28)
+    expect(PROSPECTING_DATA_TABLES).toHaveLength(23)
   })
 
   it("reports an unknown table", () => {
