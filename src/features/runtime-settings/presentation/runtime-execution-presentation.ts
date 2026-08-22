@@ -28,3 +28,16 @@ export function reasoningEffortLabel(effort: RuntimeReasoningEffort): string {
 export function runtimeModelLabel(runtimeId: RuntimeId, model: string): string {
   return runtimeModelOptions(runtimeId).find((option) => option.value === model)?.label ?? model
 }
+
+/**
+ * A model that takes no reasoning effort stores `none`, and printing that reads as a missing
+ * value rather than as the fact that there is nothing to choose. Say the model and stop.
+ */
+export function runtimeExecutionLabel(
+  runtimeId: RuntimeId,
+  configuration: Readonly<{ model: string; reasoningEffort: RuntimeReasoningEffort }>,
+): string {
+  const model = runtimeModelLabel(runtimeId, configuration.model)
+  if (configuration.reasoningEffort === "none") return model
+  return `${model} · ${reasoningEffortLabel(configuration.reasoningEffort)} Reasoning`
+}

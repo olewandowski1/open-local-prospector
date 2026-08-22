@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { RuntimeReasoningEffort } from "@/features/runtime-settings/application/runtime-execution-configuration"
 import {
   reasoningEffortLabel,
+  runtimeExecutionLabel,
   runtimeModelLabel,
 } from "@/features/runtime-settings/presentation/runtime-execution-presentation"
 
@@ -38,5 +39,22 @@ describe("runtimeModelLabel", () => {
 
   it("keeps the slug of a model it does not know rather than inventing a name", () => {
     expect(runtimeModelLabel("codex", "gpt-reserve")).toBe("gpt-reserve")
+  })
+})
+
+describe("runtimeExecutionLabel", () => {
+  it("says the model alone when the model takes no reasoning effort", () => {
+    expect(
+      runtimeExecutionLabel("opencode", {
+        model: "opencode/x-preview-f-free",
+        reasoningEffort: "none",
+      }),
+    ).toBe("Ox Alpha Free")
+  })
+
+  it("names the effort when there was one to choose", () => {
+    expect(runtimeExecutionLabel("codex", { model: "gpt-5.6-luna", reasoningEffort: "max" })).toBe(
+      "GPT-5.6 Luna · Max Reasoning",
+    )
   })
 })

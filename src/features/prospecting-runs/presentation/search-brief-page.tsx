@@ -47,7 +47,7 @@ import {
   type RuntimeReasoningEffort,
   reasoningEffortLabel,
   resolveRuntimeConfiguration,
-  runtimeModelLabel,
+  runtimeExecutionLabel,
   runtimeModelOptions,
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
@@ -647,13 +647,10 @@ export function SearchBriefPage({
                     {preflight.draft.runtimeConfiguration ? (
                       <p className="mt-2 text-xs font-medium">
                         {preflight.runtime.label} ·{" "}
-                        {runtimeModelLabel(
+                        {runtimeExecutionLabel(
                           preflight.draft.runtime,
-                          preflight.draft.runtimeConfiguration.model,
-                        )}{" "}
-                        ·{" "}
-                        {reasoningEffortLabel(preflight.draft.runtimeConfiguration.reasoningEffort)}{" "}
-                        reasoning
+                          preflight.draft.runtimeConfiguration,
+                        )}
                       </p>
                     ) : null}
                   </section>

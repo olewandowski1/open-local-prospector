@@ -26,11 +26,7 @@ import {
   runStatusPresentation,
 } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
-import {
-  RuntimeProviderIcon,
-  reasoningEffortLabel,
-  runtimeModelLabel,
-} from "@/features/runtime-settings/client"
+import { RuntimeProviderIcon, runtimeExecutionLabel } from "@/features/runtime-settings/client"
 import { RunDeleteDialog } from "@/features/workspace-administration/client"
 import { cn } from "@/lib/utils"
 
@@ -151,7 +147,7 @@ export function RunDetailHeader({
               <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
               <span className="truncate">
                 {configuration
-                  ? `${runtimeModelLabel(run.searchBrief.runtime, configuration.model)} · ${reasoningEffortLabel(configuration.reasoningEffort)}`
+                  ? runtimeExecutionLabel(run.searchBrief.runtime, configuration)
                   : "Model Not Recorded"}
               </span>
             </span>

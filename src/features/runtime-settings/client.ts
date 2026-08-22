@@ -14,6 +14,7 @@ export type {
 } from "@/features/runtime-settings/application/runtime-readiness"
 export {
   reasoningEffortLabel,
+  runtimeExecutionLabel,
   runtimeModelLabel,
 } from "@/features/runtime-settings/presentation/runtime-execution-presentation"
 export { RuntimeProviderIcon } from "@/features/runtime-settings/presentation/runtime-provider-icon"

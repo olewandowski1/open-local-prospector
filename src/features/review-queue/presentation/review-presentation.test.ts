@@ -38,10 +38,17 @@ describe("review presentation", () => {
     expect(humanizeTerm("NotABusinessFit")).toBe("Not A Business Fit")
   })
 
+  it("reads a machine code as words too", () => {
+    // An inspection limitation is stored kebab-case; the panel used to print it verbatim.
+    expect(humanizeTerm("navigation-failed")).toBe("Navigation Failed")
+    expect(humanizeTerm("chromium-unavailable")).toBe("Chromium Unavailable")
+    expect(humanizeTerm("robots_disallowed")).toBe("Robots Disallowed")
+  })
+
   it("rounds stored floats to a precision that carries meaning", () => {
     expect(formatScore(24.666666666666668)).toBe("24.7")
     expect(formatScore(87.47)).toBe("87.5")
-    expect(formatScore(15)).toBe("15")
+    expect(formatScore(15)).toBe("15.0")
   })
 
   it("pairs every score component with its rubric maximum", () => {
