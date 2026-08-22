@@ -171,12 +171,21 @@ mistake being made again.
 
 - **Never assume a wide viewport.** Columns hide as the container narrows, so assert on a column
   that is always present, or navigate the way a reader would at that width.
-- **The developer owns the dev server on `127.0.0.1:4310`.** Playwright attaches to it
-  (`reuseExistingServer: true`). Do not start, stop or take the port.
-  - **Sanctioned destructive-workspace exception.** Backup/restore/reset/deletion round trips must
-    never touch the developer's workspace. `playwright.workspace.config.ts` is allowed to own a
-    single-worker production server on `127.0.0.1:4311` only when its database and artifacts both
-    resolve beneath `.scratch/workspace-e2e`. The spec must remain gated by
-    `PROSPECTOR_ISOLATED_WORKSPACE_TEST`, and the normal `pnpm test:e2e` run must skip it.
-- One dev server serves every worker, so a click or hover landing before hydration is a genuine
-  no-op. Where a retry is needed, make it idempotent so it cannot mask a regression.
+- **The suite owns its own workspace, and never the developer's.** `127.0.0.1:4310` belongs to the
+  developer; `pnpm test:e2e` seeds `.scratch/e2e` from `src/test-support/e2e-workspace.ts` and serves
+  a production build of it on `127.0.0.1:4312`. Reading the developer's runs meant the suite passed
+  or failed on data nobody had checked in, and a destructive spec could have reached real
+  businesses' contact details.
+  - **The fixture is synthesised, never a snapshot.** This repository is public and a real workspace
+    holds real people's telephone numbers. Invent the businesses and the towns.
+  - **Seeding happens inside the `webServer` command**, not in `globalSetup`: Playwright starts the
+    server first, and the server opens the database as it boots.
+  - **The suite serves `next build`, not `next dev`.** Turbopack compiles a route on its first
+    request, and a click landing during that compile is a genuine no-op, so parallel workers raced
+    hydration and failed on a healthy application.
+  - **Backup, restore, reset and deletion round trips** keep their own single-worker server on
+    `127.0.0.1:4311` under `playwright.workspace.config.ts`, resolving beneath
+    `.scratch/workspace-e2e`, gated by `PROSPECTOR_ISOLATED_WORKSPACE_TEST` and skipped by the
+    normal `pnpm test:e2e` run.
+- One server serves every worker, so a click or hover landing before hydration is a genuine no-op.
+  Where a retry is needed, make it idempotent so it cannot mask a regression.

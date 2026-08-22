@@ -1,23 +1,37 @@
+import { resolve } from "node:path"
 import { defineConfig, devices } from "@playwright/test"
+
+const workspace = resolve(".scratch/e2e")
+const port = 4312
 
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
   retries: 0,
-  // One dev server serves every worker, and several pages spawn provider CLIs to probe readiness.
+  // One server serves every worker, and several pages spawn provider CLIs to probe readiness.
   // Above this, workers starve each other and assertions time out on a healthy application.
   workers: 3,
   use: {
-    baseURL: "http://127.0.0.1:4310",
+    baseURL: `http://127.0.0.1:${port}`,
     trace: "on-first-retry",
   },
   webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:4310",
-    // The developer keeps their own server on this port; tests attach to it rather than fighting it
-    // for the binding, which would fail their run with EADDRINUSE.
-    reuseExistingServer: true,
-    timeout: 120_000,
+    // The seed runs here, not in `globalSetup`, because Playwright starts the server first and
+    // the server opens the database as soon as it boots. A production build, not `next dev`:
+    // Turbopack compiles a route on its first request, and a click landing during that compile is
+    // a genuine no-op, so parallel workers raced hydration and failed on a healthy application.
+    command: `node --import tsx tests/e2e/seed-workspace.ts && pnpm exec next build && pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
+    url: `http://127.0.0.1:${port}`,
+    // The suite owns this port and this workspace. It used to attach to the developer's server on
+    // 4310, which meant the specs could only pass on a machine that already held the right runs,
+    // and a destructive test would have reached real data.
+    reuseExistingServer: false,
+    timeout: 300_000,
+    env: {
+      ...process.env,
+      PROSPECTOR_DATABASE_PATH: resolve(workspace, "workspace.sqlite"),
+      PROSPECTOR_ARTIFACTS_PATH: resolve(workspace, "artifacts"),
+    },
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
