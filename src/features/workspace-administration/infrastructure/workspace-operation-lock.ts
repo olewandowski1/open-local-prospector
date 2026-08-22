@@ -1,28 +1,23 @@
-import {
-  closeSync,
-  existsSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs"
+import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 
 import { closeSharedDatabases, type LocalApplicationConfig } from "@/features/local-application"
 
 const lockPathFor = (databasePath: string) => `${databasePath}.maintenance.lock`
 
+// The worker takes this for every cycle, so the lock existing says nothing about maintenance.
+type LockHolder = "maintenance" | "worker"
+
+type LockFile = Readonly<{ pid?: unknown; holder?: unknown }>
+
 export function isWorkspaceMaintenanceActive(databasePath: string): boolean {
-  return existsSync(lockPathFor(databasePath))
+  return readLock(lockPathFor(databasePath))?.holder === "maintenance"
 }
 
 export function withWorkspaceOperationLock<T>(config: LocalApplicationConfig, work: () => T): T {
-  const release = tryAcquireWorkspaceOperationLease(config.databasePath)
+  const release = tryAcquireWorkspaceOperationLease(config.databasePath, "maintenance")
   if (!release) throw new Error("Workspace maintenance is already in progress.")
-  // Restoring renames the live database file and a reset empties it. Windows will not rename a file
-  // this process still holds open, so the pooled handles are released before the work begins; the
-  // next read simply opens a new one.
+  // Windows will not rename a file this process still holds open, so pooled handles are released first.
   closeSharedDatabases()
   try {
     const result = work()
@@ -35,7 +30,10 @@ export function withWorkspaceOperationLock<T>(config: LocalApplicationConfig, wo
   }
 }
 
-export function tryAcquireWorkspaceOperationLease(databasePath: string): (() => void) | undefined {
+export function tryAcquireWorkspaceOperationLease(
+  databasePath: string,
+  holder: LockHolder = "worker",
+): (() => void) | undefined {
   const lockPath = lockPathFor(databasePath)
   mkdirSync(dirname(lockPath), { recursive: true })
   let descriptor = tryAcquire(lockPath)
@@ -54,7 +52,7 @@ export function tryAcquireWorkspaceOperationLease(databasePath: string): (() => 
   try {
     writeFileSync(
       descriptor,
-      JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
+      JSON.stringify({ pid: process.pid, holder, createdAt: new Date().toISOString() }),
     )
     return release
   } catch (error) {
@@ -71,16 +69,20 @@ function tryAcquire(path: string): number | undefined {
   }
 }
 
-function isStale(path: string): boolean {
+function readLock(path: string): LockFile | undefined {
   try {
-    const lock = JSON.parse(readFileSync(path, "utf8")) as { pid?: unknown }
-    if (typeof lock.pid !== "number" || !Number.isInteger(lock.pid)) return true
-    try {
-      process.kill(lock.pid, 0)
-      return false
-    } catch {
-      return true
-    }
+    return JSON.parse(readFileSync(path, "utf8")) as LockFile
+  } catch {
+    return undefined
+  }
+}
+
+function isStale(path: string): boolean {
+  const lock = readLock(path)
+  if (!lock || typeof lock.pid !== "number" || !Number.isInteger(lock.pid)) return true
+  try {
+    process.kill(lock.pid, 0)
+    return false
   } catch {
     return true
   }

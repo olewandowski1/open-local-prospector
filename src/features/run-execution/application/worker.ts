@@ -30,22 +30,13 @@ export const runWorkerCycle = (owner: string, configuration: WorkerConfiguration
     yield* repository.recoverAbandoned(new Date(yield* Clock.currentTimeMillis))
     let claimed = 0
 
-    /**
-     * One worker slot, taking its next task the moment it is free.
-     *
-     * The cycle used to claim a batch up front and wait for all of it before claiming again, so a
-     * slot that finished a ten-second task sat idle until a four-minute one beside it returned.
-     * Sampled through a real run, a slot was idle with work already queued in 36 of 40 samples.
-     */
     const slot = Effect.gen(function* () {
       while (true) {
         const now = new Date(yield* Clock.currentTimeMillis)
         const task = yield* repository.claimNext(owner, now, configuration.leaseMilliseconds)
         if (Option.isNone(task)) return
         claimed += 1
-        // One task's persistence failure must not abandon the others, and must not travel out of the
-        // cycle: it used to interrupt the task beside it part-way through a subscription runtime call
-        // and then end the worker process.
+        // One task's failure must not abandon the others, nor travel out of the cycle and end the process.
         yield* executeClaimedTask(task.value, owner, configuration).pipe(
           Effect.catchAll((error) =>
             Console.error(
@@ -76,13 +67,11 @@ export const runWorker = (
       (release) =>
         release
           ? runWorkerCycle(owner, configuration)
-          : // Maintenance holds the lease. It is about to rename or empty the database file, which
-            // it cannot do on Windows while this process keeps a connection open to it.
+          : // Maintenance holds the lease and is about to rename the database, which Windows refuses while this process has it open.
             Effect.sync(releaseDatabases).pipe(Effect.as(0 as number)),
       (release) => Effect.sync(() => release?.()),
     ).pipe(
-      // A database that is briefly unavailable is not a reason to stop working. The worker used to
-      // exit here, and `pnpm dev` runs it with --kill-others, so it took the web process with it.
+      // A briefly unavailable database is not a reason to stop working; exiting here took the web process with it.
       Effect.catchAll((error) =>
         Console.error(`Worker cycle failed (${error.operation}); retrying.`).pipe(
           Effect.as(0 as number),
@@ -98,9 +87,7 @@ function executeClaimedTask(task: RunTask, owner: string, configuration: WorkerC
   return Effect.gen(function* () {
     const repository = yield* RunTaskRepository
     const executor = yield* StageExecutor
-    // Renewal runs against the work rather than beside it. Forked into the scope, a failed renewal
-    // killed only its own fiber: the task carried on with no lease, recovery handed the same work to
-    // another claim, and it ran twice. Racing means losing the lease stops the work it protects.
+    // Renewal races the work rather than running beside it, so losing the lease stops the work it protects.
     const renewLease = Effect.forever(
       Effect.sleep(Math.max(1_000, Math.floor(configuration.leaseMilliseconds / 3))).pipe(
         Effect.flatMap(() => Clock.currentTimeMillis),

@@ -35,7 +35,6 @@ import {
 
 type SuppressionRow = SuppressionRecord & Readonly<{ lift: () => void; pending: boolean }>
 
-/** One map, so a header and its cells cannot drift apart as the table narrows. */
 const columnClass: Readonly<Record<string, string | undefined>> = {
   createdAt: "hidden @2xl:table-cell",
   actions: "text-right",

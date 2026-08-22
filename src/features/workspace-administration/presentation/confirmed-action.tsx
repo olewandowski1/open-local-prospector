@@ -17,13 +17,6 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-/**
- * An irreversible workspace action, held behind a word the operator has to type.
- *
- * Each of these used to be written out where it was used, so the page carried a parallel `open` and
- * `confirmation` pair per action and every keystroke in any of them re-rendered all of them. Keeping
- * that state here means one action's dialog knows nothing about the others.
- */
 export function ConfirmedAction({
   title,
   description,
@@ -37,15 +30,12 @@ export function ConfirmedAction({
 }: {
   title: string
   description: ReactNode
-  /** The word that must be typed exactly, and the word the field asks for. */
   token: string
   trigger: ReactElement
   busyLabel: string
   confirmLabel: string
   pending: boolean
-  /** Resolves true when the action succeeded, which is when the dialog closes. */
   onConfirm: (confirmation: string) => Promise<boolean>
-  /** Anything shown between the description and the confirmation field. */
   children?: ReactNode
 }) {
   const [open, setOpen] = useState(false)

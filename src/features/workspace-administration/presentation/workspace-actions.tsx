@@ -34,8 +34,6 @@ import { ConfirmedAction } from "@/features/workspace-administration/presentatio
 
 export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory }) {
   const router = useRouter()
-  // Restore keeps its own dialog: it takes a file as well as a word, and it is the one action that
-  // asks for something before it can be confirmed.
   const [restoreOpen, setRestoreOpen] = useState(false)
   const [restoreConfirmation, setRestoreConfirmation] = useState("")
   const [restoreFile, setRestoreFile] = useState<File>()
@@ -47,11 +45,7 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
   }>()
   const fileInput = useRef<HTMLInputElement>(null)
 
-  /**
-   * A plain link handed a failure straight to the browser, which replaced the page with the raw JSON
-   * error — so "not enough free disk" arrived as a stack trace in the operator's words' place. The
-   * archive is fetched instead, and only a successful response becomes a download.
-   */
+  // Fetched rather than linked, so a failure does not replace the page with raw JSON.
   const downloadBackup = async () => {
     setPending("backup")
     setFeedback(undefined)

@@ -332,10 +332,7 @@ export function deleteBusiness(
         )
         .all(business.id)
         .map((row) => (row as { path: string }).path)
-      // Deleting removes stored data; it is not a decision about contacting anyone. Writing a
-      // Suppression Entry here listed the business under Do Not Contact, which CONTEXT.md reserves
-      // for a deliberate standing instruction, and permanently barred rediscovery. An operator who
-      // wants that has Suppress; this leaves the business free to be found again.
+      // Deleting stored data is not a decision about contacting anyone; a Suppression Entry is what Suppress is for.
       database.transaction(() => {
         const deleteTasks = database.prepare("delete from run_tasks where business_id=?")
         const deleteRunBusiness = database.prepare("delete from run_businesses where id=?")

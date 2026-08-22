@@ -1,9 +1,6 @@
 import { loadLocalApplicationConfig } from "@/features/local-application"
 import { WorkspaceBusyError } from "@/features/workspace-administration/domain/workspace-errors"
-import {
-  isWorkspaceMaintenanceActive,
-  withWorkspaceOperationLock,
-} from "@/features/workspace-administration/infrastructure/workspace-operation-lock"
+import { isWorkspaceMaintenanceActive } from "@/features/workspace-administration/infrastructure/workspace-operation-lock"
 import {
   cleanupArchivedArtifacts,
   compactWorkspace,
@@ -36,8 +33,12 @@ export const removeSuppression = (identityFingerprint: string) =>
   liftSuppression(loadLocalApplicationConfig().databasePath, identityFingerprint)
 export const workspaceMaintenanceIsActive = () =>
   isWorkspaceMaintenanceActive(loadLocalApplicationConfig().databasePath)
-export const withWorkspaceAdmission = <T>(work: () => T) =>
-  withWorkspaceOperationLock(loadLocalApplicationConfig(), work)
+
+// Never take the operation lock here: the worker holds it for the whole of every cycle.
+export const withWorkspaceAdmission = <T>(work: () => T): T => {
+  if (workspaceMaintenanceIsActive()) throw new Error("Workspace maintenance is in progress.")
+  return work()
+}
 
 export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin")

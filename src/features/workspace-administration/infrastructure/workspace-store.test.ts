@@ -20,6 +20,7 @@ import { WorkspaceBusyError } from "@/features/workspace-administration/domain/w
 import { PROSPECTING_DATA_TABLES } from "@/features/workspace-administration/domain/workspace-schema"
 import {
   isWorkspaceMaintenanceActive,
+  tryAcquireWorkspaceOperationLease,
   withWorkspaceOperationLock,
 } from "@/features/workspace-administration/infrastructure/workspace-operation-lock"
 import {
@@ -97,6 +98,16 @@ describe("workspace store", () => {
     finish?.()
     await work
     expect(isWorkspaceMaintenanceActive(fixture.config.databasePath)).toBe(false)
+  })
+
+  it("does not report maintenance while the worker holds the lease", () => {
+    const fixture = workspaceFixture()
+    const release = tryAcquireWorkspaceOperationLease(fixture.config.databasePath)
+    cleanups.push(() => release?.())
+
+    expect(release).toBeDefined()
+    expect(isWorkspaceMaintenanceActive(fixture.config.databasePath)).toBe(false)
+    release?.()
   })
 
   it("rejects link entries in restore archives", async () => {
@@ -318,8 +329,6 @@ describe("workspace store", () => {
       expect(
         Number(checked.prepare("select count(*) from canonical_businesses").pluck().get()),
       ).toBe(0)
-      // Deleting is about stored data, not about contacting anyone. A Suppression Entry here would
-      // list the business under Do Not Contact and bar it from ever being discovered again.
       expect(
         Number(checked.prepare("select count(*) from suppression_entries").pluck().get()),
       ).toBe(0)
