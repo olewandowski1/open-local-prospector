@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { existsSync } from "node:fs"
 import { mkdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Effect } from "effect"
@@ -47,7 +48,8 @@ export function makePlaywrightWebsiteInspector(
             : new WebsiteInspectorError({
                 classification: "Infrastructure",
                 code: "browser-inspection-failed",
-                message: "The isolated browser inspection could not be completed.",
+                // Say what actually went wrong; a reader cannot act on "could not be completed".
+                message: `The isolated browser inspection failed: ${launchFailureDetail(error)}`,
               }),
       }),
   }
@@ -68,11 +70,17 @@ async function inspectWithPlaywright(
   let browser: Browser
   try {
     browser = await chromium.launch({ headless: true })
-  } catch {
+  } catch (error) {
+    // A browser that is installed but would not start is a transient condition — it is usually
+    // contention with the inspections running beside it — so the business is retried rather than
+    // dropped from the run. Playwright's own words are kept: this is our tool, not source content.
+    const installed = existsSync(chromium.executablePath())
     throw new WebsiteInspectorError({
-      classification: "Infrastructure",
-      code: "chromium-unavailable",
-      message: "The dedicated Playwright Chromium executable is unavailable.",
+      classification: installed ? "Transient" : "Infrastructure",
+      code: installed ? "chromium-launch-failed" : "chromium-unavailable",
+      message: installed
+        ? `Chromium did not start: ${launchFailureDetail(error)}`
+        : 'The dedicated Playwright Chromium executable is unavailable. Run "pnpm run setup".',
     })
   }
 
@@ -572,4 +580,10 @@ function safeLogUrl(value: string): string {
   } catch {
     return "blocked:invalid-url"
   }
+}
+
+// Bounded to one line so a stack trace cannot fill the Technical Run Log.
+function launchFailureDetail(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.split(/\r?\n/u)[0]?.trim().slice(0, 200) || "no detail reported"
 }

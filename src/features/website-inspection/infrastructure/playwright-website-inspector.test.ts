@@ -3,7 +3,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 import { Effect } from "effect"
-import { afterEach, describe, expect, it } from "vitest"
+import { chromium } from "playwright"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { makePlaywrightWebsiteInspector } from "@/features/website-inspection/infrastructure/playwright-website-inspector"
 
@@ -120,6 +121,29 @@ describe("Playwright website inspector", () => {
       blocks: [expect.objectContaining({ code: "captcha" })],
     })
   }, 30_000)
+
+  it("retries a browser that is installed but would not start, and says why", async () => {
+    const artifacts = temporaryArtifacts()
+    const launch = vi
+      .spyOn(chromium, "launch")
+      .mockRejectedValue(new Error("Target page, context or browser has been closed\n  at foo"))
+
+    const failure = await Effect.runPromise(
+      Effect.flip(
+        makePlaywrightWebsiteInspector({ resolveHost: publicResolver }).inspect({
+          url: "https://public.test/",
+          artifactDirectory: artifacts,
+        }),
+      ),
+    )
+    launch.mockRestore()
+
+    // Infrastructure is never retried, so classifying a busy moment that way drops the business.
+    expect(failure.classification).toBe("Transient")
+    expect(failure.code).toBe("chromium-launch-failed")
+    expect(failure.message).toContain("Target page, context or browser has been closed")
+    expect(failure.message).not.toContain("at foo")
+  })
 })
 
 function temporaryArtifacts(): string {
