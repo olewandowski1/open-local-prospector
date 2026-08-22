@@ -33,7 +33,7 @@ with a shortlist afterwards is your business, not the application's.
 
 | | |
 |---|---|
-| **No API keys, no credits** | Discovery uses the web-search capability of the Codex or Claude CLI you are already signed in to. There is no search API to register for, and no usage-based fallback that could quietly start spending. |
+| **No API keys, no credits** | Discovery uses the web-search capability of a CLI you already have: Codex, Claude, or OpenCode. There is no search API to register for, and no usage-based fallback that could quietly start spending. |
 | **Evidence, not opinions** | Every website opportunity cites at least one Supporting Observation with a source URL and a timestamp. A claim with nothing behind it is treated as a bug. |
 | **The application is in charge** | The AI runtime classifies and explains. The application owns search, browsing, validation, scoring, retries, limits, and persistence — see [ADR 0002](docs/adr/0002-application-owned-agent-orchestration.md). |
 | **Deterministic scoring** | The 0–100 Opportunity Score is calculated by versioned application code from structured fields, not asked for from a model. Every score records the rubric version that produced it. |

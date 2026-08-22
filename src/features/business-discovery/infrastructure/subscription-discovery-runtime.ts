@@ -25,8 +25,8 @@ import {
   supportsReasoningEffort,
 } from "@/features/runtime-settings"
 
-const REPORT_TIMEOUT_MILLISECONDS = 300_000
-const STRUCTURE_TIMEOUT_MILLISECONDS = 180_000
+const REPORT_TIMEOUT_MILLISECONDS = 900_000
+const STRUCTURE_TIMEOUT_MILLISECONDS = 300_000
 
 type RuntimeExecutableMap = Readonly<Partial<Record<RuntimeId, string>>>
 
@@ -226,7 +226,7 @@ function opencodeModelArguments(brief: DiscoveryBrief): readonly string[] {
 }
 
 /** The report call asks for prose, so stdout is the report unless a runtime wraps it in JSON. */
-function readReportText(runtime: RuntimeId, result: RuntimeProcessResult): string {
+export function readReportText(runtime: RuntimeId, result: RuntimeProcessResult): string {
   if (runtime !== "opencode") {
     try {
       const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
@@ -234,23 +234,37 @@ function readReportText(runtime: RuntimeId, result: RuntimeProcessResult): strin
     } catch {
       // Plain text is the expected shape; only a wrapped runtime needs unwrapping.
     }
+    return result.stdout
   }
-  return result.stdout
+  return withoutTerminalColour(result.stdout)
 }
 
-function parseStructuredOutput(runtime: RuntimeId, result: RuntimeProcessResult): unknown {
+export function parseStructuredOutput(runtime: RuntimeId, result: RuntimeProcessResult): unknown {
   if (runtime === "codex") return JSON.parse(result.stdout)
-  if (runtime === "opencode") return JSON.parse(stripCodeFence(result.stdout))
+  if (runtime === "opencode") {
+    return JSON.parse(onlyJsonObject(withoutTerminalColour(result.stdout)))
+  }
   const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
   if (wrapper.structured_output) return wrapper.structured_output
   if (typeof wrapper.result === "string") return JSON.parse(wrapper.result)
   return wrapper
 }
 
-/** A runtime with no schema flag answers in prose fences; the object inside is still the answer. */
-function stripCodeFence(text: string): string {
-  const fenced = text.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/u)
-  return fenced ? fenced[1] : text
+/** OpenCode writes to a terminal, so its answer arrives wrapped in colour codes. */
+export function withoutTerminalColour(text: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching the escape is the point
+  return text.replace(/[[0-9;]*[a-zA-Z]/gu, "")
+}
+
+/**
+ * A runtime with no output-schema flag prints its banner and its tool trace before answering, and
+ * may fence the answer. The object between the outermost braces is the answer in every case.
+ */
+export function onlyJsonObject(text: string): string {
+  const start = text.indexOf("{")
+  const end = text.lastIndexOf("}")
+  if (start < 0 || end <= start) throw new Error("the runtime output held no JSON object")
+  return text.slice(start, end + 1)
 }
 
 function withExecutable<A>(
@@ -274,7 +288,14 @@ function inTemporaryDirectory<A>(
       catch: () => blocked("temporary-directory", "A private workspace could not be created."),
     }),
     use,
-    (directory) => Effect.promise(() => rm(directory, { recursive: true, force: true })),
+    // A runtime that leaves a helper behind still holds this directory open, and Windows answers
+    // EBUSY. Losing a scratch directory in the system temp folder is not worth failing a run for.
+    (directory) =>
+      Effect.promise(() =>
+        rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }).catch(
+          () => undefined,
+        ),
+      ),
   )
 }
 
