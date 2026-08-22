@@ -134,6 +134,160 @@ describe("discovery structure verification", () => {
     )
   })
 
+  // A runtime that lists a business's pages under one heading and its telephone under the next
+  // lost every contact it found, because "beside its source" meant "in the same paragraph".
+  it("keeps a contact written further down the business's own section", () => {
+    const report = [
+      "1) Kwiaciarnia Emi",
+      "",
+      "Pages read about it:",
+      "https://emikwiaciarnia.pl/",
+      "",
+      "Contacts seen:",
+      '- On its own site: "Szybki kontakt: 509 758 700"',
+      "",
+      "2) Kwiaciarnia Fedde",
+      "",
+      "Pages read about it:",
+      "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+      "",
+      "Contacts seen:",
+      '- On trojmiasto.pl: "tel: 58 677-00-13"',
+    ].join("\n")
+
+    const { businesses, rejections } = verifyAgainstReport(
+      {
+        schemaVersion: "discovery-structure-v1",
+        businesses: [
+          business({
+            name: "Kwiaciarnia Emi",
+            sourceUrls: ["https://emikwiaciarnia.pl/"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "509 758 700",
+                sourceUrl: "https://emikwiaciarnia.pl/",
+              },
+            ],
+          }),
+          business({
+            name: "Kwiaciarnia Fedde",
+            sourceUrls: ["https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "58 677-00-13",
+                sourceUrl: "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+              },
+            ],
+          }),
+        ],
+      },
+      report,
+      "PL",
+      isPublicUrl,
+    )
+
+    expect(rejections).toEqual([])
+    expect(businesses.map((entry) => entry.contacts.map((contact) => contact.value))).toEqual([
+      ["509 758 700"],
+      ["58 677-00-13"],
+    ])
+  })
+
+  // The section rule must not become "anywhere in the report" for the business listed last.
+  it("still refuses a neighbour's telephone claimed from its own source", () => {
+    const report = [
+      "1) Kwiaciarnia Emi",
+      "https://emikwiaciarnia.pl/",
+      "Telephone: 509 758 700",
+      "",
+      "2) Kwiaciarnia Fedde",
+      "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+      "No telephone was published.",
+    ].join("\n")
+
+    const { businesses, rejections } = verifyAgainstReport(
+      {
+        schemaVersion: "discovery-structure-v1",
+        businesses: [
+          business({ name: "Kwiaciarnia Emi", sourceUrls: ["https://emikwiaciarnia.pl/"] }),
+          business({
+            name: "Kwiaciarnia Fedde",
+            sourceUrls: ["https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "509 758 700",
+                sourceUrl: "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+              },
+            ],
+          }),
+        ],
+      },
+      report,
+      "PL",
+      isPublicUrl,
+    )
+
+    expect(businesses[1]?.contacts).toEqual([])
+    expect(rejections).toContainEqual(
+      expect.objectContaining({ kind: "contact", reason: "not-beside-its-source" }),
+    )
+  })
+
+  // A report that covers one business twice must not hand its second entry to the business before.
+  it("gives every mention of a business to that business", () => {
+    const report = [
+      "1) Kwiaciarnia Emi",
+      "https://emikwiaciarnia.pl/",
+      "",
+      "2) Kwiaciarnia Fedde",
+      "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+      "No telephone was published.",
+      "",
+      "Kwiaciarnia Emi (second listing)",
+      "https://emikwiaciarnia.pl/",
+      "Telephone: 509 758 700",
+    ].join("\n")
+
+    const { businesses } = verifyAgainstReport(
+      {
+        schemaVersion: "discovery-structure-v1",
+        businesses: [
+          business({
+            name: "Kwiaciarnia Emi",
+            sourceUrls: ["https://emikwiaciarnia.pl/"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "509 758 700",
+                sourceUrl: "https://emikwiaciarnia.pl/",
+              },
+            ],
+          }),
+          business({
+            name: "Kwiaciarnia Fedde",
+            sourceUrls: ["https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "509 758 700",
+                sourceUrl: "https://www.trojmiasto.pl/Kwiaciarnia-Fedde-o39147.html",
+              },
+            ],
+          }),
+        ],
+      },
+      report,
+      "PL",
+      isPublicUrl,
+    )
+
+    expect(businesses[0]?.contacts.map((contact) => contact.value)).toEqual(["509 758 700"])
+    expect(businesses[1]?.contacts).toEqual([])
+  })
+
   it("rejects output that strays outside the structuring stage", async () => {
     const failure = await Effect.runPromise(
       Effect.flip(

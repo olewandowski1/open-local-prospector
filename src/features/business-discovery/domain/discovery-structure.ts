@@ -108,6 +108,10 @@ export function verifyAgainstReport(
 ): VerifiedStructure {
   const reportUrls = new Set(extractReportUrls(report).map(canonicalUrl))
   const blocks = reportBlocks(report)
+  const sections = businessSections(
+    report,
+    structure.businesses.map((business) => business.name),
+  )
   const rejections: VerificationRejection[] = []
   const businesses: StructuredBusiness[] = []
 
@@ -130,9 +134,13 @@ export function verifyAgainstReport(
     const presences = business.presences.filter((presence) => cited(presence.url, "presence"))
     const websiteUrl =
       business.websiteUrl && cited(business.websiteUrl, "website") ? business.websiteUrl : undefined
+    // The business's own part of the report where the report names it, and the paragraph rule
+    // where it does not. Either way the contact must sit beside a source that part cites.
+    const section = sections.get(business.name)
+    const scope = section ? [section] : blocks
     const contacts = business.contacts.filter((contact) => {
       if (!cited(contact.sourceUrl, "contact")) return false
-      const reason = contactRejection(contact, countryCode, blocksCiting(blocks, contact.sourceUrl))
+      const reason = contactRejection(contact, countryCode, blocksCiting(scope, contact.sourceUrl))
       if (reason) {
         rejections.push({ business: business.name, kind: "contact", value: contact.value, reason })
         return false
@@ -162,13 +170,73 @@ type ReportBlock = Readonly<{ text: string; lowercased: string; digits: Readonly
 function reportBlocks(report: string): readonly ReportBlock[] {
   return report
     .split(/\n\s*\n/u)
-    .map((text) => text.trim())
-    .filter(Boolean)
-    .map((text) => ({
-      text,
-      lowercased: text.toLocaleLowerCase("pl"),
-      digits: digitRuns(text),
-    }))
+    .map(asBlock)
+    .filter((block) => block.text.length > 0)
+}
+
+function asBlock(text: string): ReportBlock {
+  const trimmed = text.trim()
+  return {
+    text: trimmed,
+    lowercased: trimmed.toLocaleLowerCase("pl"),
+    digits: digitRuns(trimmed),
+  }
+}
+
+/**
+ * A business's own part of the report: from where the report first names it to where it names the
+ * next one. Splitting on blank lines alone made the check depend on how the runtime happened to lay
+ * the report out — one that listed a business's pages under "Pages read about it" and its telephone
+ * under "Contacts seen" put them in different paragraphs, and lost every contact it had found.
+ */
+function businessSections(
+  report: string,
+  names: readonly string[],
+): ReadonlyMap<string, ReportBlock> {
+  const boundaries = nameBoundaries(report, names)
+  const chunks = new Map<string, string[]>()
+  for (const [index, boundary] of boundaries.entries()) {
+    const end = boundaries[index + 1]?.start ?? report.length
+    chunks.set(boundary.name, [
+      ...(chunks.get(boundary.name) ?? []),
+      report.slice(boundary.start, end),
+    ])
+  }
+  return new Map([...chunks].map(([name, parts]) => [name, asBlock(parts.join("\n\n"))]))
+}
+
+/**
+ * Every place the report names a business, in the order it names them. Every occurrence counts: a
+ * report that covers one business twice would otherwise hand its second entry to whichever business
+ * happened to precede it, and that is a neighbour's telephone by another route.
+ */
+function nameBoundaries(
+  report: string,
+  names: readonly string[],
+): readonly Readonly<{ name: string; start: number; length: number }>[] {
+  const lowercased = report.toLocaleLowerCase("pl")
+  const marks: { name: string; start: number; length: number }[] = []
+  for (const name of new Set(names)) {
+    const needle = name.toLocaleLowerCase("pl")
+    if (needle.length === 0) continue
+    for (
+      let at = lowercased.indexOf(needle);
+      at >= 0;
+      at = lowercased.indexOf(needle, at + needle.length)
+    ) {
+      marks.push({ name, start: at, length: needle.length })
+    }
+  }
+
+  // Where one name is written inside a longer one, the longer one is the business being named.
+  marks.sort((left, right) => left.start - right.start || right.length - left.length)
+  const boundaries: typeof marks = []
+  for (const mark of marks) {
+    const previous = boundaries.at(-1)
+    if (previous && mark.start < previous.start + previous.length) continue
+    boundaries.push(mark)
+  }
+  return boundaries
 }
 
 function blocksCiting(blocks: readonly ReportBlock[], sourceUrl: string): readonly ReportBlock[] {
