@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import type { RunControl } from "@/features/run-monitoring/application/run-repositories"
 import type { RunDetail } from "@/features/run-monitoring/domain/run-progress"
 import { runControlAvailability } from "@/features/run-monitoring/presentation/run-detail-presentation"
+import { RunFact, RunFactList } from "@/features/run-monitoring/presentation/run-fact"
 import {
   formatQualified,
   formatUpdatedAt,
@@ -130,7 +131,7 @@ export function RunDetailHeader({
           title={<span id="run-overview-heading">Run Overview</span>}
           description="Current execution state and the runtime handling this prospecting run."
         />
-        <div className="overflow-hidden rounded-xl border">
+        <RunFactList>
           <RunFact label="Status">
             <span
               className={cn("font-medium", statusTextClass[status.variant])}
@@ -139,9 +140,7 @@ export function RunDetailHeader({
               {status.label}
             </span>
           </RunFact>
-          <Separator />
           <RunFact label="Current Stage">{humanizeStage(run.currentStage)}</RunFact>
-          <Separator />
           <RunFact label="Runtime">
             <span className="inline-flex min-w-0 items-center gap-2">
               <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
@@ -152,15 +151,11 @@ export function RunDetailHeader({
               </span>
             </span>
           </RunFact>
-          <Separator />
           <RunFact label="Last Updated">{formatUpdatedAt(run.updatedAt, now)}</RunFact>
           {run.requestedControl !== "None" ? (
-            <>
-              <Separator />
-              <RunFact label="Requested Control">{run.requestedControl}</RunFact>
-            </>
+            <RunFact label="Requested Control">{run.requestedControl}</RunFact>
           ) : null}
-        </div>
+        </RunFactList>
       </section>
 
       <Separator />
@@ -170,7 +165,8 @@ export function RunDetailHeader({
           title={<span id="run-progress-heading">Run Progress</span>}
           description="Committed checkpoint counts from discovery through qualification."
         />
-        <div className="overflow-hidden rounded-xl border">
+        <RunFactList>
+          {/* The target leads the list and keeps its bar: it is the one count with a denominator. */}
           <div className="flex flex-col gap-2 p-4">
             <div className="flex items-baseline justify-between gap-4 text-sm">
               <span className="text-muted-foreground">Qualified Target</span>
@@ -180,19 +176,9 @@ export function RunDetailHeader({
             </div>
             <Progress value={completion} />
           </div>
-          <Separator />
           <RunProgressFunnel progress={run.progress} />
-        </div>
+        </RunFactList>
       </section>
     </div>
-  )
-}
-
-function RunFact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <dl className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-sm sm:text-right">{children}</dd>
-    </dl>
   )
 }

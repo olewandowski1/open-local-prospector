@@ -102,7 +102,7 @@ export function TechnicalLogSheet({
                   </LogFilterButton>
                 ))}
                 {businessId ? (
-                  <Button variant="ghost" size="sm" className="h-7" onClick={onClearBusiness}>
+                  <Button variant="destructive" size="sm" className="h-7" onClick={onClearBusiness}>
                     Clear {businessLabel ? `“${businessLabel}”` : "Business"} Filter
                   </Button>
                 ) : null}
