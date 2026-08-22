@@ -1,9 +1,10 @@
 "use client"
 
+import { FilterRemoveIcon } from "@hugeicons/core-free-icons"
 import { useQuery } from "@tanstack/react-query"
-import { FilterX } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { Icon } from "@/components/icon"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -227,7 +228,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <FilterX />
+              <Icon icon={FilterRemoveIcon} />
             </EmptyMedia>
             <EmptyTitle>No Candidates With This Status</EmptyTitle>
             <EmptyDescription>

@@ -1,5 +1,6 @@
-import { CircleGauge, Plus } from "lucide-react"
+import { Add01Icon, CircleGaugeIcon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { Icon } from "@/components/icon"
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
 import { buttonVariants } from "@/components/ui/button"
@@ -26,7 +27,7 @@ export function ReviewQueuePage() {
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <CircleGauge />
+              <Icon icon={CircleGaugeIcon} />
             </EmptyMedia>
             <EmptyTitle>Nothing To Review Yet</EmptyTitle>
             <EmptyDescription>
@@ -36,7 +37,7 @@ export function ReviewQueuePage() {
           </EmptyHeader>
           <EmptyContent>
             <Link href="/runs/new" className={buttonVariants()}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
+              <Icon icon={Add01Icon} data-icon="inline-start" />
               New Run
             </Link>
           </EmptyContent>

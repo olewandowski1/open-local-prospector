@@ -1,15 +1,15 @@
 import {
-  Activity,
-  CircleGauge,
-  ClipboardCheck,
-  type LucideIcon,
-  Minus,
-  Plus,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react"
+  ActivityIcon,
+  Add01Icon,
+  ChartDownIcon,
+  ChartUpIcon,
+  CircleGaugeIcon,
+  ClipboardCheckIcon,
+  MinusSignIcon,
+} from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
@@ -32,16 +32,16 @@ import { RecentCandidatesGrid } from "@/features/overview/presentation/recent-ca
 import type { RecentCandidate } from "@/features/review-queue"
 
 /** An arrow is only shown for a measured week-over-week change. */
-const trendIcons: Partial<Record<OverviewTrend, LucideIcon>> = {
-  up: TrendingUp,
-  down: TrendingDown,
-  flat: Minus,
+const trendIcons: Partial<Record<OverviewTrend, IconSvg>> = {
+  up: ChartUpIcon,
+  down: ChartDownIcon,
+  flat: MinusSignIcon,
 }
 
 /** Standing facts get a subject icon instead, so every tile reads the same without faking a trend. */
-const standingIcons: Record<string, LucideIcon> = {
-  "awaiting-review": ClipboardCheck,
-  "active-runs": Activity,
+const standingIcons: Record<string, IconSvg> = {
+  "awaiting-review": ClipboardCheckIcon,
+  "active-runs": ActivityIcon,
 }
 
 export function OverviewPage({
@@ -69,7 +69,7 @@ export function OverviewPage({
           description="Persisted prospecting activity from this workspace, and the runtime that steers the next run."
           actions={
             <Link href="/runs/new" className={buttonVariants()}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
+              <Icon icon={Add01Icon} data-icon="inline-start" />
               New Run
             </Link>
           }
@@ -81,7 +81,7 @@ export function OverviewPage({
           className="grid gap-x-8 gap-y-6 border-y py-5 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-border"
         >
           {metrics.map((item) => {
-            const TrendIcon = trendIcons[item.trend] ?? standingIcons[item.id] ?? Minus
+            const trendIcon = trendIcons[item.trend] ?? standingIcons[item.id] ?? MinusSignIcon
             return (
               <div key={item.id} className="flex flex-col gap-1 xl:not-first:pl-8">
                 <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -89,7 +89,7 @@ export function OverviewPage({
                   {item.value}
                 </p>
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                  <TrendIcon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                  <Icon icon={trendIcon} className="mt-0.5 size-3.5 shrink-0" />
                   <span className="text-pretty font-medium text-foreground">{item.note}</span>
                 </p>
               </div>
@@ -109,7 +109,7 @@ export function OverviewPage({
               <Empty>
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
-                    <CircleGauge />
+                    <Icon icon={CircleGaugeIcon} />
                   </EmptyMedia>
                   <EmptyTitle>No Qualified Candidates Yet</EmptyTitle>
                   <EmptyDescription>
@@ -119,7 +119,7 @@ export function OverviewPage({
                 </EmptyHeader>
                 <EmptyContent>
                   <Link href="/runs/new" className={buttonVariants()}>
-                    <Plus data-icon="inline-start" aria-hidden="true" />
+                    <Icon icon={Add01Icon} data-icon="inline-start" />
                     New Run
                   </Link>
                 </EmptyContent>

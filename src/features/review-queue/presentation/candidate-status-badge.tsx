@@ -1,16 +1,22 @@
-import type { LucideIcon } from "lucide-react"
-import { Archive, Circle, CircleCheck, CircleX, Send } from "lucide-react"
+import {
+  ArchiveIcon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  CircleIcon,
+  SentIcon,
+} from "@hugeicons/core-free-icons"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import { Badge } from "@/components/ui/badge"
 import { reviewStatusVariant } from "@/features/review-queue/presentation/review-presentation"
 import { cn } from "@/lib/utils"
 
-const statusIcons: Readonly<Record<string, LucideIcon>> = {
-  Unreviewed: Circle,
-  Shortlisted: CircleCheck,
-  Rejected: CircleX,
-  Contacted: Send,
-  Archived: Archive,
+const statusIcons: Readonly<Record<string, IconSvg>> = {
+  Unreviewed: CircleIcon,
+  Shortlisted: CheckmarkCircle02Icon,
+  Rejected: CancelCircleIcon,
+  Contacted: SentIcon,
+  Archived: ArchiveIcon,
 }
 
 /** One badge for a review decision, so every surface reads the same status the same way. */
@@ -21,10 +27,10 @@ export function CandidateStatusBadge({
   status: string
   className?: string
 }) {
-  const Icon = statusIcons[status] ?? Circle
+  const icon = statusIcons[status] ?? CircleIcon
   return (
     <Badge variant={reviewStatusVariant(status)} className={cn("shrink-0", className)}>
-      <Icon data-icon="inline-start" aria-hidden="true" />
+      <Icon icon={icon} data-icon="inline-start" />
       {status}
     </Badge>
   )

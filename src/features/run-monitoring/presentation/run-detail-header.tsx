@@ -1,7 +1,15 @@
 "use client"
 
-import { ArrowLeft, Ban, CirclePause, CirclePlay, MapPin, RotateCcw } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  BanIcon,
+  MapPinIcon,
+  PauseCircleIcon,
+  PlayCircleIcon,
+  RefreshIcon,
+} from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { Icon } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { Button } from "@/components/ui/button"
@@ -60,14 +68,14 @@ export function RunDetailHeader({
             href="/runs"
             className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
           >
-            <ArrowLeft aria-hidden="true" className="size-3.5" />
+            <Icon icon={ArrowLeftIcon} className="size-3.5" />
             All Runs
           </Link>
         }
         title={run.searchBrief.category}
         description={
           <span className="flex min-w-0 items-center gap-1.5">
-            <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+            <Icon icon={MapPinIcon} className="size-3.5 shrink-0" />
             <span className="truncate">{run.searchBrief.searchArea.displayName}</span>
           </span>
         }
@@ -80,7 +88,7 @@ export function RunDetailHeader({
                 onClick={() => onControl("Pause")}
                 disabled={busy}
               >
-                <CirclePause data-icon="inline-start" aria-hidden="true" /> Pause
+                <Icon icon={PauseCircleIcon} data-icon="inline-start" /> Pause
               </Button>
             ) : null}
             {canResume ? (
@@ -90,7 +98,7 @@ export function RunDetailHeader({
                 onClick={() => onControl("Resume")}
                 disabled={busy}
               >
-                <CirclePlay data-icon="inline-start" aria-hidden="true" /> Resume
+                <Icon icon={PlayCircleIcon} data-icon="inline-start" /> Resume
               </Button>
             ) : null}
             {canCancel ? (
@@ -100,11 +108,11 @@ export function RunDetailHeader({
                 onClick={() => onControl("Cancel")}
                 disabled={busy}
               >
-                <Ban data-icon="inline-start" aria-hidden="true" /> Cancel
+                <Icon icon={BanIcon} data-icon="inline-start" /> Cancel
               </Button>
             ) : null}
             <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
-              <RotateCcw data-icon="inline-start" aria-hidden="true" /> Refresh
+              <Icon icon={RefreshIcon} data-icon="inline-start" /> Refresh
             </Button>
             {isRunSettled(run.state) ? (
               <RunDeleteDialog

@@ -1,5 +1,5 @@
-import type { LucideIcon } from "lucide-react"
-import { Check, X } from "lucide-react"
+import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -16,13 +16,13 @@ import { cn } from "@/lib/utils"
  */
 const statusPresentation: Record<
   RuntimeReadinessStatus,
-  Readonly<{ className: string; icon: LucideIcon }>
+  Readonly<{ className: string; icon: IconSvg }>
 > = {
-  Ready: { className: "text-success", icon: Check },
-  Missing: { className: "text-warning", icon: X },
-  "Logged Out": { className: "text-warning", icon: X },
-  Unreachable: { className: "text-destructive", icon: X },
-  "Unsupported Version": { className: "text-warning", icon: X },
+  Ready: { className: "text-success", icon: Tick02Icon },
+  Missing: { className: "text-warning", icon: Cancel01Icon },
+  "Logged Out": { className: "text-warning", icon: Cancel01Icon },
+  Unreachable: { className: "text-destructive", icon: Cancel01Icon },
+  "Unsupported Version": { className: "text-warning", icon: Cancel01Icon },
 }
 
 export function RuntimeSettingsSection({
@@ -39,7 +39,6 @@ export function RuntimeSettingsSection({
       {runtimes.map((runtime, index) => {
         const selected = runtime.runtimeId === selectedRuntime
         const status = statusPresentation[runtime.status]
-        const StatusIcon = status.icon
         return (
           <div key={runtime.runtimeId}>
             <div className="flex items-center gap-3 p-4">
@@ -53,7 +52,7 @@ export function RuntimeSettingsSection({
                     <span
                       className={cn("inline-flex items-center gap-1 text-sm", status.className)}
                     >
-                      <StatusIcon className="size-3.5" aria-hidden="true" />
+                      <Icon icon={status.icon} className="size-3.5" />
                       {runtime.status}
                     </span>
                   </div>
@@ -79,7 +78,7 @@ export function RuntimeSettingsSection({
                 >
                   {selected ? (
                     <>
-                      <Check data-icon="inline-start" aria-hidden="true" />
+                      <Icon icon={Tick02Icon} data-icon="inline-start" />
                       Active Runtime
                     </>
                   ) : (

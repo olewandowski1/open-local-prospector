@@ -1,15 +1,16 @@
 "use client"
 
 import {
-  Check,
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  Copy,
-  DownloadCloud,
-  LoaderCircle,
-} from "lucide-react"
+  AlertCircleIcon,
+  ArrowRight01Icon,
+  CheckmarkCircle02Icon,
+  CloudDownloadIcon,
+  Copy01Icon,
+  Loading03Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons"
 import { useEffect, useState } from "react"
+import { Icon } from "@/components/icon"
 
 import { IconButton } from "@/components/icon-button"
 import { Button } from "@/components/ui/button"
@@ -113,7 +114,7 @@ export function RuntimeUpdatePanel() {
                   size="icon-sm"
                   aria-label={triggerLabel}
                 >
-                  <DownloadCloud aria-hidden="true" />
+                  <Icon icon={CloudDownloadIcon} />
                 </Button>
               }
             />
@@ -191,7 +192,7 @@ function RuntimeUpdateCard({
         </div>
         <Button size="sm" disabled={busy || disabled} onClick={onUpdate}>
           {busy ? (
-            <LoaderCircle data-icon="inline-start" className="animate-spin" aria-hidden="true" />
+            <Icon icon={Loading03Icon} data-icon="inline-start" className="animate-spin" />
           ) : null}
           {busy ? "Updating…" : "Update"}
         </Button>
@@ -205,9 +206,9 @@ function RuntimeUpdateCard({
           )}
         >
           {result.outcome === "Failed" ? (
-            <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+            <Icon icon={AlertCircleIcon} className="mt-0.5 size-3.5 shrink-0" />
           ) : (
-            <CircleCheck aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-success" />
+            <Icon icon={CheckmarkCircle02Icon} className="mt-0.5 size-3.5 shrink-0 text-success" />
           )}
           <span>
             <span className="font-medium">{result.outcome}.</span> {result.detail}
@@ -261,7 +262,7 @@ function CopyButton({ value }: { value: string }) {
       size="icon-xs"
       onClick={copy}
     >
-      {copied ? <Check aria-hidden="true" className="text-success" /> : <Copy aria-hidden="true" />}
+      {copied ? <Icon icon={Tick02Icon} className="text-success" /> : <Icon icon={Copy01Icon} />}
     </IconButton>
   )
 }
@@ -282,7 +283,7 @@ function RuntimeVersionLine({
     return (
       <p className="flex items-center gap-1 text-xs tabular-nums">
         <s className="text-muted-foreground">{status.installed}</s>
-        <ChevronRight aria-hidden="true" className="size-3 text-muted-foreground" />
+        <Icon icon={ArrowRight01Icon} className="size-3 text-muted-foreground" />
         <span className="font-medium text-foreground">{target}</span>
       </p>
     )

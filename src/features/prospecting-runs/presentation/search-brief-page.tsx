@@ -1,18 +1,19 @@
 "use client"
 
 import {
-  AlertCircle,
-  Check,
-  CheckCircle2,
-  Clock3,
-  LoaderCircle,
-  MapPin,
-  Play,
-  Search,
-  X,
-} from "lucide-react"
+  AlertCircleIcon,
+  Cancel01Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  Loading03Icon,
+  MapPinIcon,
+  PlayIcon,
+  Search01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { Icon } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
@@ -203,7 +204,7 @@ export function SearchBriefPage({
 
           {readyRuntimes.length === 0 ? (
             <Alert variant="destructive" className="mt-6">
-              <AlertCircle aria-hidden="true" />
+              <Icon icon={AlertCircleIcon} />
               <AlertTitle>No subscription runtime is ready</AlertTitle>
               <AlertDescription>
                 <Link href="/settings/subscription">Open Settings</Link> and follow the terminal
@@ -516,9 +517,9 @@ export function SearchBriefPage({
 
                 <Button type="submit" disabled={!hydrated || busy || !draft.runtime}>
                   {busy ? (
-                    <LoaderCircle className="animate-spin" aria-hidden="true" />
+                    <Icon icon={Loading03Icon} className="animate-spin" />
                   ) : (
-                    <Search aria-hidden="true" />
+                    <Icon icon={Search01Icon} />
                   )}
                   Check preflight
                 </Button>
@@ -537,7 +538,7 @@ export function SearchBriefPage({
             <div className="grid gap-5">
               {error ? (
                 <Alert variant="destructive">
-                  <AlertCircle aria-hidden="true" />
+                  <Icon icon={AlertCircleIcon} />
                   <AlertTitle>Unable to continue</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -569,7 +570,7 @@ export function SearchBriefPage({
                           <FieldLabel key={area.id}>
                             <Field orientation="horizontal">
                               <RadioGroupItem value={area.id} aria-label={area.displayName} />
-                              <MapPin aria-hidden="true" />
+                              <Icon icon={MapPinIcon} />
                               <span className="text-sm">{area.displayName}</span>
                             </Field>
                           </FieldLabel>
@@ -608,9 +609,12 @@ export function SearchBriefPage({
                           className="flex items-start gap-2 text-sm"
                         >
                           {dependency.status === "Ready" ? (
-                            <Check className="mt-0.5 size-3.5 text-success" aria-hidden="true" />
+                            <Icon icon={Tick02Icon} className="mt-0.5 size-3.5 text-success" />
                           ) : (
-                            <X className="mt-0.5 size-3.5 text-destructive" aria-hidden="true" />
+                            <Icon
+                              icon={Cancel01Icon}
+                              className="mt-0.5 size-3.5 text-destructive"
+                            />
                           )}
                           <span className="flex-1">{dependency.label}</span>
                           <span
@@ -631,7 +635,7 @@ export function SearchBriefPage({
                       id="estimate-title"
                       className="flex items-center gap-2 text-sm font-semibold"
                     >
-                      <Clock3 aria-hidden="true" /> Workload estimate
+                      <Icon icon={Clock01Icon} /> Workload estimate
                     </h2>
                     <p className="mt-2 text-sm">
                       About {preflight.estimate.discoveryQueries} discovery queries, up to{" "}
@@ -649,7 +653,7 @@ export function SearchBriefPage({
 
                   {createdRun ? (
                     <Alert>
-                      <CheckCircle2 aria-hidden="true" />
+                      <Icon icon={CheckmarkCircle02Icon} />
                       <AlertTitle>Pending run created</AlertTitle>
                       <AlertDescription>
                         Run{" "}
@@ -666,9 +670,9 @@ export function SearchBriefPage({
                       disabled={busy || !preflight.ready || !selectedAreaId}
                     >
                       {busy ? (
-                        <LoaderCircle className="animate-spin" aria-hidden="true" />
+                        <Icon icon={Loading03Icon} className="animate-spin" />
                       ) : (
-                        <Play aria-hidden="true" />
+                        <Icon icon={PlayIcon} />
                       )}
                       Confirm and create run
                     </Button>

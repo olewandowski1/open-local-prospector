@@ -1,5 +1,6 @@
-import { ChevronRight, MapPin } from "lucide-react"
+import { ArrowRight01Icon, MapPinIcon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { Icon } from "@/components/icon"
 
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -23,7 +24,7 @@ export function RunCard({ run }: { run: RunRow }) {
           </p>
           {/* The truncation lives on the text itself; a flex row cannot truncate its children. */}
           <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
-            <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+            <Icon icon={MapPinIcon} className="size-3.5 shrink-0" />
             <span className="truncate">{run.location}</span>
           </p>
         </div>
@@ -60,8 +61,8 @@ export function RunCard({ run }: { run: RunRow }) {
         <span className="truncate">
           {run.mode} · Updated {run.updatedLabel}
         </span>
-        <ChevronRight
-          aria-hidden="true"
+        <Icon
+          icon={ArrowRight01Icon}
           className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
         />
       </div>

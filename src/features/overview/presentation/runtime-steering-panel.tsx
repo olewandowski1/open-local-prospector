@@ -1,8 +1,15 @@
 "use client"
 
-import { Check, CircleAlert, LoaderCircle, Settings2, X } from "lucide-react"
+import {
+  AlertCircleIcon,
+  Cancel01Icon,
+  Loading03Icon,
+  Settings02Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useState, useTransition } from "react"
+import { Icon } from "@/components/icon"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -108,9 +115,9 @@ export function RuntimeSteeringPanel({
                 )}
               >
                 {selectedRuntime.status === "Ready" ? (
-                  <Check className="size-3.5" aria-hidden="true" />
+                  <Icon icon={Tick02Icon} className="size-3.5" />
                 ) : (
-                  <X className="size-3.5" aria-hidden="true" />
+                  <Icon icon={Cancel01Icon} className="size-3.5" />
                 )}
                 {selectedRuntime.status === "Ready" ? "Ready" : "Not Ready"}
               </span>
@@ -254,7 +261,7 @@ export function RuntimeSteeringPanel({
           </div>
         ) : (
           <Alert>
-            <CircleAlert aria-hidden="true" />
+            <Icon icon={AlertCircleIcon} />
             <AlertTitle>No Authenticated Runtime</AlertTitle>
             <AlertDescription>
               Sign in to Codex or Claude in their terminals, then confirm readiness in settings.
@@ -264,11 +271,11 @@ export function RuntimeSteeringPanel({
 
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={save} disabled={!draft || pending || unchanged}>
-            {pending ? <LoaderCircle data-icon="inline-start" aria-hidden="true" /> : null}
+            {pending ? <Icon icon={Loading03Icon} data-icon="inline-start" /> : null}
             Save Steering
           </Button>
           <Link href="/settings/subscription" className={buttonVariants({ variant: "ghost" })}>
-            <Settings2 data-icon="inline-start" aria-hidden="true" />
+            <Icon icon={Settings02Icon} data-icon="inline-start" />
             Runtime Settings
           </Link>
           <p role="status" className="text-xs text-muted-foreground">

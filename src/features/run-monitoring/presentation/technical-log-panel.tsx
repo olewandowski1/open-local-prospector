@@ -1,8 +1,9 @@
 "use client"
 
+import { LinkSquare02Icon, Scroll01Icon } from "@hugeicons/core-free-icons"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ExternalLink, ScrollText } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
+import { Icon } from "@/components/icon"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -70,7 +71,7 @@ export function TechnicalLogSheet({
       <SheetTrigger
         render={
           <Button variant="outline" size="sm">
-            <ScrollText data-icon="inline-start" aria-hidden="true" />
+            <Icon icon={Scroll01Icon} data-icon="inline-start" />
             Technical Log ({events.length})
           </Button>
         }
@@ -210,7 +211,7 @@ function EventRows({ events }: { events: readonly TechnicalRunEvent[] }) {
                     title={url}
                     className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    <ExternalLink aria-hidden="true" className="size-3.5" />
+                    <Icon icon={LinkSquare02Icon} className="size-3.5" />
                   </a>
                 ) : null}
               </div>

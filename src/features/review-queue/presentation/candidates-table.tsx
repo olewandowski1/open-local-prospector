@@ -1,6 +1,12 @@
 "use client"
 
 import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  PanelRightOpenIcon,
+} from "@hugeicons/core-free-icons"
+import {
   createColumnHelper,
   createPaginatedRowModel,
   createSortedRowModel,
@@ -11,10 +17,9 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, PanelRightOpen } from "lucide-react"
 import { useMemo } from "react"
-
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
+import { Icon } from "@/components/icon"
 import { IconButton } from "@/components/icon-button"
 import { Button } from "@/components/ui/button"
 import {
@@ -96,7 +101,7 @@ const columns = helper.columns([
           size="icon-xs"
           onClick={context.row.original.onOpen}
         >
-          <PanelRightOpen aria-hidden="true" />
+          <Icon icon={PanelRightOpenIcon} />
         </IconButton>
       </div>
     ),
@@ -121,7 +126,7 @@ const initialState = {
   pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE },
 }
 
-const sortIcons = { asc: ArrowUp, desc: ArrowDown } as const
+const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
 
 /**
  * The whole queue as one sortable, paged grid. Reviewing happens in a side panel rather than in a
@@ -160,7 +165,7 @@ export function CandidatesTable({
                   )
                 }
                 const direction = header.column.getIsSorted()
-                const SortIcon = direction ? sortIcons[direction] : ArrowUpDown
+                const sortIcon = direction ? sortIcons[direction] : ArrowUpDownIcon
                 return (
                   <TableHead
                     key={header.id}
@@ -174,7 +179,7 @@ export function CandidatesTable({
                       onClick={() => header.column.toggleSorting()}
                     >
                       <table.FlexRender header={header} />
-                      <SortIcon aria-hidden="true" className="text-muted-foreground" />
+                      <Icon icon={sortIcon} className="text-muted-foreground" />
                     </Button>
                   </TableHead>
                 )

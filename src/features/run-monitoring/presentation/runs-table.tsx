@@ -1,6 +1,13 @@
 "use client"
 
 import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  LinkSquare02Icon,
+  Route01Icon,
+} from "@hugeicons/core-free-icons"
+import {
   createColumnHelper,
   createPaginatedRowModel,
   createSortedRowModel,
@@ -11,11 +18,10 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, SquareArrowOutUpRight, Waypoints } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemo } from "react"
-
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
+import { Icon } from "@/components/icon"
 import { IconLink } from "@/components/icon-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -139,7 +145,7 @@ const columnClassNames: Readonly<Record<string, string>> = {
   // the run, so nothing becomes unreachable.
   actions: "hidden text-right @sm:table-cell",
 }
-const sortIcons = { asc: ArrowUp, desc: ArrowDown } as const
+const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
 
 export function RunsTable({ runs }: { runs: readonly RunRow[] }) {
   const router = useRouter()
@@ -157,7 +163,7 @@ export function RunsTable({ runs }: { runs: readonly RunRow[] }) {
               {group.headers.map((header) => {
                 if (header.isPlaceholder) return <TableHead key={header.id} />
                 const direction = header.column.getIsSorted()
-                const SortIcon = direction ? sortIcons[direction] : ArrowUpDown
+                const sortIcon = direction ? sortIcons[direction] : ArrowUpDownIcon
                 if (!header.column.getCanSort()) {
                   return (
                     <TableHead key={header.id} className={columnClassNames[header.column.id]}>
@@ -178,7 +184,7 @@ export function RunsTable({ runs }: { runs: readonly RunRow[] }) {
                       onClick={() => header.column.toggleSorting()}
                     >
                       <table.FlexRender header={header} />
-                      <SortIcon aria-hidden="true" className="text-muted-foreground" />
+                      <Icon icon={sortIcon} className="text-muted-foreground" />
                     </Button>
                   </TableHead>
                 )
@@ -229,10 +235,10 @@ function RunActions({ run }: { run: RunRow }) {
   return (
     <div className="flex items-center justify-end gap-1">
       <IconLink label="Open Run" href={`/runs/${run.id}`}>
-        <SquareArrowOutUpRight aria-hidden="true" />
+        <Icon icon={LinkSquare02Icon} />
       </IconLink>
       <IconLink label="Open Review Queue" href="/review">
-        <Waypoints aria-hidden="true" />
+        <Icon icon={Route01Icon} />
       </IconLink>
       {run.settled ? (
         <RunDeleteDialog

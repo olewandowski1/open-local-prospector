@@ -1,8 +1,9 @@
 "use client"
 
-import { LayoutGrid, Plus, Rows3 } from "lucide-react"
+import { Add01Icon, LayoutGridIcon, ListViewIcon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import { buttonVariants } from "@/components/ui/button"
 import { RunCard } from "@/features/run-monitoring/presentation/run-card"
@@ -14,9 +15,9 @@ type RunsView = "table" | "cards"
 
 const VIEW_STORAGE_KEY = "v1:runs-view"
 
-const views: readonly Readonly<{ value: RunsView; label: string; icon: typeof Rows3 }>[] = [
-  { value: "table", label: "Table", icon: Rows3 },
-  { value: "cards", label: "Cards", icon: LayoutGrid },
+const views: readonly Readonly<{ value: RunsView; label: string; icon: IconSvg }>[] = [
+  { value: "table", label: "Table", icon: ListViewIcon },
+  { value: "cards", label: "Cards", icon: LayoutGridIcon },
 ]
 
 export function RunsWorkspace({ runs }: { runs: readonly RunRow[] }) {
@@ -58,7 +59,7 @@ export function RunsWorkspace({ runs }: { runs: readonly RunRow[] }) {
                 onChange={() => select(option.value)}
                 className="absolute inset-0 cursor-pointer appearance-none opacity-0"
               />
-              <option.icon aria-hidden="true" className="size-4" />
+              <Icon icon={option.icon} className="size-4" />
               {/* The icons are the whole control, so the name lives here for assistive technology. */}
               <span className="sr-only">{option.label}</span>
             </label>
@@ -66,7 +67,7 @@ export function RunsWorkspace({ runs }: { runs: readonly RunRow[] }) {
         </fieldset>
 
         <Link href="/runs/new" className={cn(buttonVariants({ size: "sm" }), "h-8")}>
-          <Plus data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={Add01Icon} data-icon="inline-start" />
           New Run
         </Link>
       </div>

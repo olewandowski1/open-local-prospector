@@ -1,9 +1,10 @@
 "use client"
 
+import { AlertCircleIcon, Loading03Icon } from "@hugeicons/core-free-icons"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, LoaderCircle } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { Icon } from "@/components/icon"
 
 import { PageScroller } from "@/components/page-scroller"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -42,14 +43,14 @@ export function RunDetailPage({
       <PageScroller className="flex items-center justify-center p-8">
         {query.isError ? (
           <Alert variant="destructive">
-            <AlertCircle aria-hidden="true" />
+            <Icon icon={AlertCircleIcon} />
             <AlertTitle>Run Unavailable</AlertTitle>
             <AlertDescription>
               The persisted run could not be loaded. <Link href="/runs">Return to Runs</Link>.
             </AlertDescription>
           </Alert>
         ) : (
-          <LoaderCircle className="animate-spin" aria-label="Loading run" />
+          <Icon icon={Loading03Icon} className="animate-spin" aria-label="Loading run" />
         )}
       </PageScroller>
     )
@@ -64,7 +65,7 @@ export function RunDetailPage({
           than replacing a run being watched with an error page. */}
       {query.isError ? (
         <Alert variant="destructive">
-          <AlertCircle aria-hidden="true" />
+          <Icon icon={AlertCircleIcon} />
           <AlertTitle>Progress Not Refreshing</AlertTitle>
           <AlertDescription>
             These figures are the last that could be read. <Link href="/runs">Return to Runs</Link>.
@@ -83,7 +84,7 @@ export function RunDetailPage({
 
       {control.isError ? (
         <Alert variant="destructive">
-          <AlertCircle aria-hidden="true" />
+          <Icon icon={AlertCircleIcon} />
           <AlertTitle>Control Not Accepted</AlertTitle>
           <AlertDescription>The persisted state changed; refresh and try again.</AlertDescription>
         </Alert>

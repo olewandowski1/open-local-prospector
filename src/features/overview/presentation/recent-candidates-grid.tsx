@@ -1,6 +1,13 @@
 "use client"
 
 import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  LinkSquare02Icon,
+  Route01Icon,
+} from "@hugeicons/core-free-icons"
+import {
   createColumnHelper,
   createPaginatedRowModel,
   createSortedRowModel,
@@ -11,11 +18,10 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown, SquareArrowOutUpRight, Waypoints } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
-
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
+import { Icon } from "@/components/icon"
 import { IconLink } from "@/components/icon-button"
 import { Button } from "@/components/ui/button"
 import {
@@ -131,7 +137,7 @@ const initialState = {
   pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE },
 }
 
-const sortIcons = { asc: ArrowUp, desc: ArrowDown } as const
+const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
 
 export function RecentCandidatesGrid({ candidates }: { candidates: readonly RecentCandidate[] }) {
   const data = useMemo(() => [...candidates], [candidates])
@@ -155,7 +161,7 @@ export function RecentCandidatesGrid({ candidates }: { candidates: readonly Rece
                   )
                 }
                 const direction = header.column.getIsSorted()
-                const SortIcon = direction ? sortIcons[direction] : ArrowUpDown
+                const sortIcon = direction ? sortIcons[direction] : ArrowUpDownIcon
                 return (
                   <TableHead
                     key={header.id}
@@ -169,7 +175,7 @@ export function RecentCandidatesGrid({ candidates }: { candidates: readonly Rece
                       onClick={() => header.column.toggleSorting()}
                     >
                       <table.FlexRender header={header} />
-                      <SortIcon aria-hidden="true" className="text-muted-foreground" />
+                      <Icon icon={sortIcon} className="text-muted-foreground" />
                     </Button>
                   </TableHead>
                 )
@@ -221,10 +227,10 @@ function RowActions({ candidate }: { candidate: RecentCandidate }) {
   return (
     <div className="flex items-center justify-end gap-1">
       <IconLink label="Open In Review" href={reviewHref(candidate.id)}>
-        <SquareArrowOutUpRight aria-hidden="true" />
+        <Icon icon={LinkSquare02Icon} />
       </IconLink>
       <IconLink label="Open Source Run" href={`/runs/${candidate.runId}`}>
-        <Waypoints aria-hidden="true" />
+        <Icon icon={Route01Icon} />
       </IconLink>
     </div>
   )

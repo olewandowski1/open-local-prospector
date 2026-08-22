@@ -1,6 +1,7 @@
 "use client"
 
-import { MoonStar, Sun } from "lucide-react"
+import { Moon02Icon, Sun01Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/icon"
 
 import { Button } from "@/components/ui/button"
 import type { ThemePreference } from "@/features/local-application/application/theme-preference"
@@ -10,11 +11,11 @@ export function AppearanceSection({ theme }: { theme: ThemePreference }) {
   // A stored `system` preference resolves to the current surface; the control intentionally exposes
   // only the two concrete outcomes and persists one only after the operator chooses it.
   const { resolved, select } = useTheme(theme)
-  const Icon = resolved === "dark" ? MoonStar : Sun
+  const resolvedIcon = resolved === "dark" ? Moon02Icon : Sun01Icon
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border p-4">
-      <Icon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+      <Icon icon={resolvedIcon} className="size-5 shrink-0 text-muted-foreground" />
       <div className="min-w-52 flex-1">
         <h3 className="font-heading font-medium">Theme</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -29,7 +30,7 @@ export function AppearanceSection({ theme }: { theme: ThemePreference }) {
           aria-pressed={resolved === "light"}
           onClick={() => select("light")}
         >
-          <Sun aria-hidden="true" />
+          <Icon icon={Sun01Icon} />
           Light
         </Button>
         <Button
@@ -39,7 +40,7 @@ export function AppearanceSection({ theme }: { theme: ThemePreference }) {
           aria-pressed={resolved === "dark"}
           onClick={() => select("dark")}
         >
-          <MoonStar aria-hidden="true" />
+          <Icon icon={Moon02Icon} />
           Dark
         </Button>
       </fieldset>

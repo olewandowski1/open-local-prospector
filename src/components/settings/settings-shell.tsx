@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
+import { Icon } from "@/components/icon"
 
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
@@ -41,7 +42,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                     )}
                   >
-                    <section.icon aria-hidden="true" className="size-4 shrink-0" />
+                    <Icon icon={section.icon} className="size-4 shrink-0" />
                     {section.label}
                   </Link>
                 </li>

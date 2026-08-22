@@ -1,8 +1,8 @@
 "use client"
 
-import type { LucideIcon } from "lucide-react"
-import { Braces, Download, Sheet } from "lucide-react"
+import { BracesIcon, DownloadIcon, FileSpreadsheetIcon } from "@hugeicons/core-free-icons"
 import { useState } from "react"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -25,19 +25,19 @@ const formats: readonly Readonly<{
   value: ExportFormat
   label: string
   detail: string
-  icon: LucideIcon
+  icon: IconSvg
 }>[] = [
   {
     value: "csv",
     label: "CSV",
     detail: "One row per candidate, for a spreadsheet.",
-    icon: Sheet,
+    icon: FileSpreadsheetIcon,
   },
   {
     value: "json",
     label: "JSON",
     detail: "Full records, for another tool to read.",
-    icon: Braces,
+    icon: BracesIcon,
   },
 ]
 
@@ -66,7 +66,7 @@ export function ExportDialog({
       <DialogTrigger
         render={
           <Button size="sm" className="h-8">
-            <Download data-icon="inline-start" aria-hidden="true" />
+            <Icon icon={DownloadIcon} data-icon="inline-start" />
             Export
           </Button>
         }
@@ -99,7 +99,7 @@ export function ExportDialog({
                 <div className="flex w-full items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 text-sm font-medium">
-                      <option.icon aria-hidden="true" className="size-3.5 text-muted-foreground" />
+                      <Icon icon={option.icon} className="size-3.5 text-muted-foreground" />
                       {option.label}
                     </p>
                     <p className="mt-0.5 text-xs font-normal text-muted-foreground">

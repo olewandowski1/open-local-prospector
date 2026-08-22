@@ -1,6 +1,7 @@
 "use client"
 
-import { ExternalLink } from "lucide-react"
+import { LinkSquare02Icon } from "@hugeicons/core-free-icons"
+import { Icon } from "@/components/icon"
 
 import { SectionHeader } from "@/components/page-layout"
 import { Progress } from "@/components/ui/progress"
@@ -172,7 +173,7 @@ function SourceLink({
       }
     >
       {label}
-      {inline ? null : <ExternalLink aria-hidden="true" className="size-3" />}
+      {inline ? null : <Icon icon={LinkSquare02Icon} className="size-3" />}
     </a>
   )
 }

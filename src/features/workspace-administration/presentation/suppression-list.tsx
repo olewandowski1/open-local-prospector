@@ -1,5 +1,6 @@
 "use client"
 
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   createColumnHelper,
@@ -11,10 +12,10 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 import { DataTablePagination, DEFAULT_PAGE_SIZE } from "@/components/data-table-pagination"
+import { Icon } from "@/components/icon"
 import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -39,7 +40,7 @@ const columnClass: Readonly<Record<string, string | undefined>> = {
   createdAt: "hidden @2xl:table-cell",
   actions: "text-right",
 }
-const sortIcons = { asc: ArrowUp, desc: ArrowDown } as const
+const sortIcons = { asc: ArrowUpIcon, desc: ArrowDownIcon } as const
 
 function ariaSort(direction: false | "asc" | "desc") {
   if (direction === "asc") return "ascending"
@@ -174,7 +175,7 @@ export function SuppressionList({
                 <TableRow key={group.id}>
                   {group.headers.map((header) => {
                     const direction = header.column.getIsSorted()
-                    const SortIcon = direction ? sortIcons[direction] : ArrowUpDown
+                    const sortIcon = direction ? sortIcons[direction] : ArrowUpDownIcon
                     return (
                       <TableHead
                         key={header.id}
@@ -189,7 +190,7 @@ export function SuppressionList({
                             onClick={() => header.column.toggleSorting()}
                           >
                             <table.FlexRender header={header} />
-                            <SortIcon aria-hidden="true" className="text-muted-foreground" />
+                            <Icon icon={sortIcon} className="text-muted-foreground" />
                           </Button>
                         ) : (
                           <table.FlexRender header={header} />

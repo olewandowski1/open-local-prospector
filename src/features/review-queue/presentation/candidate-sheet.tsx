@@ -1,16 +1,17 @@
 "use client"
 
 import {
-  Archive,
-  ChevronLeft,
-  ChevronRight,
-  CircleCheck,
-  CircleX,
-  MapPin,
-  RotateCcw,
-  Send,
-} from "lucide-react"
+  ArchiveIcon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  ArrowTurnBackwardIcon,
+  CancelCircleIcon,
+  CheckmarkCircle02Icon,
+  MapPinIcon,
+  SentIcon,
+} from "@hugeicons/core-free-icons"
 import { useEffect, useRef, useState } from "react"
+import { Icon } from "@/components/icon"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -102,7 +103,7 @@ export function CandidateSheet({
                   <SheetTitle className="truncate">{candidate.name}</SheetTitle>
                   <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="inline-flex items-center gap-1">
-                      <MapPin aria-hidden="true" className="size-3.5" />
+                      <Icon icon={MapPinIcon} className="size-3.5" />
                       {candidate.locality}
                     </span>
                     <span aria-hidden="true">·</span>
@@ -159,12 +160,12 @@ export function CandidateSheet({
                   disabled={!canPrevious || busy}
                   onClick={onPrevious}
                 >
-                  <ChevronLeft data-icon="inline-start" aria-hidden="true" />
+                  <Icon icon={ArrowLeft01Icon} data-icon="inline-start" />
                   Previous
                 </Button>
                 <Button variant="outline" size="sm" disabled={!canNext || busy} onClick={onNext}>
                   Next
-                  <ChevronRight data-icon="inline-end" aria-hidden="true" />
+                  <Icon icon={ArrowRight01Icon} data-icon="inline-end" />
                 </Button>
               </div>
             </SheetFooter>
@@ -216,7 +217,7 @@ function CandidateDecisionBar({
     <>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="success" size="sm" disabled={busy} onClick={shortlist}>
-          <CircleCheck data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={CheckmarkCircle02Icon} data-icon="inline-start" />
           Shortlist
           <Kbd className="ml-1">S</Kbd>
         </Button>
@@ -227,7 +228,7 @@ function CandidateDecisionBar({
           onClick={() => setRejecting((current) => !current)}
           aria-expanded={rejecting}
         >
-          <CircleX data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={CancelCircleIcon} data-icon="inline-start" />
           Reject
           <Kbd className="ml-1">R</Kbd>
         </Button>
@@ -238,7 +239,7 @@ function CandidateDecisionBar({
           disabled={busy || reviewStatus === secondaryStatuses[0]}
           onClick={() => onQuickDecision({ status: secondaryStatuses[0] })}
         >
-          <Send data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={SentIcon} data-icon="inline-start" />
           Mark Contacted
         </Button>
         <Button
@@ -247,7 +248,7 @@ function CandidateDecisionBar({
           disabled={busy || reviewStatus === secondaryStatuses[1]}
           onClick={() => onQuickDecision({ status: secondaryStatuses[1] })}
         >
-          <Archive data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={ArchiveIcon} data-icon="inline-start" />
           Mark Archived
         </Button>
         <Button
@@ -256,7 +257,7 @@ function CandidateDecisionBar({
           disabled={busy || reviewStatus === "Unreviewed"}
           onClick={() => onQuickDecision({ status: "Unreviewed" })}
         >
-          <RotateCcw data-icon="inline-start" aria-hidden="true" />
+          <Icon icon={ArrowTurnBackwardIcon} data-icon="inline-start" />
           Reset To Unreviewed
         </Button>
       </div>

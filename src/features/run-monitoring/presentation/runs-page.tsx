@@ -1,5 +1,6 @@
-import { FileSearch, Plus } from "lucide-react"
+import { Add01Icon, FileSearchIcon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
+import { Icon } from "@/components/icon"
 
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
@@ -31,7 +32,7 @@ export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
-                <FileSearch />
+                <Icon icon={FileSearchIcon} />
               </EmptyMedia>
               <EmptyTitle>No Runs Yet</EmptyTitle>
               <EmptyDescription>
@@ -41,7 +42,7 @@ export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date
             </EmptyHeader>
             <EmptyContent>
               <Link href="/runs/new" className={buttonVariants()}>
-                <Plus data-icon="inline-start" aria-hidden="true" />
+                <Icon icon={Add01Icon} data-icon="inline-start" />
                 New Run
               </Link>
             </EmptyContent>

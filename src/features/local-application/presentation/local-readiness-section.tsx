@@ -1,12 +1,18 @@
-import type { LucideIcon } from "lucide-react"
-import { Check, CircleHelp, Database, FolderOpen, X } from "lucide-react"
+import {
+  BrowserIcon,
+  Cancel01Icon,
+  DatabaseIcon,
+  FolderOpenIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons"
+import { Icon, type IconSvg } from "@/components/icon"
 
 import type { DependencyReadiness } from "@/features/local-application/readiness/get-local-readiness"
 
-const dependencyIcons: Record<DependencyReadiness["id"], LucideIcon> = {
-  sqlite: Database,
-  playwright: CircleHelp,
-  disk: FolderOpen,
+const dependencyIcons: Record<DependencyReadiness["id"], IconSvg> = {
+  sqlite: DatabaseIcon,
+  playwright: BrowserIcon,
+  disk: FolderOpenIcon,
 }
 
 const checklistLabels: Record<DependencyReadiness["id"], string> = {
@@ -23,14 +29,14 @@ export function LocalReadinessSection({
   return (
     <ul aria-label="Local Readiness Checklist" className="overflow-hidden rounded-xl border">
       {readiness.map((item) => {
-        const Icon = dependencyIcons[item.id]
+        const dependencyIcon = dependencyIcons[item.id]
         const ready = item.status === "Ready"
-        const StatusIcon = ready ? Check : X
+        const statusIcon = ready ? Tick02Icon : Cancel01Icon
 
         return (
           <li key={item.id} className="flex items-start gap-3 border-b p-4 last:border-b-0">
             <div className="flex size-9 shrink-0 items-center justify-center text-muted-foreground">
-              <Icon aria-hidden="true" />
+              <Icon icon={dependencyIcon} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -43,7 +49,7 @@ export function LocalReadinessSection({
                       : "inline-flex items-center gap-1 text-sm text-destructive"
                   }
                 >
-                  <StatusIcon className="size-3.5" aria-hidden="true" />
+                  <Icon icon={statusIcon} className="size-3.5" />
                   {ready ? "Ready" : "Not Ready"}
                 </span>
               </div>
