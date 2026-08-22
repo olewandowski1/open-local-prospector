@@ -2,7 +2,7 @@ import { Schema } from "effect"
 
 const TrimmedNonEmptyString = Schema.Trim.pipe(Schema.minLength(1))
 
-export const RuntimeIdSchema = Schema.Literal("codex", "claude")
+export const RuntimeIdSchema = Schema.Literal("codex", "claude", "opencode")
 
 export type RuntimeId = typeof RuntimeIdSchema.Type
 
@@ -16,7 +16,16 @@ export const SearchBriefDraftSchema = Schema.Struct({
   runtimeConfiguration: Schema.optional(
     Schema.Struct({
       model: TrimmedNonEmptyString,
-      reasoningEffort: Schema.Literal("none", "minimal", "low", "medium", "high", "xhigh", "max"),
+      reasoningEffort: Schema.Literal(
+        "none",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra",
+      ),
     }),
   ),
   recentBusinessPolicy: Schema.optional(

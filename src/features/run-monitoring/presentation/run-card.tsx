@@ -5,6 +5,7 @@ import { Icon } from "@/components/icon"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import type { RunRow } from "@/features/run-monitoring/presentation/run-presentation"
+import { formatQualified } from "@/features/run-monitoring/presentation/run-presentation"
 
 export function RunCard({ run }: { run: RunRow }) {
   return (
@@ -31,7 +32,9 @@ export function RunCard({ run }: { run: RunRow }) {
       <div className="grid gap-1.5">
         <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
           <span className="tabular-nums">
-            <span className="font-medium text-foreground">{run.qualified}</span> / {run.targetCount}{" "}
+            <span className="font-medium text-foreground">
+              {formatQualified(run.qualified, run.targetCount, " / ")}
+            </span>{" "}
             Qualified
           </span>
           <span className="tabular-nums">{run.completion}%</span>

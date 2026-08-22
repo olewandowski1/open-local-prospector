@@ -83,6 +83,14 @@ export function makeSubscriptionDiscoveryRuntime(
 
 /** Searching needs the web-search tool and no output schema; a schema here costs report quality. */
 function reportCommand(brief: DiscoveryBrief, directory: string) {
+  if (brief.runtime === "opencode") {
+    return {
+      arguments: ["run", ...opencodeModelArguments(brief), "--dir", directory],
+      cwd: directory,
+      // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
+      settleOnExitMilliseconds: 2_000,
+    }
+  }
   if (brief.runtime === "codex") {
     return {
       arguments: [
@@ -127,6 +135,15 @@ function reportCommand(brief: DiscoveryBrief, directory: string) {
 
 /** Structuring reads the report it is given and nothing else, so every tool is withdrawn. */
 function structureCommand(brief: DiscoveryBrief, directory: string) {
+  if (brief.runtime === "opencode") {
+    // OpenCode exposes no flag to withdraw tools, so the prompt's instruction plus the contract
+    // verifier carry the containment: anything not written down in the report is dropped.
+    return Effect.succeed({
+      arguments: ["run", ...opencodeModelArguments(brief), "--dir", directory],
+      cwd: directory,
+      settleOnExitMilliseconds: 2_000,
+    })
+  }
   if (brief.runtime === "codex") {
     const schemaPath = join(directory, "discovery-structure.schema.json")
     return Effect.tryPromise({
@@ -202,23 +219,38 @@ function claudeModelArguments(brief: DiscoveryBrief): readonly string[] {
   ]
 }
 
+/** No reasoning-effort argument: no hosted model documents a variant. */
+function opencodeModelArguments(brief: DiscoveryBrief): readonly string[] {
+  if (!brief.runtimeConfiguration) return []
+  return ["-m", brief.runtimeConfiguration.model]
+}
+
 /** The report call asks for prose, so stdout is the report unless a runtime wraps it in JSON. */
-function readReportText(_runtime: RuntimeId, result: RuntimeProcessResult): string {
-  try {
-    const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
-    if (typeof wrapper.result === "string") return wrapper.result
-  } catch {
-    // Plain text is the expected shape; only a wrapped runtime needs unwrapping.
+function readReportText(runtime: RuntimeId, result: RuntimeProcessResult): string {
+  if (runtime !== "opencode") {
+    try {
+      const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
+      if (typeof wrapper.result === "string") return wrapper.result
+    } catch {
+      // Plain text is the expected shape; only a wrapped runtime needs unwrapping.
+    }
   }
   return result.stdout
 }
 
 function parseStructuredOutput(runtime: RuntimeId, result: RuntimeProcessResult): unknown {
   if (runtime === "codex") return JSON.parse(result.stdout)
+  if (runtime === "opencode") return JSON.parse(stripCodeFence(result.stdout))
   const wrapper = JSON.parse(result.stdout) as Record<string, unknown>
   if (wrapper.structured_output) return wrapper.structured_output
   if (typeof wrapper.result === "string") return JSON.parse(wrapper.result)
   return wrapper
+}
+
+/** A runtime with no schema flag answers in prose fences; the object inside is still the answer. */
+function stripCodeFence(text: string): string {
+  const fenced = text.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/u)
+  return fenced ? fenced[1] : text
 }
 
 function withExecutable<A>(

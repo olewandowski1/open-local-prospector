@@ -3,7 +3,7 @@ import { Data, type Effect } from "effect"
 import type { DiscoveryStructure } from "@/features/business-discovery/domain/discovery-structure"
 
 export type DiscoveryBrief = Readonly<{
-  runtime: "codex" | "claude"
+  runtime: "codex" | "claude" | "opencode"
   runtimeConfiguration?: Readonly<{ model: string; reasoningEffort: string }>
   query: string
   category: string

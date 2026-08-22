@@ -60,7 +60,7 @@ test.describe
       )
 
       const original = (await effortOf(steering()).textContent())?.trim() ?? ""
-      const replacement = original === "low" ? "medium" : "low"
+      const replacement = original === "Low" ? "Medium" : "Low"
 
       await effortOf(steering()).click()
       await page.getByRole("option", { name: replacement, exact: true }).click()
@@ -184,10 +184,10 @@ test("reports local dependency readiness without rendering secrets", async ({ pa
 
   await page.getByRole("link", { name: "Subscription" }).click()
   const runtimes = page.getByRole("region", { name: "Subscription runtimes" })
-  // The section streams in only once both provider CLIs have been probed.
+  // The section streams in only once every provider CLI has been probed.
   await expect(runtimes).toContainText("Codex", { timeout: 20_000 })
   await expect(runtimes).toContainText("Claude")
-  await expect(runtimes).not.toContainText("OpenCode")
+  await expect(runtimes).toContainText("OpenCode")
   await expect(page.locator("body")).not.toContainText("accessToken")
 })
 

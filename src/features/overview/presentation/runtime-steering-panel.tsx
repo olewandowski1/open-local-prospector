@@ -28,6 +28,7 @@ import {
   RuntimeProviderIcon,
   type RuntimeReadiness,
   type RuntimeReasoningEffort,
+  reasoningEffortLabel,
   resolveRuntimeConfiguration,
   runtimeModelOptions,
   runtimeReasoningEfforts,
@@ -220,7 +221,10 @@ export function RuntimeSteeringPanel({
                 </div>
               ) : (
                 <Select
-                  items={efforts.map((effort) => ({ label: effort, value: effort }))}
+                  items={efforts.map((effort) => ({
+                    label: reasoningEffortLabel(effort),
+                    value: effort,
+                  }))}
                   value={draft.reasoningEffort}
                   onValueChange={(value) =>
                     value &&
@@ -233,15 +237,15 @@ export function RuntimeSteeringPanel({
                   <SelectTrigger
                     id="steering-effort"
                     aria-label="Reasoning Effort"
-                    className="w-full capitalize"
+                    className="w-full"
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       {efforts.map((effort) => (
-                        <SelectItem className="capitalize" key={effort} value={effort}>
-                          {effort}
+                        <SelectItem key={effort} value={effort}>
+                          {reasoningEffortLabel(effort)}
                         </SelectItem>
                       ))}
                     </SelectGroup>

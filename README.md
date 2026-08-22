@@ -89,6 +89,8 @@ Knowing the edges matters as much as knowing the features.
   - Codex — `npm install -g @openai/codex`, then `codex login`
   - Claude — `irm https://claude.ai/install.ps1 | iex` on Windows, or
     `curl -fsSL https://claude.ai/install.sh | bash`, then `claude auth login`
+  - OpenCode — `npm install -g opencode-ai`. No login needed: its hosted catalog answers without
+    one, and a provider login only adds more models (`opencode providers login`).
 
 No Docker. No PostgreSQL. No search API key. No Python or C++ toolchain — `better-sqlite3` installs
 from its prebuilt binaries.
@@ -146,6 +148,7 @@ Everything here is optional and non-secret. Copy `.env.local.example` to `.env.l
 | `PROSPECTOR_GEOCODER_URL` | Nominatim `/search` | Any compatible geocoding endpoint |
 | `PROSPECTOR_CODEX_EXECUTABLE` | resolved from `PATH` | Absolute path to the Codex CLI |
 | `PROSPECTOR_CLAUDE_EXECUTABLE` | resolved from `PATH` | Absolute path to the Claude CLI |
+| `PROSPECTOR_OPENCODE_EXECUTABLE` | resolved from `PATH` | Absolute path to the OpenCode CLI |
 
 `.local/` is git-ignored. If you override a path, set it in the terminal that runs setup as well.
 

@@ -133,6 +133,13 @@ function executableCandidates(
     )
   }
 
+  // The npm shim for OpenCode is a .cmd wrapper; spawn needs the real executable it hides.
+  if (runtimeId === "opencode" && platform === "win32" && environment.APPDATA) {
+    candidates.push(
+      join(environment.APPDATA, "npm", "node_modules", "opencode-ai", "bin", "opencode.exe"),
+    )
+  }
+
   return [...new Set(candidates)]
 }
 

@@ -10,7 +10,7 @@ export function RuntimeReadinessSkeleton() {
       aria-label="Checking Subscription Runtimes"
       className="overflow-hidden rounded-xl border"
     >
-      {["codex", "claude"].map((runtime, index, runtimes) => (
+      {["codex", "claude", "opencode"].map((runtime, index, runtimes) => (
         <div key={runtime}>
           <div className="flex items-center gap-4 p-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">

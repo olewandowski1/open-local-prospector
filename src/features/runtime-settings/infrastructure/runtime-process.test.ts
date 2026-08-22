@@ -1,6 +1,12 @@
+import { tmpdir } from "node:os"
+
+import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 
-import { classifyRuntimeFailure } from "@/features/runtime-settings/infrastructure/runtime-process"
+import {
+  classifyRuntimeFailure,
+  executeRuntimeProcess,
+} from "@/features/runtime-settings/infrastructure/runtime-process"
 
 describe("runtime process diagnostics", () => {
   it("classifies strict structured-output schema failures without persisting stderr", () => {
@@ -36,4 +42,26 @@ describe("runtime process diagnostics", () => {
       code: "runtime-failed",
     })
   })
+})
+
+describe("executeRuntimeProcess", () => {
+  // A descendant inheriting stdout outlives its parent, so stdio never closes even though the
+  // answer is complete; this is how OpenCode behaves after every call.
+  const holdsThePipe = `console.log("done"); require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 5000)"], { stdio: ["ignore", "inherit", "inherit"] }).unref()`
+
+  it("settles shortly after exit when a descendant keeps the output pipes open", async () => {
+    const result = await Effect.runPromise(
+      executeRuntimeProcess({
+        executable: process.execPath,
+        arguments: ["-e", holdsThePipe],
+        input: "",
+        cwd: tmpdir(),
+        timeoutMilliseconds: 30_000,
+        settleOnExitMilliseconds: 500,
+      }),
+    )
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout.trim()).toBe("done")
+  }, 20_000)
 })

@@ -1,6 +1,6 @@
 import { Context, Data, Effect, Either, Option } from "effect"
 
-export const runtimeIds = ["codex", "claude"] as const
+export const runtimeIds = ["codex", "claude", "opencode"] as const
 export type RuntimeId = (typeof runtimeIds)[number]
 
 export function isRuntimeId(value: string): value is RuntimeId {
@@ -57,6 +57,7 @@ type RuntimeDefinition = Readonly<{
   installInstruction: string
   loginInstruction: string
   updateInstruction: string
+  readyDetail: string
 }>
 
 const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
@@ -75,6 +76,21 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     installInstruction: "Run: npm install -g @openai/codex, then: codex login",
     loginInstruction: "Run in your terminal: codex login",
     updateInstruction: "Run: npm update -g @openai/codex",
+    readyDetail: "Subscription login reported by the official CLI.",
+  },
+  opencode: {
+    id: "opencode",
+    label: "OpenCode",
+    versionArguments: ["--version"],
+    authenticationArguments: ["providers", "list"],
+    // The hosted catalog answers without a provider login, so the credential listing is a
+    // functional probe rather than a subscription gate; any exit 0 output counts as ready.
+    minimumVersion: [1, 18, 0],
+    parseAuthentication: ({ exitCode }) => (exitCode === 0 ? "ready" : "unsupported"),
+    installInstruction: "Run: npm install -g opencode-ai",
+    loginInstruction: "Optional. Run in your terminal: opencode providers login",
+    updateInstruction: "Run: opencode upgrade",
+    readyDetail: "Hosted catalog available; provider login optional.",
   },
   claude: {
     id: "claude",
@@ -101,6 +117,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     loginInstruction: "Run in your terminal: claude auth login",
     updateInstruction:
       "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash",
+    readyDetail: "Subscription login reported by the official CLI.",
   },
 }
 
@@ -159,7 +176,7 @@ export const getRuntimeReadiness = (runtimeId: RuntimeId) =>
       )
     }
 
-    return readiness(definition, "Ready", "Subscription login reported by the official CLI.", {
+    return readiness(definition, "Ready", definition.readyDetail, {
       version: version.display,
     })
   })

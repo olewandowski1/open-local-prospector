@@ -23,16 +23,19 @@ const readyAuthentication: Record<RuntimeId, RuntimeCommandResult> = {
     }),
     stderr: "",
   },
+  opencode: { exitCode: 0, stdout: "0 credentials", stderr: "" },
 }
 
 const loggedOutAuthentication: Record<RuntimeId, RuntimeCommandResult> = {
   codex: { exitCode: 1, stdout: "Not logged in", stderr: "" },
   claude: { exitCode: 0, stdout: JSON.stringify({ loggedIn: false }), stderr: "" },
+  opencode: { exitCode: 0, stdout: "0 credentials", stderr: "" },
 }
 
 const versionOutput: Record<RuntimeId, string> = {
   codex: "codex-cli 0.99.0",
   claude: "2.4.1 (Claude Code)",
+  opencode: "1.18.21 (opencode)",
 }
 
 function runProbe(runtimeId: RuntimeId, service: RuntimeProbeService) {
@@ -103,6 +106,64 @@ describe.each(["codex", "claude"] as const)("%s runtime readiness", (runtimeId) 
     }[runtimeId]
     expect(execute).toHaveBeenNthCalledWith(1, `/bin/${runtimeId}`, ["--version"])
     expect(execute).toHaveBeenNthCalledWith(2, `/bin/${runtimeId}`, expectedAuthenticationArguments)
+  })
+})
+
+describe("opencode runtime readiness", () => {
+  it.each(["Ready", "Missing", "Unreachable", "Unsupported Version"] as const)(
+    "classifies %s deterministically",
+    async (status) => {
+      const result = await runProbe("opencode", serviceFor("opencode", status))
+
+      expect(result.status).toBe(status)
+      expect(result.runtimeId).toBe("opencode")
+    },
+  )
+
+  // The hosted catalog answers without a provider login, so credentials never gate readiness.
+  it("is ready with zero credentials and can never report Logged Out", async () => {
+    const ready = await runProbe("opencode", serviceFor("opencode", "Ready"))
+    expect(ready.status).toBe("Ready")
+    // Ready means nothing is asked of the reader; the optional login stays out of the way.
+    expect(ready.detail).toBe("Hosted catalog available; provider login optional.")
+    expect(ready.terminalInstruction).toBeUndefined()
+
+    const loggedOut = await runProbe("opencode", serviceFor("opencode", "Logged Out"))
+    expect(loggedOut.status).toBe("Ready")
+  })
+
+  it("reports Unsupported Version when the credential listing fails", async () => {
+    let call = 0
+    const result = await runProbe("opencode", {
+      resolveExecutable: () => Effect.succeed(Option.some("/bin/opencode")),
+      execute: () => {
+        call += 1
+        return Effect.succeed(
+          call === 1
+            ? { exitCode: 0, stdout: versionOutput.opencode, stderr: "" }
+            : { exitCode: 1, stdout: "", stderr: "unknown command" },
+        )
+      },
+    })
+
+    expect(result.status).toBe("Unsupported Version")
+  })
+
+  it("uses only the adapter's fixed status and version arguments", async () => {
+    const execute = vi
+      .fn<RuntimeProbeService["execute"]>()
+      .mockReturnValueOnce(
+        Effect.succeed({ exitCode: 0, stdout: versionOutput.opencode, stderr: "" }),
+      )
+      .mockReturnValueOnce(Effect.succeed(readyAuthentication.opencode))
+
+    await runProbe("opencode", {
+      resolveExecutable: () => Effect.succeed(Option.some("/bin/opencode")),
+      execute,
+    })
+
+    expect(execute).toHaveBeenNthCalledWith(1, "/bin/opencode", ["--version"])
+    expect(execute).toHaveBeenNthCalledWith(2, "/bin/opencode", ["providers", "list"])
   })
 })
 

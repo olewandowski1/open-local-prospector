@@ -113,3 +113,14 @@ function titleCase(value: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ")
 }
+
+/**
+ * "5/5 (+2 More)". A run stops looking once it meets its target, but the businesses already in
+ * flight still finish, so it can pass it — and "7/5" reads as a fault rather than as a surplus.
+ */
+export function formatQualified(qualified: number, target: number, separator = "/"): string {
+  const counted = Math.min(qualified, target)
+  const surplus = Math.max(0, qualified - target)
+  const met = `${counted}${separator}${target}`
+  return surplus > 0 ? `${met} (+${surplus} More)` : met
+}

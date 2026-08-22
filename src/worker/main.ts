@@ -23,6 +23,7 @@ import {
   makeAssessmentTaskExecutor,
   makeClaudeAssessmentRuntime,
   makeCodexAssessmentRuntime,
+  makeOpencodeAssessmentRuntime,
   makeSqliteAssessmentRepository,
 } from "@/features/website-assessment"
 import {
@@ -45,9 +46,11 @@ const program = Effect.gen(function* () {
   yield* Effect.try(() => migrateLocalDatabase(localConfig.databasePath))
   const codexExecutable = yield* resolveRuntimeExecutable("codex")
   const claudeExecutable = yield* resolveRuntimeExecutable("claude")
+  const opencodeExecutable = yield* resolveRuntimeExecutable("opencode")
   const runtimeExecutables = {
     ...(Option.isSome(codexExecutable) ? { codex: codexExecutable.value } : {}),
     ...(Option.isSome(claudeExecutable) ? { claude: claudeExecutable.value } : {}),
+    ...(Option.isSome(opencodeExecutable) ? { opencode: opencodeExecutable.value } : {}),
   }
   const discoveryRuntime = makeSubscriptionDiscoveryRuntime(runtimeExecutables)
   const executeDiscovery = makeDiscoveryTaskExecutor(
@@ -73,6 +76,15 @@ const program = Effect.gen(function* () {
             claudeExecutable.value,
             undefined,
             yield* runtimeVersion(claudeExecutable.value),
+          ),
+        }
+      : {}),
+    ...(Option.isSome(opencodeExecutable)
+      ? {
+          opencode: makeOpencodeAssessmentRuntime(
+            opencodeExecutable.value,
+            undefined,
+            yield* runtimeVersion(opencodeExecutable.value),
           ),
         }
       : {}),

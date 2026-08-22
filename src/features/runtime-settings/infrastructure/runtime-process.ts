@@ -17,6 +17,12 @@ export type RuntimeProcessRequest = Readonly<{
   timeoutMilliseconds?: number
   inputLimitBytes?: number
   outputLimitBytes?: number
+  /**
+   * Settle this long after the process exits rather than when its output pipes close. A CLI that
+   * leaves a helper process holding inherited stdio never produces "close", even though its
+   * answer is complete and its exit code final; waiting for close only burns the timeout.
+   */
+  settleOnExitMilliseconds?: number
 }>
 
 export type RuntimeProcessResult = Readonly<{ exitCode: number; stdout: string }>
@@ -74,11 +80,21 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
         ),
       ),
     )
-    child.on("close", (exitCode) => {
+    const settle = (exitCode: number | null) => {
       if (exitCode !== 0) {
         finish(Effect.fail(classifyRuntimeFailure(stderrTail.toString("utf8"), exitCode)))
       } else finish(Effect.succeed({ exitCode: 0, stdout: Buffer.concat(stdout).toString("utf8") }))
-    })
+    }
+    child.on("close", (exitCode) => settle(exitCode))
+    if (request.settleOnExitMilliseconds !== undefined) {
+      child.on("exit", (exitCode) => {
+        setTimeout(() => {
+          child.stdout.destroy()
+          child.stderr.destroy()
+          settle(exitCode)
+        }, request.settleOnExitMilliseconds)
+      })
+    }
     child.stdin.end(request.input)
     return Effect.sync(() => {
       if (!settled) child.kill()

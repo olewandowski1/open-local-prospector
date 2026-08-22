@@ -10,8 +10,8 @@ import {
 import { runtimeIds } from "@/features/runtime-settings/application/runtime-readiness"
 
 describe("runtime execution configuration", () => {
-  it("offers only OpenAI and Anthropic subscription runtimes", () => {
-    expect(runtimeIds).toEqual(["codex", "claude"])
+  it("offers OpenAI, Anthropic, and OpenCode subscription runtimes", () => {
+    expect(runtimeIds).toEqual(["codex", "claude", "opencode"])
   })
 
   it("names Claude models with their versions", () => {
@@ -22,6 +22,21 @@ describe("runtime execution configuration", () => {
     ])
   })
 
+  it("offers the hosted OpenCode model that runs without a provider login", () => {
+    expect(runtimeModelOptions("opencode")).toEqual([
+      {
+        value: "opencode/x-preview-f-free",
+        label: "Ox Alpha Free",
+        detail: expect.any(String),
+        reasoningEfforts: [],
+      },
+    ])
+    expect(defaultRuntimeExecutionConfiguration("opencode")).toEqual({
+      model: "opencode/x-preview-f-free",
+      reasoningEffort: "none",
+    })
+  })
+
   it("exposes the effort ladder each model actually accepts", () => {
     expect(runtimeReasoningEfforts("claude", "claude-opus-5")).toEqual([
       "low",
@@ -30,8 +45,35 @@ describe("runtime execution configuration", () => {
       "xhigh",
       "max",
     ])
-    expect(runtimeReasoningEfforts("codex", "gpt-5.6-sol")).toContain("minimal")
-    expect(runtimeReasoningEfforts("codex", "gpt-5.6-sol")).not.toContain("max")
+    expect(runtimeReasoningEfforts("codex", "gpt-5.6-sol")).toEqual([
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+    ])
+  })
+
+  it("offers Ultra where the model manifest documents it and Max on every current Codex model", () => {
+    expect(runtimeReasoningEfforts("codex", "gpt-5.6-terra")).toEqual([
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra",
+    ])
+    expect(runtimeReasoningEfforts("codex", "gpt-5.6-luna")).toEqual([
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+    ])
+    for (const model of ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]) {
+      expect(runtimeReasoningEfforts("codex", model)).not.toContain("none")
+      expect(runtimeReasoningEfforts("codex", model)).not.toContain("minimal")
+    }
   })
 
   it("reports models that take no reasoning effort", () => {

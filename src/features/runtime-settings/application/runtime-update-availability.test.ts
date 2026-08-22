@@ -54,8 +54,10 @@ describe("isUpdateAvailable", () => {
 
 describe("RUNTIME_PACKAGES", () => {
   it("names a published package for every supported runtime", () => {
+    // OpenCode publishes unscoped; Codex and Claude publish under their organisations.
+    const npmPackageName = /^(@[\w-]+\/)?[\w.-]+$/u
     for (const runtimeId of runtimeIds) {
-      expect(RUNTIME_PACKAGES[runtimeId]).toMatch(/^@[\w-]+\/[\w-]+$/u)
+      expect(RUNTIME_PACKAGES[runtimeId]).toMatch(npmPackageName)
     }
   })
 })

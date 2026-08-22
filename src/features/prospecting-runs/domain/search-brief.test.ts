@@ -47,7 +47,7 @@ describe("Search Brief", () => {
     ).toBe("Failure")
   })
 
-  it.each(["codex", "claude"])("accepts supported runtime %s", async (runtime) => {
+  it.each(["codex", "claude", "opencode"])("accepts supported runtime %s", async (runtime) => {
     const result = await Effect.runPromise(decodeSearchBrief({ ...validBrief, runtime }))
     expect(result.runtime).toBe(runtime)
   })

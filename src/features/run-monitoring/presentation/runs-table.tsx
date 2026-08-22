@@ -34,7 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { RunRow } from "@/features/run-monitoring/presentation/run-presentation"
+import {
+  formatQualified,
+  type RunRow,
+} from "@/features/run-monitoring/presentation/run-presentation"
 import { RunDeleteDialog } from "@/features/workspace-administration/client"
 
 const features = tableFeatures({
@@ -90,7 +93,7 @@ const columns = helper.columns([
         <div className="flex min-w-32 items-center gap-2">
           <Progress value={context.getValue()} className="flex-1" />
           <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {run.qualified}/{run.targetCount}
+            {formatQualified(run.qualified, run.targetCount)}
           </span>
         </div>
       )

@@ -57,15 +57,39 @@ export function makeClaudeAssessmentRuntime(
   )
 }
 
+export function makeOpencodeAssessmentRuntime(
+  executable: string,
+  runProcess: RuntimeProcess = executeRuntimeProcess,
+  version?: string,
+): AssessmentRuntime {
+  return makeRuntime(
+    "opencode",
+    executable,
+    runProcess,
+    version,
+    (directory, configuration) => ({
+      // No reasoning-effort argument: no hosted model documents a variant.
+      arguments: ["run", ...(configuration ? ["-m", configuration.model] : []), "--dir", directory],
+      cwd: directory,
+      // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
+      settleOnExitMilliseconds: 2_000,
+    }),
+    (result) => JSON.parse(stripCodeFence(result.stdout)),
+  )
+}
+
 function makeRuntime(
-  id: "claude",
+  id: AssessmentRuntime["id"],
   executable: string,
   runProcess: RuntimeProcess,
   version: string | undefined,
   command: (
     directory: string,
     configuration?: Readonly<{ model: string; reasoningEffort: string }>,
-  ) => Pick<Parameters<RuntimeProcess>[0], "arguments" | "cwd" | "environment">,
+  ) => Pick<
+    Parameters<RuntimeProcess>[0],
+    "arguments" | "cwd" | "environment" | "settleOnExitMilliseconds"
+  >,
   parse: (result: RuntimeProcessResult) => unknown,
 ): AssessmentRuntime {
   return {
@@ -105,6 +129,12 @@ function parseClaude(result: RuntimeProcessResult): unknown {
   if (wrapper.structured_output) return wrapper.structured_output
   if (typeof wrapper.result === "string") return JSON.parse(wrapper.result)
   return wrapper
+}
+
+/** OpenCode has no schema flag, so it answers in prose fences; the object inside is the answer. */
+function stripCodeFence(text: string): string {
+  const fenced = text.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/u)
+  return fenced ? fenced[1] : text
 }
 function transient(code: string, message: string) {
   return new AssessmentRuntimeError({ classification: "Transient", code, message })

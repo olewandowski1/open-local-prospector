@@ -9,7 +9,7 @@ export type AssessmentTarget = Readonly<{
   runBusinessId: string
   canonicalBusinessId: string
   inspectionId: string
-  runtimeId: "codex" | "claude"
+  runtimeId: "codex" | "claude" | "opencode"
   runtimeConfiguration?: RuntimeExecutionConfiguration
   inspectionConfigurationVersion: string
   evidence: AssessmentEvidenceEnvelope

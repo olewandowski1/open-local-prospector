@@ -8,6 +8,7 @@ export type RuntimeReasoningEffort =
   | "high"
   | "xhigh"
   | "max"
+  | "ultra"
 
 export type RuntimeExecutionConfiguration = Readonly<{
   model: string
@@ -21,15 +22,20 @@ export type RuntimeModelOption = Readonly<{
   reasoningEfforts: readonly RuntimeReasoningEffort[]
 }>
 
-// Codex CLI passes the effort through as `model_reasoning_effort`.
-const codexEfforts: readonly RuntimeReasoningEffort[] = [
-  "none",
-  "minimal",
+// Codex CLI passes the effort through as `model_reasoning_effort`. The ladders below mirror the
+// per-model `supported_reasoning_levels` of the Codex models manifest (checked 2026-08): every
+// current model starts at "low"; "ultra" is offered by Terra alone. "none" and "minimal" remain in
+// the union for values already stored, but no current Codex model accepts them.
+const solEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
+const terraEfforts: readonly RuntimeReasoningEffort[] = [
   "low",
   "medium",
   "high",
   "xhigh",
+  "max",
+  "ultra",
 ]
+const lunaEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
 
 // Claude Code passes the effort through as `--effort`.
 const claudeEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
@@ -40,19 +46,19 @@ const models: Readonly<Record<RuntimeId, readonly RuntimeModelOption[]>> = {
       value: "gpt-5.6-sol",
       label: "GPT-5.6 Sol",
       detail: "Frontier Codex model for complex agentic work.",
-      reasoningEfforts: codexEfforts,
+      reasoningEfforts: solEfforts,
     },
     {
       value: "gpt-5.6-terra",
       label: "GPT-5.6 Terra",
       detail: "Balanced Codex model for everyday agentic work.",
-      reasoningEfforts: codexEfforts,
+      reasoningEfforts: terraEfforts,
     },
     {
       value: "gpt-5.6-luna",
       label: "GPT-5.6 Luna",
       detail: "Fast, lightweight Codex model.",
-      reasoningEfforts: codexEfforts,
+      reasoningEfforts: lunaEfforts,
     },
   ],
   claude: [
@@ -75,11 +81,21 @@ const models: Readonly<Record<RuntimeId, readonly RuntimeModelOption[]>> = {
       reasoningEfforts: [],
     },
   ],
+  opencode: [
+    {
+      value: "opencode/x-preview-f-free",
+      label: "Ox Alpha Free",
+      detail:
+        "Unlimited hosted model with web search. Runs without a provider login and takes no reasoning effort.",
+      reasoningEfforts: [],
+    },
+  ],
 }
 
 const defaults: Readonly<Record<RuntimeId, RuntimeExecutionConfiguration>> = {
-  codex: { model: "gpt-5.6-sol", reasoningEffort: "medium" },
+  codex: { model: "gpt-5.6-luna", reasoningEffort: "max" },
   claude: { model: "claude-sonnet-5", reasoningEffort: "high" },
+  opencode: { model: "opencode/x-preview-f-free", reasoningEffort: "none" },
 }
 
 export function runtimeModelOptions(runtimeId: RuntimeId): readonly RuntimeModelOption[] {

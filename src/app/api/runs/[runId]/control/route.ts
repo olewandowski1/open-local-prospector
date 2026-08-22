@@ -17,12 +17,15 @@ export async function POST(request: Request, context: { params: Promise<{ runId:
 
 function isControlRequest(
   value: unknown,
-): value is { control: RunControl; runtime?: "codex" | "claude" } {
+): value is { control: RunControl; runtime?: "codex" | "claude" | "opencode" } {
   return (
     typeof value === "object" &&
     value !== null &&
     "control" in value &&
     (value.control === "Pause" || value.control === "Resume" || value.control === "Cancel") &&
-    (!("runtime" in value) || value.runtime === "codex" || value.runtime === "claude")
+    (!("runtime" in value) ||
+      value.runtime === "codex" ||
+      value.runtime === "claude" ||
+      value.runtime === "opencode")
   )
 }

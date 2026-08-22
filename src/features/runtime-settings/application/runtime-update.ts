@@ -52,10 +52,11 @@ function summarize(output: string): string {
   return lines.slice(-3).join(" ").slice(0, MAX_DETAIL_LENGTH)
 }
 
-// Both CLIs publish to npm, the one place an available update is visible without installing it.
+// All three CLIs publish to npm, the one place an available update is visible without installing it.
 export const RUNTIME_PACKAGES: Readonly<Record<RuntimeId, string>> = {
   codex: "@openai/codex",
   claude: "@anthropic-ai/claude-code",
+  opencode: "opencode-ai",
 }
 
 export type RuntimeUpdateStatus = Readonly<{

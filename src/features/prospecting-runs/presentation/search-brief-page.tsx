@@ -45,7 +45,9 @@ import {
   RuntimeProviderIcon,
   type RuntimeReadiness,
   type RuntimeReasoningEffort,
+  reasoningEffortLabel,
   resolveRuntimeConfiguration,
+  runtimeModelLabel,
   runtimeModelOptions,
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
@@ -482,7 +484,7 @@ export function SearchBriefPage({
                       ) : (
                         <Select
                           items={selectedEfforts.map((effort) => ({
-                            label: effort,
+                            label: reasoningEffortLabel(effort),
                             value: effort,
                           }))}
                           value={draft.reasoningEffort}
@@ -491,14 +493,14 @@ export function SearchBriefPage({
                             invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
                           }
                         >
-                          <SelectTrigger id="reasoning-effort" className="w-full capitalize">
+                          <SelectTrigger id="reasoning-effort" className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
                               {selectedEfforts.map((effort) => (
-                                <SelectItem className="capitalize" key={effort} value={effort}>
-                                  {effort}
+                                <SelectItem key={effort} value={effort}>
+                                  {reasoningEffortLabel(effort)}
                                 </SelectItem>
                               ))}
                             </SelectGroup>
@@ -644,8 +646,14 @@ export function SearchBriefPage({
                     <p className="mt-1 text-xs text-muted-foreground">{preflight.estimate.note}</p>
                     {preflight.draft.runtimeConfiguration ? (
                       <p className="mt-2 text-xs font-medium">
-                        {preflight.runtime.label} · {preflight.draft.runtimeConfiguration.model} ·{" "}
-                        {preflight.draft.runtimeConfiguration.reasoningEffort} reasoning
+                        {preflight.runtime.label} ·{" "}
+                        {runtimeModelLabel(
+                          preflight.draft.runtime,
+                          preflight.draft.runtimeConfiguration.model,
+                        )}{" "}
+                        ·{" "}
+                        {reasoningEffortLabel(preflight.draft.runtimeConfiguration.reasoningEffort)}{" "}
+                        reasoning
                       </p>
                     ) : null}
                   </section>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { type RunSummary, runCompletionStates } from "@/features/run-monitoring/domain/run-progress"
 import {
+  formatQualified,
   formatUpdatedAt,
   humanizeStage,
   runStatusPresentation,
@@ -126,5 +127,17 @@ describe("runStatusPresentation", () => {
       expect(presentation.label.length).toBeLessThanOrEqual(12)
       expect(presentation.variant).not.toBe("outline")
     }
+  })
+})
+
+describe("formatQualified", () => {
+  it("reads as a surplus rather than a fault once the target is passed", () => {
+    expect(formatQualified(7, 5)).toBe("5/5 (+2 More)")
+    expect(formatQualified(7, 5, " of ")).toBe("5 of 5 (+2 More)")
+  })
+
+  it("stays a plain fraction while the run is still short of its target", () => {
+    expect(formatQualified(0, 5)).toBe("0/5")
+    expect(formatQualified(5, 5)).toBe("5/5")
   })
 })

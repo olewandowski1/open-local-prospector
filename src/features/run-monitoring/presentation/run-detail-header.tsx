@@ -19,13 +19,18 @@ import type { RunControl } from "@/features/run-monitoring/application/run-repos
 import type { RunDetail } from "@/features/run-monitoring/domain/run-progress"
 import { runControlAvailability } from "@/features/run-monitoring/presentation/run-detail-presentation"
 import {
+  formatQualified,
   formatUpdatedAt,
   humanizeStage,
   isRunSettled,
   runStatusPresentation,
 } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunProgressFunnel } from "@/features/run-monitoring/presentation/run-progress-funnel"
-import { RuntimeProviderIcon } from "@/features/runtime-settings/client"
+import {
+  RuntimeProviderIcon,
+  reasoningEffortLabel,
+  runtimeModelLabel,
+} from "@/features/runtime-settings/client"
 import { RunDeleteDialog } from "@/features/workspace-administration/client"
 import { cn } from "@/lib/utils"
 
@@ -146,7 +151,7 @@ export function RunDetailHeader({
               <RuntimeProviderIcon runtimeId={run.searchBrief.runtime} />
               <span className="truncate">
                 {configuration
-                  ? `${configuration.model} · ${configuration.reasoningEffort}`
+                  ? `${runtimeModelLabel(run.searchBrief.runtime, configuration.model)} · ${reasoningEffortLabel(configuration.reasoningEffort)}`
                   : "Model Not Recorded"}
               </span>
             </span>
@@ -174,7 +179,7 @@ export function RunDetailHeader({
             <div className="flex items-baseline justify-between gap-4 text-sm">
               <span className="text-muted-foreground">Qualified Target</span>
               <span className="font-medium tabular-nums">
-                {qualified} of {target} · {completion}%
+                {formatQualified(qualified, target, " of ")} · {completion}%
               </span>
             </div>
             <Progress value={completion} />
