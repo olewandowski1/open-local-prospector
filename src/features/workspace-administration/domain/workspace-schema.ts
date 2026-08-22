@@ -17,6 +17,7 @@ export const PROSPECTING_DATA_TABLES = [
   "canonical_businesses",
   "discovery_occurrences",
   "discovered_businesses",
+  "discovery_reports",
   "discovery_queries",
   "technical_run_events",
   "run_metrics",

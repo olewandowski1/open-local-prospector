@@ -45,6 +45,8 @@ export const discoveredBusinesses = sqliteTable(
     resultUrl: text("result_url").notNull(),
     description: text(),
     rawAttributes: text("raw_attributes").notNull(),
+    // What the structuring step said about this business, kept so a run can be explained later.
+    structured: text(),
     // A page shares one `discovered_at`, so without this the only tiebreak is the random primary key.
     discoveryRank: integer("discovery_rank").notNull().default(0),
     discoveredAt: integer("discovered_at", { mode: "timestamp_ms" }).notNull(),
@@ -76,4 +78,27 @@ export const discoveryOccurrences = sqliteTable(
     discoveredAt: integer("discovered_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [index("discovery_occurrences_run_idx").on(table.runId, table.discoveredAt)],
+)
+
+export const discoveryReports = sqliteTable(
+  "discovery_reports",
+  {
+    id: text().primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => prospectingRuns.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => runTasks.id, { onDelete: "set null" }),
+    queryText: text("query_text").notNull(),
+    reportText: text("report_text").notNull(),
+    reportPromptVersion: text("report_prompt_version").notNull(),
+    structurePromptVersion: text("structure_prompt_version").notNull(),
+    structureSchemaVersion: text("structure_schema_version").notNull(),
+    runtimeId: text("runtime_id").notNull(),
+    runtimeModel: text("runtime_model"),
+    businessesReturned: integer("businesses_returned").notNull(),
+    businessesVerified: integer("businesses_verified").notNull(),
+    rejections: text().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [index("discovery_reports_run_idx").on(table.runId, table.createdAt)],
 )
