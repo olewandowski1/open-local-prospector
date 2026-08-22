@@ -37,6 +37,9 @@ const terraEfforts: readonly RuntimeReasoningEffort[] = [
 ]
 const lunaEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
 
+// OpenCode calls the effort a model variant and passes it through as `--variant`.
+const oxEfforts: readonly RuntimeReasoningEffort[] = ["low", "high", "max"]
+
 // Claude Code passes the effort through as `--effort`.
 const claudeEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
 
@@ -85,9 +88,8 @@ const models: Readonly<Record<RuntimeId, readonly RuntimeModelOption[]>> = {
     {
       value: "opencode/x-preview-f-free",
       label: "Ox Alpha Free",
-      detail:
-        "Unlimited hosted model with web search. Runs without a provider login and takes no reasoning effort.",
-      reasoningEfforts: [],
+      detail: "Unlimited hosted model with web search. Runs without a provider login.",
+      reasoningEfforts: oxEfforts,
     },
   ],
 }
@@ -95,7 +97,7 @@ const models: Readonly<Record<RuntimeId, readonly RuntimeModelOption[]>> = {
 const defaults: Readonly<Record<RuntimeId, RuntimeExecutionConfiguration>> = {
   codex: { model: "gpt-5.6-luna", reasoningEffort: "max" },
   claude: { model: "claude-sonnet-5", reasoningEffort: "high" },
-  opencode: { model: "opencode/x-preview-f-free", reasoningEffort: "none" },
+  opencode: { model: "opencode/x-preview-f-free", reasoningEffort: "high" },
 }
 
 export function runtimeModelOptions(runtimeId: RuntimeId): readonly RuntimeModelOption[] {

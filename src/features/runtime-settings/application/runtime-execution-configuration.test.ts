@@ -28,12 +28,12 @@ describe("runtime execution configuration", () => {
         value: "opencode/x-preview-f-free",
         label: "Ox Alpha Free",
         detail: expect.any(String),
-        reasoningEfforts: [],
+        reasoningEfforts: ["low", "high", "max"],
       },
     ])
     expect(defaultRuntimeExecutionConfiguration("opencode")).toEqual({
       model: "opencode/x-preview-f-free",
-      reasoningEffort: "none",
+      reasoningEffort: "high",
     })
   })
 
@@ -98,6 +98,30 @@ describe("runtime execution configuration", () => {
       model: "claude-haiku-4-5",
       reasoningEffort: "none",
     })
+  })
+
+  // OpenCode calls the effort a model variant, and the hosted model offers three of them.
+  it("accepts the variants Ox Alpha Free offers and nothing else", () => {
+    for (const reasoningEffort of ["low", "high", "max"] as const) {
+      expect(
+        isRuntimeExecutionConfiguration("opencode", {
+          model: "opencode/x-preview-f-free",
+          reasoningEffort,
+        }),
+      ).toBe(true)
+    }
+    expect(
+      isRuntimeExecutionConfiguration("opencode", {
+        model: "opencode/x-preview-f-free",
+        reasoningEffort: "none",
+      }),
+    ).toBe(false)
+    expect(
+      isRuntimeExecutionConfiguration("opencode", {
+        model: "opencode/x-preview-f-free",
+        reasoningEffort: "medium",
+      }),
+    ).toBe(false)
   })
 
   it("rejects an effort the selected model does not accept", () => {

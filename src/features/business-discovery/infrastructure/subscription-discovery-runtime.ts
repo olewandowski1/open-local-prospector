@@ -240,10 +240,11 @@ function claudeModelArguments(brief: DiscoveryBrief): readonly string[] {
   ]
 }
 
-/** No reasoning-effort argument: no hosted model documents a variant. */
+/** OpenCode calls the reasoning effort a model variant. */
 function opencodeModelArguments(brief: DiscoveryBrief): readonly string[] {
   if (!brief.runtimeConfiguration) return []
-  return ["-m", brief.runtimeConfiguration.model]
+  const { model, reasoningEffort } = brief.runtimeConfiguration
+  return ["-m", model, ...(reasoningEffort === "none" ? [] : ["--variant", reasoningEffort])]
 }
 
 /** The report call asks for prose, so stdout is the report unless a runtime wraps it in JSON. */

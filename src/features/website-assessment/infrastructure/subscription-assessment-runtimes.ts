@@ -68,8 +68,16 @@ export function makeOpencodeAssessmentRuntime(
     runProcess,
     version,
     (directory, configuration) => ({
-      // No reasoning-effort argument: no hosted model documents a variant.
-      arguments: ["run", ...(configuration ? ["-m", configuration.model] : []), "--dir", directory],
+      // OpenCode calls the reasoning effort a model variant.
+      arguments: [
+        "run",
+        ...(configuration ? ["-m", configuration.model] : []),
+        ...(configuration && configuration.reasoningEffort !== "none"
+          ? ["--variant", configuration.reasoningEffort]
+          : []),
+        "--dir",
+        directory,
+      ],
       cwd: directory,
       // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
       settleOnExitMilliseconds: 2_000,
