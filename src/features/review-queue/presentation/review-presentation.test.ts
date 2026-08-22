@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest"
 import { REVIEW_STATUSES } from "@/features/review-queue/domain/review-policy"
 import {
   displayUrl,
+  emptyQueueFilter,
+  filterQueueCandidates,
   formatObservedAt,
   formatScore,
   groupPresences,
   humanizeTerm,
+  isQueueFiltered,
+  queueFilterOptions,
   reviewStatusVariant,
   scoreComponents,
 } from "@/features/review-queue/presentation/review-presentation"
@@ -100,3 +104,49 @@ describe("review presentation", () => {
     })
   })
 })
+
+describe("queue filters", () => {
+  const candidates = [
+    row({ id: "a", locality: "Reda", primaryOpportunity: "NoDedicatedWebsite" }),
+    row({ id: "b", locality: "Rumia", primaryOpportunity: "NoDedicatedWebsite" }),
+    row({
+      id: "c",
+      locality: "Reda",
+      primaryOpportunity: "BrokenOrUnusable",
+      reviewStatus: "Shortlisted",
+    }),
+  ]
+
+  it("offers only the values the queue actually holds", () => {
+    expect(queueFilterOptions(candidates)).toEqual({
+      localities: ["Reda", "Rumia"],
+      opportunities: ["BrokenOrUnusable", "NoDedicatedWebsite"],
+    })
+  })
+
+  it("narrows by town, opportunity and status together", () => {
+    const ids = (filter: Parameters<typeof filterQueueCandidates>[1]) =>
+      filterQueueCandidates(candidates, filter).map((candidate) => candidate.id)
+
+    expect(ids(emptyQueueFilter)).toEqual(["a", "b", "c"])
+    expect(ids({ ...emptyQueueFilter, locality: "Reda" })).toEqual(["a", "c"])
+    expect(ids({ ...emptyQueueFilter, opportunity: "NoDedicatedWebsite" })).toEqual(["a", "b"])
+    expect(ids({ ...emptyQueueFilter, locality: "Reda", status: "Shortlisted" })).toEqual(["c"])
+  })
+
+  it("knows whether anything is being held back", () => {
+    expect(isQueueFiltered(emptyQueueFilter)).toBe(false)
+    expect(isQueueFiltered({ ...emptyQueueFilter, locality: "Reda" })).toBe(true)
+  })
+})
+
+function row(
+  overrides: Readonly<{
+    id: string
+    locality: string
+    primaryOpportunity: string
+    reviewStatus?: string
+  }>,
+) {
+  return { reviewStatus: "Unreviewed", ...overrides }
+}

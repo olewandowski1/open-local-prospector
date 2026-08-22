@@ -78,3 +78,40 @@ const statusVariants: Readonly<Record<string, ReviewStatusVariant>> = {
 export function reviewStatusVariant(status: string): ReviewStatusVariant {
   return statusVariants[status] ?? "outline"
 }
+
+export type QueueFilter = Readonly<{ status: string; locality: string; opportunity: string }>
+
+export const ALL = "All" as const
+
+export const emptyQueueFilter: QueueFilter = { status: ALL, locality: ALL, opportunity: ALL }
+
+export function isQueueFiltered(filter: QueueFilter): boolean {
+  return filter.status !== ALL || filter.locality !== ALL || filter.opportunity !== ALL
+}
+
+/** The distinct values actually present, so a filter never offers a choice that matches nothing. */
+export function queueFilterOptions(
+  candidates: readonly Readonly<{ locality: string; primaryOpportunity: string }>[],
+): Readonly<{ localities: readonly string[]; opportunities: readonly string[] }> {
+  const localities = new Set<string>()
+  const opportunities = new Set<string>()
+  for (const candidate of candidates) {
+    if (candidate.locality) localities.add(candidate.locality)
+    if (candidate.primaryOpportunity) opportunities.add(candidate.primaryOpportunity)
+  }
+  return {
+    localities: [...localities].toSorted((left, right) => left.localeCompare(right)),
+    opportunities: [...opportunities].toSorted((left, right) => left.localeCompare(right)),
+  }
+}
+
+export function filterQueueCandidates<
+  T extends Readonly<{ reviewStatus: string; locality: string; primaryOpportunity: string }>,
+>(candidates: readonly T[], filter: QueueFilter): readonly T[] {
+  return candidates.filter(
+    (candidate) =>
+      (filter.status === ALL || candidate.reviewStatus === filter.status) &&
+      (filter.locality === ALL || candidate.locality === filter.locality) &&
+      (filter.opportunity === ALL || candidate.primaryOpportunity === filter.opportunity),
+  )
+}

@@ -30,6 +30,14 @@ import {
 } from "@/features/review-queue/presentation/candidate-sheet"
 import { CandidatesTable } from "@/features/review-queue/presentation/candidates-table"
 import { ExportDialog } from "@/features/review-queue/presentation/export-dialog"
+import {
+  ALL,
+  emptyQueueFilter,
+  filterQueueCandidates,
+  humanizeTerm,
+  type QueueFilter,
+  queueFilterOptions,
+} from "@/features/review-queue/presentation/review-presentation"
 import type {
   QueueCandidate,
   QueueCandidateSummary,
@@ -41,14 +49,14 @@ const SELECTION_STORAGE_KEY = "v1:review-selection"
 export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCandidateSummary[] }) {
   const router = useRouter()
   const requestedId = useSearchParams().get("candidate")
-  const [filter, setFilter] = useState("All")
+  const [filter, setFilter] = useState<QueueFilter>(emptyQueueFilter)
   const [openId, setOpenId] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
 
   useEffect(() => {
     const stored = localStorage.getItem(FILTER_STORAGE_KEY)
-    if (stored) setFilter(stored)
+    if (stored) setFilter({ ...emptyQueueFilter, status: stored })
   }, [])
 
   useEffect(() => {
@@ -56,16 +64,11 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     if (!candidates.some((candidate) => candidate.id === requestedId)) return
     setOpenId(requestedId)
     // A saved filter could otherwise hide the very candidate the link was followed to reach.
-    setFilter("All")
+    setFilter(emptyQueueFilter)
   }, [candidates, requestedId])
 
-  const visible = useMemo(
-    () =>
-      filter === "All"
-        ? candidates
-        : candidates.filter((candidate) => candidate.reviewStatus === filter),
-    [candidates, filter],
-  )
+  const options = useMemo(() => queueFilterOptions(candidates), [candidates])
+  const visible = useMemo(() => filterQueueCandidates(candidates, filter), [candidates, filter])
 
   const index = openId ? visible.findIndex((candidate) => candidate.id === openId) : -1
   const open = index >= 0 ? visible[index] : undefined
@@ -77,9 +80,14 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     staleTime: 30_000,
   })
 
-  const selectFilter = (value: string) => {
-    setFilter(value)
-    localStorage.setItem(FILTER_STORAGE_KEY, value)
+  // Only the review status is remembered: a saved town would quietly hide a run made later
+  // somewhere else, and the reader would have no idea the queue was holding anything back.
+  const selectFilter = (next: Partial<QueueFilter>) => {
+    setFilter((current) => {
+      const merged = { ...current, ...next }
+      localStorage.setItem(FILTER_STORAGE_KEY, merged.status)
+      return merged
+    })
   }
 
   const openCandidate = useCallback((id: string) => {
@@ -183,7 +191,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     }
   }
 
-  const exportQuery = filter === "All" ? "" : `&status=${encodeURIComponent(filter)}`
+  const exportQuery = filter.status === ALL ? "" : `&status=${encodeURIComponent(filter.status)}`
 
   return (
     <div className="flex flex-col gap-4">
@@ -194,24 +202,40 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         </Alert>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Select value={filter} onValueChange={(value) => selectFilter(value ?? "All")}>
-          <SelectTrigger size="sm" aria-label="Review Status Filter" className="w-[11rem]">
-            <span className="text-muted-foreground">Status</span>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="All">All Statuses</SelectItem>
-              {REVIEW_STATUSES.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <QueueFilterSelect
+            label="Status"
+            value={filter.status}
+            allLabel="All Statuses"
+            options={REVIEW_STATUSES}
+            onChange={(status) => selectFilter({ status })}
+          />
+          {options.localities.length > 1 ? (
+            <QueueFilterSelect
+              label="Town"
+              value={filter.locality}
+              allLabel="All Towns"
+              options={options.localities}
+              onChange={(locality) => selectFilter({ locality })}
+            />
+          ) : null}
+          {options.opportunities.length > 1 ? (
+            <QueueFilterSelect
+              label="Opportunity"
+              value={filter.opportunity}
+              allLabel="All Opportunities"
+              options={options.opportunities}
+              format={humanizeTerm}
+              onChange={(opportunity) => selectFilter({ opportunity })}
+            />
+          ) : null}
+        </div>
 
-        <ExportDialog statusFilter={filter} count={visible.length} exportQuery={exportQuery} />
+        <ExportDialog
+          statusFilter={filter.status}
+          count={visible.length}
+          exportQuery={exportQuery}
+        />
       </div>
 
       {visible.length === 0 ? (
@@ -220,15 +244,16 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
             <EmptyMedia variant="icon">
               <Icon icon={FilterRemoveIcon} />
             </EmptyMedia>
-            <EmptyTitle>No Candidates With This Status</EmptyTitle>
+            <EmptyTitle>Nothing Matches These Filters</EmptyTitle>
             <EmptyDescription>
               The queue holds {candidates.length}{" "}
-              {candidates.length === 1 ? "candidate" : "candidates"}, none of them {filter}.
+              {candidates.length === 1 ? "candidate" : "candidates"}, and none of them match every
+              filter you have set.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button variant="outline" size="sm" onClick={() => selectFilter("All")}>
-              Show All Statuses
+            <Button variant="outline" size="sm" onClick={() => selectFilter(emptyQueueFilter)}>
+              Clear Filters
             </Button>
           </EmptyContent>
         </Empty>
@@ -265,4 +290,39 @@ async function fetchCandidate(scoreId: string): Promise<QueueCandidate> {
   const response = await fetch(`/api/review/${encodeURIComponent(scoreId)}`)
   if (!response.ok) throw new Error("candidate unavailable")
   return (await response.json()) as QueueCandidate
+}
+
+function QueueFilterSelect({
+  label,
+  value,
+  allLabel,
+  options,
+  format,
+  onChange,
+}: {
+  label: string
+  value: string
+  allLabel: string
+  options: readonly string[]
+  format?: (value: string) => string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Select value={value} onValueChange={(next) => onChange(next ?? ALL)}>
+      <SelectTrigger size="sm" aria-label={`${label} Filter`} className="w-[12rem]">
+        <span className="text-muted-foreground">{label}</span>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value={ALL}>{allLabel}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {format ? format(option) : option}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
 }
