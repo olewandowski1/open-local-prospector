@@ -120,7 +120,13 @@ mistake being made again.
   diff first and restore local variants after.
 - **Overlays**: `Dialog` to decide something, `Sheet` for a full record beside the list it came from,
   `AlertDialog` to confirm something irreversible.
-- **Empty states use `Empty`** and offer the action that resolves them.
+- **Empty states use `Empty`** and offer the action that resolves them. One sits where the content
+  it replaces would start, not centred in the viewport: `Empty` is `flex-1`, so it stretches whenever
+  its parent has spare height. Keep the page column in a wrapper *inside* `PageScroller` rather than
+  putting the layout classes on the scroller, whose inner element is `min-h-full`.
+- **Every icon comes from `@/components/icon`.** One set (Hugeicons), one stroke weight, hidden from
+  assistive technology unless given an `aria-label`. `src/components/ui/` calls `HugeiconsIcon`
+  directly because that is what `shadcn add` writes and re-writes; nothing else should.
 - **Every icon-only control has a tooltip.** Use `IconButton`, or `IconLink` when it navigates. One
   `label` feeds both the accessible name and the tooltip so they cannot drift.
 - **Navigation renders an anchor.** A `Button` with `nativeButton={false}` stamps `role="button"` on
