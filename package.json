@@ -18,7 +18,7 @@
     "lint": "biome lint .",
     "check:biome": "biome check .",
     "check:architecture": "tsx src/architecture/feature-boundaries.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:workspace": "playwright test --config playwright.workspace.config.ts",
@@ -39,7 +39,6 @@
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.2",
     "effect": "3.22.1",
-    "lucide-react": "^1.31.0",
     "next": "16.3.1",
     "playwright": "^1.62.1",
     "react": "19.2.8",
@@ -66,10 +65,7 @@
     "vitest": "4.1.10"
   },
   "packageManager": "pnpm@10.32.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "lefthook"
-    ]
+  "engines": {
+    "node": ">=22"
   }
 }

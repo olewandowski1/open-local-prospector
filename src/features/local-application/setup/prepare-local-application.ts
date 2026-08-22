@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { constants, copyFileSync, existsSync, mkdirSync } from "node:fs"
 import { createRequire } from "node:module"
-import { dirname } from "node:path"
+import { dirname, join } from "node:path"
 
 import type { LocalApplicationConfig } from "@/features/local-application/configuration"
 import { migrateLocalDatabase } from "@/features/local-application/infrastructure/database/local-database"
@@ -68,7 +68,11 @@ function isChromiumReady(): boolean {
 
 function installChromium(): void {
   const require = createRequire(import.meta.url)
-  const cliPath = require.resolve("playwright/cli")
+  // Playwright stopped exporting the "playwright/cli" subpath, so ask the package where its own
+  // executable lives instead of guessing at an internal path that may move again.
+  const packageManifestPath = require.resolve("playwright/package.json")
+  const { bin } = require(packageManifestPath) as { bin: Readonly<Record<string, string>> }
+  const cliPath = join(dirname(packageManifestPath), bin.playwright)
   const result = spawnSync(process.execPath, [cliPath, "install", "chromium"], {
     stdio: "inherit",
     windowsHide: true,
