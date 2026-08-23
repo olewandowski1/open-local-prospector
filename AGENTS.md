@@ -23,6 +23,8 @@ imports it, and Codex reads it directly. Everything an agent must follow is here
   overriding it.
 - [`docs/Product.md`](docs/Product.md) is the living product requirements.
 - [`README.md`](README.md) documents the commands. `pnpm check` is the verification gate.
+- Commit and push completed in-scope changes at the end of every implementation task. Preserve and
+  exclude unrelated user changes.
 
 ## Source Layout
 

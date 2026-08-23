@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 400" role="img" aria-labelledby="title description">
+  <title id="title">How An Open Prospector Run Works</title>
+  <desc id="description">A search brief moves through preflight, research, candidates, and a user decision.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4ba882" />
+    </marker>
+  </defs>
+  <rect width="1440" height="400" rx="28" fill="#0f0f0e" />
+  <text x="56" y="62" fill="#f4f1eb" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">How A Run Works</text>
+
+  <g fill="none" stroke="#4ba882" stroke-width="4" marker-end="url(#arrow)">
+    <path d="M 270 190 H 306" />
+    <path d="M 528 190 H 564" />
+    <path d="M 924 190 H 960" />
+    <path d="M 1164 190 H 1200" />
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g>
+      <rect x="48" y="104" width="222" height="172" rx="18" fill="#1d1d1b" stroke="#393936" stroke-width="2" />
+      <circle cx="78" cy="136" r="8" fill="#4ba882" />
+      <text x="96" y="144" fill="#f4f1eb" font-size="24" font-weight="700">Search Brief</text>
+      <text x="72" y="190" fill="#b8b3aa" font-size="19">Reda And Rumia</text>
+      <text x="72" y="224" fill="#b8b3aa" font-size="19">Florist</text>
+      <text x="72" y="258" fill="#b8b3aa" font-size="19">Target And Runtime</text>
+    </g>
+    <g>
+      <rect x="306" y="104" width="222" height="172" rx="18" fill="#1d1d1b" stroke="#393936" stroke-width="2" />
+      <circle cx="336" cy="136" r="8" fill="#4ba882" />
+      <text x="354" y="144" fill="#f4f1eb" font-size="24" font-weight="700">Preflight</text>
+      <text x="330" y="190" fill="#b8b3aa" font-size="19">Search Area</text>
+      <text x="330" y="224" fill="#b8b3aa" font-size="19">Runtime Readiness</text>
+      <text x="330" y="258" fill="#b8b3aa" font-size="19">Workload</text>
+    </g>
+    <g>
+      <rect x="564" y="92" width="360" height="196" rx="18" fill="#17241f" stroke="#4ba882" stroke-width="3" />
+      <circle cx="596" cy="128" r="8" fill="#4ba882" />
+      <text x="614" y="136" fill="#f4f1eb" font-size="24" font-weight="700">Research Pipeline</text>
+      <text x="594" y="188" fill="#d3cec5" font-size="19">Discover  •  Corroborate  •  Inspect</text>
+      <text x="594" y="228" fill="#d3cec5" font-size="19">Assess  •  Score</text>
+      <text x="594" y="266" fill="#74c7a5" font-size="17">Bounded And Resumable</text>
+    </g>
+    <g>
+      <rect x="960" y="104" width="204" height="172" rx="18" fill="#1d1d1b" stroke="#393936" stroke-width="2" />
+      <circle cx="990" cy="136" r="8" fill="#4ba882" />
+      <text x="1008" y="144" fill="#f4f1eb" font-size="24" font-weight="700">Candidates</text>
+      <text x="984" y="190" fill="#b8b3aa" font-size="19">Evidence</text>
+      <text x="984" y="224" fill="#b8b3aa" font-size="19">Sources</text>
+      <text x="984" y="258" fill="#b8b3aa" font-size="19">Rank</text>
+    </g>
+    <g>
+      <rect x="1200" y="104" width="192" height="172" rx="18" fill="#1d1d1b" stroke="#393936" stroke-width="2" />
+      <circle cx="1230" cy="136" r="8" fill="#4ba882" />
+      <text x="1248" y="144" fill="#f4f1eb" font-size="24" font-weight="700">Decision</text>
+      <text x="1224" y="190" fill="#b8b3aa" font-size="19">Shortlist</text>
+      <text x="1224" y="224" fill="#b8b3aa" font-size="19">Reject Or Correct</text>
+      <text x="1224" y="258" fill="#b8b3aa" font-size="19">Suppress Or Export</text>
+    </g>
+  </g>
+
+  <text x="720" y="350" fill="#8f8a82" font-family="Arial, Helvetica, sans-serif" font-size="18" text-anchor="middle">Local SQLite checkpoints preserve progress. The application never sends outreach.</text>
+</svg>
