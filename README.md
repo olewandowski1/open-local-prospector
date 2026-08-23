@@ -35,7 +35,10 @@ runtime for each run.
 
 ## How A Run Works
 
-![Open Prospector Run Workflow](docs/assets/open-prospector-workflow.svg)
+1. **Define The Search:** Choose a location, business category, target, and authenticated runtime.
+2. **Confirm Preflight:** Review the Search Area, local dependencies, and estimated workload.
+3. **Run Local Research:** Open Prospector discovers, verifies, inspects, assesses, and scores businesses.
+4. **Review Candidates:** Inspect source-backed evidence, then shortlist, reject, correct, suppress, or export.
 
 ![Candidate Review In Dark Mode](docs/assets/candidate-review.png)
 
