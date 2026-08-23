@@ -24,8 +24,9 @@ imports it, and Codex reads it directly. Everything an agent must follow is here
 - [`docs/Product.md`](docs/Product.md) is the living product requirements.
 - [`README.md`](README.md) documents the commands. `pnpm check` is the verification gate.
 - [`CHANGELOG.md`](CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-  Update its `Unreleased` section for every
-  task that changes repository files. Never commit or push a change without recording it there.
+  Review it before every commit and record each notable technical or product change under
+  `Unreleased`. Include behavior, architecture, compatibility, fixes, and security. Omit
+  documentation presentation and repository housekeeping.
 - Commit and push completed in-scope changes at the end of every implementation task. Preserve and
   exclude unrelated user changes.
 
