@@ -10,8 +10,11 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
   test.skip(isMobile, "Driven once, on desktop")
   test.setTimeout(30 * 60_000)
 
-  await page.goto("/runs/new")
-  const preflight = page.getByRole("button", { name: "Check preflight" })
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "New Run" }).click()
+  const preflight = page.getByRole("button", { name: "Check Preflight" })
+  // The sheet loads its bootstrap before the brief appears.
+  await expect(preflight).toBeVisible({ timeout: 30_000 })
   test.skip(
     await page.getByText("No subscription runtime is ready").isVisible(),
     "No ready subscription runtime",

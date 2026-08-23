@@ -20,7 +20,12 @@ import type { SearchBriefPreflight } from "@/features/prospecting-runs/applicati
 import { runtimeExecutionLabel } from "@/features/runtime-settings/client"
 import { cn } from "@/lib/utils"
 
-export function RunPreflightPanel({
+/**
+ * The preflight outcome as a document section: interpreted area, dependency readiness, workload
+ * estimate, and the confirm action. The New Run sheet renders it directly; nothing wraps it in
+ * the sticky aside the deleted standalone page used.
+ */
+export function RunPreflightSection({
   preflight,
   selectedAreaId,
   onSelectedAreaChange,
@@ -38,66 +43,61 @@ export function RunPreflightPanel({
   onCreateRun: () => void
 }) {
   return (
-    <aside aria-label="Run preflight" className="lg:pt-20">
-      <section className="border-y py-5 lg:sticky lg:top-6">
-        <SectionHeader
-          title="Run Preflight"
-          description="Nothing is persisted as a run until you confirm here."
-          className="mb-5"
-        />
-        <div className="grid gap-5">
-          {error ? (
-            <Alert variant="destructive">
-              <Icon icon={AlertCircleIcon} />
-              <AlertTitle>Unable to continue</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
+    <section aria-labelledby="run-preflight-heading" className="border-y py-5">
+      <SectionHeader
+        title={<span id="run-preflight-heading">Run Preflight</span>}
+        description="Nothing is persisted as a run until you confirm here."
+        className="mb-5"
+      />
+      <div className="grid gap-5">
+        {error ? (
+          <Alert variant="destructive">
+            <Icon icon={AlertCircleIcon} />
+            <AlertTitle>Unable to continue</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
 
-          {!preflight ? (
-            <p className="text-sm text-muted-foreground">
-              Complete the Search Brief and check preflight to interpret the area and verify
-              dependencies.
-            </p>
-          ) : (
-            <>
-              <SearchAreaChoice
-                preflight={preflight}
-                selectedAreaId={selectedAreaId}
-                onSelectedAreaChange={onSelectedAreaChange}
-              />
-              <DependencyReadiness preflight={preflight} />
-              <WorkloadEstimate preflight={preflight} />
-              {createdRun ? (
-                <Alert>
-                  <Icon icon={CheckmarkCircle02Icon} />
-                  <AlertTitle>Pending run created</AlertTitle>
-                  <AlertDescription>
-                    Run{" "}
-                    <span className="font-medium tabular-nums" title={createdRun.id}>
-                      #{createdRun.id.slice(0, 8)}
-                    </span>{" "}
-                    is ready for the worker.{" "}
-                    <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Button
-                  onClick={onCreateRun}
-                  disabled={busy || !preflight.ready || !selectedAreaId}
-                >
-                  <Icon
-                    icon={busy ? Loading03Icon : PlayIcon}
-                    className={busy ? "animate-spin" : undefined}
-                  />
-                  Confirm and create run
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </section>
-    </aside>
+        {!preflight ? (
+          <p className="text-sm text-muted-foreground">
+            Complete the Search Brief and check preflight to interpret the area and verify
+            dependencies.
+          </p>
+        ) : (
+          <>
+            <SearchAreaChoice
+              preflight={preflight}
+              selectedAreaId={selectedAreaId}
+              onSelectedAreaChange={onSelectedAreaChange}
+            />
+            <DependencyReadiness preflight={preflight} />
+            <WorkloadEstimate preflight={preflight} />
+            {createdRun ? (
+              <Alert>
+                <Icon icon={CheckmarkCircle02Icon} />
+                <AlertTitle>Pending run created</AlertTitle>
+                <AlertDescription>
+                  Run{" "}
+                  <span className="font-medium tabular-nums" title={createdRun.id}>
+                    #{createdRun.id.slice(0, 8)}
+                  </span>{" "}
+                  is ready for the worker.{" "}
+                  <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Button onClick={onCreateRun} disabled={busy || !preflight.ready || !selectedAreaId}>
+                <Icon
+                  icon={busy ? Loading03Icon : PlayIcon}
+                  className={busy ? "animate-spin" : undefined}
+                />
+                Confirm And Create Run
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -141,7 +141,7 @@ function SearchAreaChoice({
         </p>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
-        Geocoding © OpenStreetMap contributors. Public Nominatim is used only on your explicit
+        Geocoding ┬ę OpenStreetMap contributors. Public Nominatim is used only on your explicit
         request, cached locally, and limited to one request per second. Read the{" "}
         <a
           className="underline underline-offset-4"
@@ -205,7 +205,7 @@ function WorkloadEstimate({ preflight }: { preflight: SearchBriefPreflight }) {
       <p className="mt-1 text-xs text-muted-foreground">{preflight.estimate.note}</p>
       {preflight.draft.runtimeConfiguration ? (
         <p className="mt-2 text-xs font-medium">
-          {preflight.runtime.label} ·{" "}
+          {preflight.runtime.label} ┬Ě{" "}
           {runtimeExecutionLabel(preflight.draft.runtime, preflight.draft.runtimeConfiguration)}
         </p>
       ) : null}

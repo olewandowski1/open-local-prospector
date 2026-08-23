@@ -1,19 +1,16 @@
 import {
   ActivityIcon,
-  Add01Icon,
   ChartDownIcon,
   ChartUpIcon,
   CircleGaugeIcon,
   ClipboardCheckIcon,
   MinusSignIcon,
 } from "@hugeicons/core-free-icons"
-import Link from "next/link"
 import type { ReactNode } from "react"
 import { Icon, type IconSvg } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -29,6 +26,7 @@ import {
   type OverviewTrend,
 } from "@/features/overview/domain/overview-metrics"
 import { RecentCandidatesGrid } from "@/features/overview/presentation/recent-candidates-grid"
+import { NewRunButton } from "@/features/prospecting-runs/client"
 import type { RecentCandidate } from "@/features/review-queue"
 
 // An arrow means a measured week-over-week change; standing facts get a subject icon instead.
@@ -64,12 +62,7 @@ export function OverviewPage({
         <PageHeader
           title="Overview"
           description="Persisted prospecting activity from this workspace, and the runtime that steers the next run."
-          actions={
-            <Link href="/runs/new" className={buttonVariants()}>
-              <Icon icon={Add01Icon} data-icon="inline-start" />
-              New Run
-            </Link>
-          }
+          actions={<NewRunButton />}
         />
 
         <section
@@ -115,10 +108,7 @@ export function OverviewPage({
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                  <Link href="/runs/new" className={buttonVariants()}>
-                    <Icon icon={Add01Icon} data-icon="inline-start" />
-                    New Run
-                  </Link>
+                  <NewRunButton />
                 </EmptyContent>
               </Empty>
             ) : (

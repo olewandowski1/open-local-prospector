@@ -1,9 +1,7 @@
-import { Add01Icon, CircleGaugeIcon } from "@hugeicons/core-free-icons"
-import Link from "next/link"
+import { CircleGaugeIcon } from "@hugeicons/core-free-icons"
 import { Icon } from "@/components/icon"
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -12,6 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { NewRunButton } from "@/features/prospecting-runs/client"
 import { ReviewWorkspace } from "@/features/review-queue/presentation/review-workspace"
 import { getReviewQueueSummaries } from "@/features/review-queue/server/review-queue-read-model"
 
@@ -37,10 +36,7 @@ export function ReviewQueuePage() {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Link href="/runs/new" className={buttonVariants()}>
-                <Icon icon={Add01Icon} data-icon="inline-start" />
-                New Run
-              </Link>
+              <NewRunButton />
             </EmptyContent>
           </Empty>
         ) : (

@@ -2,11 +2,10 @@
 
 import { AlertCircleIcon, Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Icon } from "@/components/icon"
 
-import { PageHeader, SectionHeader } from "@/components/page-layout"
-import { PageScroller } from "@/components/page-scroller"
+import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
@@ -27,9 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { SearchBriefDefaults } from "@/features/prospecting-runs/application/prospecting-run"
 import type { SearchBriefPreflight } from "@/features/prospecting-runs/application/search-brief-preflight"
-import { RunPreflightPanel } from "@/features/prospecting-runs/presentation/run-preflight-panel"
+import { RunPreflightSection } from "@/features/prospecting-runs/presentation/run-preflight-panel"
 import {
   categoryPresets,
   initialSearchBriefDraft,
@@ -50,7 +52,101 @@ import {
 
 const fieldSpacing = "gap-1.5"
 
-export function SearchBriefPage({
+export type SearchBriefBootstrap = Readonly<{
+  defaults?: SearchBriefDefaults
+  runtimes: readonly RuntimeReadiness[]
+  selectedRuntime?: RuntimeId
+}>
+
+/**
+ * The whole New Run flow beside whatever page launched it. Mounted fresh by `NewRunProvider`
+ * on every open, so a half-written brief never survives closing the panel.
+ */
+export function NewRunSheet() {
+  // Retrying remounts the loader, so every attempt starts from a clean slate.
+  const [attempt, setAttempt] = useState(0)
+
+  return (
+    <>
+      <SheetHeader className="gap-1 p-4 pr-12">
+        <SheetTitle>New Prospecting Run</SheetTitle>
+        <SheetDescription>
+          Define the market, confirm how the location was interpreted, and verify local readiness.
+        </SheetDescription>
+      </SheetHeader>
+      <Separator />
+      <NewRunBootstrap key={attempt} onRetry={() => setAttempt((current) => current + 1)} />
+    </>
+  )
+}
+
+function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
+  const [bootstrap, setBootstrap] = useState<SearchBriefBootstrap>()
+  const [loadError, setLoadError] = useState("")
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadError("")
+    fetch("/api/search-brief/bootstrap")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("The New Run form could not be loaded.")
+        return (await response.json()) as SearchBriefBootstrap
+      })
+      .then((body) => {
+        if (!cancelled) setBootstrap(body)
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setLoadError(
+            reason instanceof Error ? reason.message : "The New Run form could not be loaded.",
+          )
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loadError) {
+    return (
+      <div className="p-4">
+        <Alert variant="destructive">
+          <Icon icon={AlertCircleIcon} />
+          <AlertTitle>The form could not be loaded</AlertTitle>
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+          Retry
+        </Button>
+      </div>
+    )
+  }
+  if (!bootstrap) {
+    return (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label="Loading the Search Brief"
+        className="grid gap-3 p-4"
+      >
+        <div className="h-4 w-40 rounded-md bg-muted" />
+        <div className="h-8 w-full rounded-lg bg-muted" />
+        <div className="h-4 w-52 rounded-md bg-muted" />
+        <div className="h-8 w-full rounded-lg bg-muted" />
+        <div className="h-8 w-full rounded-lg bg-muted" />
+      </div>
+    )
+  }
+  return (
+    <SearchBriefForm
+      defaults={bootstrap.defaults}
+      readyRuntimes={bootstrap.runtimes.filter((runtime) => runtime.status === "Ready")}
+      selectedRuntime={bootstrap.selectedRuntime}
+    />
+  )
+}
+
+function SearchBriefForm({
   defaults,
   readyRuntimes,
   selectedRuntime,
@@ -68,8 +164,14 @@ export function SearchBriefPage({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [createdRun, setCreatedRun] = useState<{ id: string; state: string }>()
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => setHydrated(true), [])
+  const preflightSectionRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Preflight results appear below the brief; bring them into view where the sticky aside used to.
+    if (preflight)
+      preflightSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [preflight])
+
   const runtimeItems = useMemo(
     () => readyRuntimes.map((runtime) => ({ label: runtime.label, value: runtime.runtimeId })),
     [readyRuntimes],
@@ -86,8 +188,6 @@ export function SearchBriefPage({
     setError("")
   }
 
-  const serializedDraft = () => serializeSearchBriefDraft(draft)
-
   const checkPreflight = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setBusy(true)
@@ -97,7 +197,7 @@ export function SearchBriefPage({
       const response = await fetch("/api/prospecting-runs/preflight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serializedDraft()),
+        body: JSON.stringify(serializeSearchBriefDraft(draft)),
       })
       const body = (await response.json()) as SearchBriefPreflight & { error?: string }
       if (!response.ok) throw new Error(body.error ?? "Preflight failed.")
@@ -120,7 +220,7 @@ export function SearchBriefPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          draft: serializedDraft(),
+          draft: serializeSearchBriefDraft(draft),
           searchAreaId: selectedAreaId,
           requestId,
         }),
@@ -138,17 +238,11 @@ export function SearchBriefPage({
   }
 
   return (
-    <PageScroller>
-      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.8fr)]">
-        <div className="min-w-0">
-          <PageHeader
-            eyebrow="New prospecting run"
-            title="Create a Search Brief"
-            description="Define the market, confirm how the location was interpreted, and verify local readiness."
-          />
-
+    <>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="grid gap-6 p-4">
           {readyRuntimes.length === 0 ? (
-            <Alert variant="destructive" className="mt-6">
+            <Alert variant="destructive">
               <Icon icon={AlertCircleIcon} />
               <AlertTitle>No subscription runtime is ready</AlertTitle>
               <AlertDescription>
@@ -158,13 +252,13 @@ export function SearchBriefPage({
             </Alert>
           ) : null}
 
-          <section aria-labelledby="search-scope-heading" className="mt-6 border-y py-5">
+          <section aria-labelledby="search-scope-heading" className="border-y py-5">
             <SectionHeader
               title={<span id="search-scope-heading">Search Scope</span>}
               description="Poland is assumed when no country is provided. Add a country to search elsewhere."
               className="mb-5"
             />
-            <form onSubmit={checkPreflight}>
+            <form id="new-run-brief" onSubmit={checkPreflight}>
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="location">City or Municipality</FieldLabel>
@@ -177,7 +271,7 @@ export function SearchBriefPage({
                     required
                   />
                   <FieldDescription>
-                    Search runs only when you choose Check preflight; there is no location
+                    Search runs only when you choose Check Preflight; there is no location
                     autocomplete.
                   </FieldDescription>
                 </Field>
@@ -224,7 +318,7 @@ export function SearchBriefPage({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {categoryPresets.map((category) => (
+                        {[...categoryPresets].map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
                           </SelectItem>
@@ -460,30 +554,36 @@ export function SearchBriefPage({
                     </Field>
                   </div>
                 ) : null}
-
-                <Button type="submit" disabled={!hydrated || busy || !draft.runtime}>
-                  {busy ? (
-                    <Icon icon={Loading03Icon} className="animate-spin" />
-                  ) : (
-                    <Icon icon={Search01Icon} />
-                  )}
-                  Check preflight
-                </Button>
               </FieldGroup>
             </form>
           </section>
-        </div>
 
-        <RunPreflightPanel
-          preflight={preflight}
-          selectedAreaId={selectedAreaId}
-          onSelectedAreaChange={setSelectedAreaId}
-          error={error}
-          busy={busy}
-          createdRun={createdRun}
-          onCreateRun={createRun}
-        />
-      </div>
-    </PageScroller>
+          <div ref={preflightSectionRef} className="scroll-mt-2">
+            <RunPreflightSection
+              preflight={preflight}
+              selectedAreaId={selectedAreaId}
+              onSelectedAreaChange={setSelectedAreaId}
+              error={error}
+              busy={busy}
+              createdRun={createdRun}
+              onCreateRun={createRun}
+            />
+          </div>
+        </div>
+      </ScrollArea>
+
+      {!preflight && !createdRun ? (
+        <SheetFooter className="flex-row items-center justify-end gap-3 border-t p-3">
+          <Button type="submit" form="new-run-brief" disabled={busy || !draft.runtime}>
+            {busy ? (
+              <Icon icon={Loading03Icon} className="animate-spin" />
+            ) : (
+              <Icon icon={Search01Icon} />
+            )}
+            Check Preflight
+          </Button>
+        </SheetFooter>
+      ) : null}
+    </>
   )
 }

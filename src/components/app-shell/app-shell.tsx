@@ -26,6 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/features/local-application/presentation/theme-toggle"
+import { NewRunProvider } from "@/features/prospecting-runs/client"
 import { RuntimeUpdatePanel } from "@/features/runtime-settings/presentation/runtime-update-panel"
 import { cn } from "@/lib/utils"
 
@@ -85,58 +86,59 @@ export function AppShell({ children }: { children: ReactNode }) {
         ? "Settings"
         : pathname === "/review"
           ? "Review Queue"
-          : pathname === "/runs/new"
-            ? "New Run"
-            : pathname.startsWith("/runs/")
-              ? "Run Detail"
-              : pathname === "/runs"
-                ? "Runs"
-                : "Workspace"
+          : pathname.startsWith("/runs/")
+            ? "Run Detail"
+            : pathname === "/runs"
+              ? "Runs"
+              : "Workspace"
 
   return (
     <SidebarProvider defaultOpen className="h-svh overflow-hidden">
-      <Sidebar collapsible="offcanvas" className="app-sidebar-gradient">
-        <SidebarHeader>
-          <div className="flex h-10 items-center justify-between gap-2 px-2">
-            <Link href="/" className="truncate font-heading text-sm font-semibold">
-              OpenProspector <span className="text-[0.8em] text-sidebar-foreground/55">Local</span>
-            </Link>
-            <div className="ml-auto flex items-center gap-1">
-              <WorkspaceSearchTrigger onClick={() => command.setOpen(true)} />
-              <SidebarTrigger />
+      <NewRunProvider>
+        <Sidebar collapsible="offcanvas" className="app-sidebar-gradient">
+          <SidebarHeader>
+            <div className="flex h-10 items-center justify-between gap-2 px-2">
+              <Link href="/" className="truncate font-heading text-sm font-semibold">
+                OpenProspector{" "}
+                <span className="text-[0.8em] text-sidebar-foreground/55">Local</span>
+              </Link>
+              <div className="ml-auto flex items-center gap-1">
+                <WorkspaceSearchTrigger onClick={() => command.setOpen(true)} />
+                <SidebarTrigger />
+              </div>
             </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <NavigationGroup label="Workspace" items={primaryNavigation} />
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="flex items-center gap-1">
-            <IconLink label="Settings" href="/settings/general" variant="subtle" size="icon-sm">
-              <HugeiconsIcon icon={Settings02Icon} aria-hidden="true" />
-            </IconLink>
-            <RuntimeUpdatePanel />
-          </div>
-        </SidebarFooter>
-      </Sidebar>
+          </SidebarHeader>
+          <SidebarContent>
+            <NavigationGroup label="Workspace" items={primaryNavigation} />
+          </SidebarContent>
+          <SidebarFooter>
+            <div className="flex items-center gap-1">
+              <IconLink label="Settings" href="/settings/general" variant="subtle" size="icon-sm">
+                <HugeiconsIcon icon={Settings02Icon} aria-hidden="true" />
+              </IconLink>
+              <RuntimeUpdatePanel />
+            </div>
+          </SidebarFooter>
+        </Sidebar>
 
-      <SidebarInset className="h-full min-h-0 overflow-hidden [--shell-header:2.75rem]">
-        <header className="flex h-(--shell-header) shrink-0 items-center gap-3 border-b px-3 sm:px-4">
-          <SidebarTrigger className="md:hidden" />
-          <SidebarRestoreTrigger />
-          <div className="hidden items-center gap-2 text-xs sm:flex">
-            <span className="text-muted-foreground">Workspace</span>
-            <span className="text-muted-foreground">/</span>
-            <span className="font-medium">{currentPage}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-1">
-            <ThemeToggle />
-          </div>
-        </header>
-        <div className={cn(workspaceWidth, "flex min-h-0 flex-1 flex-col")}>{children}</div>
-      </SidebarInset>
+        <SidebarInset className="h-full min-h-0 overflow-hidden [--shell-header:2.75rem]">
+          <header className="flex h-(--shell-header) shrink-0 items-center gap-3 border-b px-3 sm:px-4">
+            <SidebarTrigger className="md:hidden" />
+            <SidebarRestoreTrigger />
+            <div className="hidden items-center gap-2 text-xs sm:flex">
+              <span className="text-muted-foreground">Workspace</span>
+              <span className="text-muted-foreground">/</span>
+              <span className="font-medium">{currentPage}</span>
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              <ThemeToggle />
+            </div>
+          </header>
+          <div className={cn(workspaceWidth, "flex min-h-0 flex-1 flex-col")}>{children}</div>
+        </SidebarInset>
 
-      <WorkspaceCommand open={command.open} onOpenChange={command.setOpen} />
+        <WorkspaceCommand open={command.open} onOpenChange={command.setOpen} />
+      </NewRunProvider>
     </SidebarProvider>
   )
 }

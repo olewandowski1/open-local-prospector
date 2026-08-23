@@ -44,8 +44,10 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
       }),
     })
   })
-  await page.goto("/runs/new")
-  const preflightButton = page.getByRole("button", { name: "Check preflight" })
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "New Run" }).click()
+  const preflightButton = page.getByRole("button", { name: "Check Preflight" })
+  await expect(preflightButton).toBeVisible({ timeout: 15_000 })
   test.skip(
     await page.getByText("No subscription runtime is ready").isVisible(),
     "No ready local subscription runtime is available",
@@ -101,8 +103,10 @@ test("keeps confirmation disabled after failed preflight", async ({ page }) => {
       }),
     })
   })
-  await page.goto("/runs/new")
-  const preflightButton = page.getByRole("button", { name: "Check preflight" })
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "New Run" }).click()
+  const preflightButton = page.getByRole("button", { name: "Check Preflight" })
+  await expect(preflightButton).toBeVisible({ timeout: 15_000 })
   test.skip(
     await page.getByText("No subscription runtime is ready").isVisible(),
     "No ready local subscription runtime is available",

@@ -32,7 +32,9 @@ test.describe("OpenCode discovery smoke", () => {
       test.setTimeout(12 * 60_000)
       const act = { timeout: 15_000 }
 
-      await page.goto("/runs/new")
+      await page.goto("/runs")
+      await page.getByRole("button", { name: "New Run" }).click()
+      await expect(page.getByLabel("City or Municipality")).toBeVisible(act)
       await page.getByLabel("City or Municipality").fill(city)
       await page.getByLabel("Target Businesses").fill("5")
 

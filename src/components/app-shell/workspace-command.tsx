@@ -14,6 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { useNewRun } from "@/features/prospecting-runs/client"
 
 export function useWorkspaceCommand() {
   const [open, setOpen] = React.useState(false)
@@ -38,6 +39,7 @@ export function WorkspaceCommand({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
+  const newRun = useNewRun()
 
   const navigate = (href: string) => {
     onOpenChange(false)
@@ -59,7 +61,12 @@ export function WorkspaceCommand({
             ))}
           </CommandGroup>
           <CommandGroup heading="Actions">
-            <CommandItem onSelect={() => navigate("/runs/new")}>
+            <CommandItem
+              onSelect={() => {
+                onOpenChange(false)
+                newRun.open()
+              }}
+            >
               <HugeiconsIcon icon={Add01Icon} aria-hidden="true" />
               <span>Start a New Run</span>
             </CommandItem>

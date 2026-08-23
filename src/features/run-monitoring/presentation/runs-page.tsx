@@ -1,10 +1,8 @@
-import { Add01Icon, FileSearchIcon } from "@hugeicons/core-free-icons"
-import Link from "next/link"
+import { FileSearchIcon } from "@hugeicons/core-free-icons"
 import { Icon } from "@/components/icon"
 
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -13,6 +11,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { NewRunButton } from "@/features/prospecting-runs/client"
 import type { RunSummary } from "@/features/run-monitoring/domain/run-progress"
 import { toRunRow } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunsWorkspace } from "@/features/run-monitoring/presentation/runs-workspace"
@@ -41,10 +40,7 @@ export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Link href="/runs/new" className={buttonVariants()}>
-                <Icon icon={Add01Icon} data-icon="inline-start" />
-                New Run
-              </Link>
+              <NewRunButton />
             </EmptyContent>
           </Empty>
         ) : (

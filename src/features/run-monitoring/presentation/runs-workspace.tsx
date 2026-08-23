@@ -1,11 +1,9 @@
 "use client"
 
-import { Add01Icon, LayoutGridIcon, ListViewIcon } from "@hugeicons/core-free-icons"
-import Link from "next/link"
+import { LayoutGridIcon, ListViewIcon } from "@hugeicons/core-free-icons"
 import { useEffect, useState } from "react"
 import { Icon, type IconSvg } from "@/components/icon"
-
-import { buttonVariants } from "@/components/ui/button"
+import { NewRunButton } from "@/features/prospecting-runs/client"
 import { RunCard } from "@/features/run-monitoring/presentation/run-card"
 import type { RunRow } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunsTable } from "@/features/run-monitoring/presentation/runs-table"
@@ -66,10 +64,7 @@ export function RunsWorkspace({ runs }: { runs: readonly RunRow[] }) {
           ))}
         </fieldset>
 
-        <Link href="/runs/new" className={cn(buttonVariants({ size: "sm" }), "h-8")}>
-          <Icon icon={Add01Icon} data-icon="inline-start" />
-          New Run
-        </Link>
+        <NewRunButton size="sm" className="h-8" />
       </div>
 
       {view === "table" ? (
