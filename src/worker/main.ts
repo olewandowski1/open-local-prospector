@@ -4,33 +4,33 @@ import {
   makeDiscoveryTaskExecutor,
   makeSqliteDiscoveryRepository,
   makeSubscriptionDiscoveryRuntime,
-} from "@/features/business-discovery"
+} from "@/features/business-discovery/worker"
 import {
   makeIdentityTaskExecutor,
   makeSqliteIdentityRepository,
-} from "@/features/business-identity"
+} from "@/features/business-identity/worker"
 import {
   closeSharedDatabases,
   loadLocalApplicationConfig,
   migrateLocalDatabase,
 } from "@/features/local-application"
-import { makeScoreCandidateTaskExecutor } from "@/features/review-queue"
+import { makeScoreCandidateTaskExecutor } from "@/features/review-queue/worker"
 import { loadWorkerConfiguration, runWorker } from "@/features/run-execution/application/worker"
 import { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 import { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"
-import { executeRuntimeCommand, resolveRuntimeExecutable } from "@/features/runtime-settings"
+import { executeRuntimeCommand, resolveRuntimeExecutable } from "@/features/runtime-settings/worker"
 import {
   makeAssessmentTaskExecutor,
   makeClaudeAssessmentRuntime,
   makeCodexAssessmentRuntime,
   makeOpencodeAssessmentRuntime,
   makeSqliteAssessmentRepository,
-} from "@/features/website-assessment"
+} from "@/features/website-assessment/worker"
 import {
   makeInspectionTaskExecutor,
   makePlaywrightWebsiteInspector,
   makeSqliteInspectionRepository,
-} from "@/features/website-inspection"
+} from "@/features/website-inspection/worker"
 import { tryAcquireWorkspaceOperationLease } from "@/features/workspace-administration"
 
 const localConfig = loadLocalApplicationConfig()

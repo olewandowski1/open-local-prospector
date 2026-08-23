@@ -1,16 +1,6 @@
 "use client"
 
-import {
-  AlertCircleIcon,
-  Cancel01Icon,
-  CheckmarkCircle02Icon,
-  Clock01Icon,
-  Loading03Icon,
-  MapPinIcon,
-  PlayIcon,
-  Search01Icon,
-  Tick02Icon,
-} from "@hugeicons/core-free-icons"
+import { AlertCircleIcon, Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { Icon } from "@/components/icon"
@@ -39,6 +29,13 @@ import {
 } from "@/components/ui/select"
 import type { SearchBriefDefaults } from "@/features/prospecting-runs/application/prospecting-run"
 import type { SearchBriefPreflight } from "@/features/prospecting-runs/application/search-brief-preflight"
+import { RunPreflightPanel } from "@/features/prospecting-runs/presentation/run-preflight-panel"
+import {
+  categoryPresets,
+  initialSearchBriefDraft,
+  type SearchBriefDraftState,
+  serializeSearchBriefDraft,
+} from "@/features/prospecting-runs/presentation/search-brief-draft"
 import {
   defaultRuntimeExecutionConfiguration,
   type RuntimeId,
@@ -47,35 +44,11 @@ import {
   type RuntimeReasoningEffort,
   reasoningEffortLabel,
   resolveRuntimeConfiguration,
-  runtimeExecutionLabel,
   runtimeModelOptions,
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
-import { cn } from "@/lib/utils"
 
 const fieldSpacing = "gap-1.5"
-
-const categoryPresets = [
-  "Dental clinics",
-  "Restaurants",
-  "Beauty salons",
-  "Construction companies",
-  "Law firms",
-  "Custom category",
-] as const
-
-type DraftState = Readonly<{
-  location: string
-  radiusKm: string
-  categoryChoice: string
-  customCategory: string
-  targetCount: string
-  mode: "Quick" | "Thorough"
-  runtime: RuntimeId | ""
-  model: string
-  reasoningEffort: RuntimeReasoningEffort
-  recentBusinessPolicy: "Skip" | "IncludeWithoutReassessment" | "Reassess"
-}>
 
 export function SearchBriefPage({
   defaults,
@@ -86,28 +59,9 @@ export function SearchBriefPage({
   readyRuntimes: readonly RuntimeReadiness[]
   selectedRuntime?: RuntimeId
 }) {
-  const defaultCategory = defaults?.category ?? "Dental clinics"
-  const categoryIsPreset = categoryPresets.some(
-    (category) => category !== "Custom category" && category === defaultCategory,
+  const [draft, setDraft] = useState<SearchBriefDraftState>(() =>
+    initialSearchBriefDraft(defaults, readyRuntimes, selectedRuntime),
   )
-  const preferredRuntime = readyRuntimes.some((runtime) => runtime.runtimeId === selectedRuntime)
-    ? selectedRuntime
-    : readyRuntimes[0]?.runtimeId
-  const preferredConfiguration = preferredRuntime
-    ? defaultRuntimeExecutionConfiguration(preferredRuntime)
-    : { model: "", reasoningEffort: "medium" as const }
-  const [draft, setDraft] = useState<DraftState>({
-    location: "",
-    radiusKm: defaults?.radiusKm?.toString() ?? "",
-    categoryChoice: categoryIsPreset ? defaultCategory : "Custom category",
-    customCategory: categoryIsPreset ? "" : defaultCategory,
-    targetCount: String(defaults?.targetCount ?? 10),
-    mode: defaults?.mode ?? "Quick",
-    runtime: preferredRuntime ?? "",
-    model: preferredConfiguration.model,
-    reasoningEffort: preferredConfiguration.reasoningEffort,
-    recentBusinessPolicy: "Skip",
-  })
   const [preflight, setPreflight] = useState<SearchBriefPreflight>()
   const [selectedAreaId, setSelectedAreaId] = useState("")
   const [requestId, setRequestId] = useState("")
@@ -123,7 +77,7 @@ export function SearchBriefPage({
   const categoryItems = categoryPresets.map((category) => ({ label: category, value: category }))
   const selectedEfforts = draft.runtime ? runtimeReasoningEfforts(draft.runtime, draft.model) : []
 
-  const invalidate = (next: Partial<DraftState>) => {
+  const invalidate = (next: Partial<SearchBriefDraftState>) => {
     setDraft((current) => ({ ...current, ...next }))
     setPreflight(undefined)
     setSelectedAreaId("")
@@ -132,17 +86,7 @@ export function SearchBriefPage({
     setError("")
   }
 
-  const serializedDraft = () => ({
-    location: draft.location,
-    ...(draft.radiusKm === "" ? {} : { radiusKm: Number(draft.radiusKm) }),
-    category:
-      draft.categoryChoice === "Custom category" ? draft.customCategory : draft.categoryChoice,
-    targetCount: Number(draft.targetCount),
-    mode: draft.mode,
-    runtime: draft.runtime,
-    runtimeConfiguration: { model: draft.model, reasoningEffort: draft.reasoningEffort },
-    recentBusinessPolicy: draft.recentBusinessPolicy,
-  })
+  const serializedDraft = () => serializeSearchBriefDraft(draft)
 
   const checkPreflight = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -307,7 +251,7 @@ export function SearchBriefPage({
                   <RadioGroup
                     value={draft.mode}
                     onValueChange={(value) =>
-                      value && invalidate({ mode: value as DraftState["mode"] })
+                      value && invalidate({ mode: value as SearchBriefDraftState["mode"] })
                     }
                     className="grid sm:grid-cols-2"
                   >
@@ -346,7 +290,8 @@ export function SearchBriefPage({
                     onValueChange={(value) =>
                       value &&
                       invalidate({
-                        recentBusinessPolicy: value as DraftState["recentBusinessPolicy"],
+                        recentBusinessPolicy:
+                          value as SearchBriefDraftState["recentBusinessPolicy"],
                       })
                     }
                   >
@@ -529,163 +474,15 @@ export function SearchBriefPage({
           </section>
         </div>
 
-        <aside aria-label="Run preflight" className="lg:pt-20">
-          <section className="border-y py-5 lg:sticky lg:top-6">
-            <SectionHeader
-              title="Run Preflight"
-              description="Nothing is persisted as a run until you confirm here."
-              className="mb-5"
-            />
-            <div className="grid gap-5">
-              {error ? (
-                <Alert variant="destructive">
-                  <Icon icon={AlertCircleIcon} />
-                  <AlertTitle>Unable to continue</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              {!preflight ? (
-                <p className="text-sm text-muted-foreground">
-                  Complete the Search Brief and check preflight to interpret the area and verify
-                  dependencies.
-                </p>
-              ) : (
-                <>
-                  <section aria-labelledby="search-area-title">
-                    <h2 id="search-area-title" className="text-sm font-semibold">
-                      Interpreted Search Area
-                    </h2>
-                    {preflight.searchAreas.length === 0 ? (
-                      <p className="mt-2 text-sm text-destructive">
-                        No matching location was found.
-                      </p>
-                    ) : (
-                      <RadioGroup
-                        value={selectedAreaId}
-                        onValueChange={(value) => value && setSelectedAreaId(value)}
-                        className="mt-3"
-                        aria-label="Search Area"
-                      >
-                        {preflight.searchAreas.map((area) => (
-                          <FieldLabel key={area.id}>
-                            <Field orientation="horizontal">
-                              <RadioGroupItem value={area.id} aria-label={area.displayName} />
-                              <Icon icon={MapPinIcon} />
-                              <span className="text-sm">{area.displayName}</span>
-                            </Field>
-                          </FieldLabel>
-                        ))}
-                      </RadioGroup>
-                    )}
-                    {preflight.searchAreas.length > 1 && !selectedAreaId ? (
-                      <p className="mt-2 text-xs font-medium text-destructive">
-                        Select the intended Search Area explicitly.
-                      </p>
-                    ) : null}
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Geocoding © OpenStreetMap contributors. Public Nominatim is used only on your
-                      explicit request, cached locally, and limited to one request per second. Read
-                      the{" "}
-                      <a
-                        className="underline underline-offset-4"
-                        href="https://operations.osmfoundation.org/policies/nominatim/"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        usage policy
-                      </a>
-                      .
-                    </p>
-                  </section>
-
-                  <section aria-labelledby="dependency-title">
-                    <h2 id="dependency-title" className="text-sm font-semibold">
-                      Dependencies
-                    </h2>
-                    <ul className="mt-2 grid gap-2">
-                      {[...preflight.dependencies, preflight.runtime].map((dependency) => (
-                        <li
-                          key={"id" in dependency ? dependency.id : dependency.runtimeId}
-                          className="flex items-start gap-2 text-sm"
-                        >
-                          {dependency.status === "Ready" ? (
-                            <Icon icon={Tick02Icon} className="mt-0.5 size-3.5 text-success" />
-                          ) : (
-                            <Icon
-                              icon={Cancel01Icon}
-                              className="mt-0.5 size-3.5 text-destructive"
-                            />
-                          )}
-                          <span className="flex-1">{dependency.label}</span>
-                          <span
-                            className={cn(
-                              "text-sm font-medium",
-                              dependency.status === "Ready" ? "text-success" : "text-destructive",
-                            )}
-                          >
-                            {dependency.status === "Ready" ? "Ready" : "Not Ready"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-
-                  <section aria-labelledby="estimate-title">
-                    <h2
-                      id="estimate-title"
-                      className="flex items-center gap-2 text-sm font-semibold"
-                    >
-                      <Icon icon={Clock01Icon} /> Workload estimate
-                    </h2>
-                    <p className="mt-2 text-sm">
-                      About {preflight.estimate.discoveryQueries} discovery queries, up to{" "}
-                      {preflight.estimate.likelyInspections} inspections, and{" "}
-                      {preflight.estimate.duration}.
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{preflight.estimate.note}</p>
-                    {preflight.draft.runtimeConfiguration ? (
-                      <p className="mt-2 text-xs font-medium">
-                        {preflight.runtime.label} ·{" "}
-                        {runtimeExecutionLabel(
-                          preflight.draft.runtime,
-                          preflight.draft.runtimeConfiguration,
-                        )}
-                      </p>
-                    ) : null}
-                  </section>
-
-                  {createdRun ? (
-                    <Alert>
-                      <Icon icon={CheckmarkCircle02Icon} />
-                      <AlertTitle>Pending run created</AlertTitle>
-                      <AlertDescription>
-                        Run{" "}
-                        <span className="font-medium tabular-nums" title={createdRun.id}>
-                          #{createdRun.id.slice(0, 8)}
-                        </span>{" "}
-                        is ready for the worker.{" "}
-                        <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Button
-                      onClick={createRun}
-                      disabled={busy || !preflight.ready || !selectedAreaId}
-                    >
-                      {busy ? (
-                        <Icon icon={Loading03Icon} className="animate-spin" />
-                      ) : (
-                        <Icon icon={PlayIcon} />
-                      )}
-                      Confirm and create run
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-          </section>
-        </aside>
+        <RunPreflightPanel
+          preflight={preflight}
+          selectedAreaId={selectedAreaId}
+          onSelectedAreaChange={setSelectedAreaId}
+          error={error}
+          busy={busy}
+          createdRun={createdRun}
+          onCreateRun={createRun}
+        />
       </div>
     </PageScroller>
   )

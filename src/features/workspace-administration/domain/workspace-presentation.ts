@@ -12,6 +12,14 @@ export type WorkspaceInventory = Readonly<{
   suppressions: number
 }>
 
+export type SuppressionRecord = Readonly<{
+  identityFingerprint: string
+  canonicalBusinessId: string | null
+  businessName: string
+  reason: string
+  createdAt: string
+}>
+
 export type WorkspaceInventoryPresentation = Readonly<{
   databasePath: string
   databaseSize: string

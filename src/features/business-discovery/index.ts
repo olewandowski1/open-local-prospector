@@ -23,4 +23,3 @@ export {
 } from "@/features/business-discovery/domain/discovery-structure"
 export { discoveredBusinesses } from "@/features/business-discovery/infrastructure/schema"
 export { makeSqliteDiscoveryRepository } from "@/features/business-discovery/infrastructure/sqlite-discovery-repository"
-export { makeSubscriptionDiscoveryRuntime } from "@/features/business-discovery/infrastructure/subscription-discovery-runtime"

@@ -5,4 +5,3 @@ export {
   canonicalBusinesses,
   runBusinesses,
 } from "@/features/business-identity/infrastructure/schema"
-export { makeSqliteIdentityRepository } from "@/features/business-identity/infrastructure/sqlite-identity-repository"

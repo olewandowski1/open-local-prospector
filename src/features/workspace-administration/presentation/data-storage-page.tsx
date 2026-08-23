@@ -3,8 +3,10 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { SectionHeader } from "@/components/page-layout"
 import { Separator } from "@/components/ui/separator"
-import type { WorkspaceInventoryPresentation } from "@/features/workspace-administration/domain/workspace-presentation"
-import type { SuppressionRecord } from "@/features/workspace-administration/infrastructure/workspace-store"
+import type {
+  SuppressionRecord,
+  WorkspaceInventoryPresentation,
+} from "@/features/workspace-administration/domain/workspace-presentation"
 import { SuppressionList } from "@/features/workspace-administration/presentation/suppression-list"
 
 export function DataStoragePage({
