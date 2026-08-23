@@ -85,7 +85,7 @@ workspace paths, concurrency, geocoding, or runtime executables.
 Next.js serves the local interface, a separate worker executes durable jobs, and SQLite stores the
 workspace. Start with the [Documentation Index](docs/README.md), [Product](docs/Product.md),
 [Domain Language](docs/Domain-Language.md), [Architecture](docs/Architecture.md), and
-[Changelog](Changelog.md).
+[Changelog](CHANGELOG.md).
 
 ## Verification
 
