@@ -10,7 +10,7 @@ the artifact directory are the only state that must survive a restart.
 ```text
 Browser → Next.js Web Process → SQLite ← Effect Worker
                   │                         │
-                  └─ Review And Control     ├─ Codex, Claude, Or OpenCode
+                  └─ Review And Control     ├─ Claude, Codex, Or OpenCode
                                             └─ Playwright Chromium
 ```
 

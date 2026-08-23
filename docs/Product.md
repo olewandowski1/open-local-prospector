@@ -15,8 +15,10 @@ leave the user to repeat discovery, verification, and review by hand.
 Open Prospector is a single-user, local-first application that discovers independent
 businesses for a bounded Search Brief, verifies their public Online Presence, inspects their
 websites in a controlled browser, and ranks evidence-backed Website Opportunities for review. The
-application owns orchestration, validation, scoring, safety, and persistence; Codex, Claude, or
-OpenCode performs narrowly scoped search and interpretation work through an installed runtime.
+application owns orchestration, validation, scoring, safety, and persistence. Users bring their own
+Claude, Codex, or OpenCode subscriptions, choose one for each Search Brief, and switch between ready
+runtimes whenever they want. The selected runtime performs narrowly scoped search and
+interpretation work.
 
 ### Success Criteria
 
@@ -113,7 +115,7 @@ local-first.
 
 ### Tool Requirements
 
-- Discovery uses the selected Codex, Claude, or OpenCode runtime's public web-search capability.
+- Discovery uses the selected Claude, Codex, or OpenCode runtime's public web-search capability.
 - Website inspection uses application-owned Playwright Chromium, not provider browsing behavior.
 - Structuring calls receive a bounded report with tools disabled and must satisfy a closed schema.
 - Source Content is delimited untrusted data and cannot grant permissions or alter tool arguments.
@@ -155,7 +157,7 @@ Next.js Web Application  →  SQLite  ←  Effect Worker
 
 ### Integration Points
 
-- Installed Codex, Claude, and OpenCode executables, invoked directly without a shell.
+- Installed Claude, Codex, and OpenCode executables, invoked directly without a shell.
 - Playwright-managed Chromium for public website inspection.
 - OpenStreetMap Nominatim-compatible geocoding, called only by explicit preflight action.
 - Local filesystem paths configured through non-secret environment variables.

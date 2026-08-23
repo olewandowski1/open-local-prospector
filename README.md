@@ -5,7 +5,11 @@
 <h1 align="center">Open Prospector</h1>
 
 <p align="center">
-  Find evidence-backed website opportunities for independent businesses on your own machine.
+  Turn your existing AI subscription into a local prospect research workflow.
+</p>
+
+<p align="center">
+  <strong>Bring Your Own Claude, Codex, Or OpenCode Subscription. Use Your Subscriptions Your Way.</strong>
 </p>
 
 <p align="center">
@@ -24,8 +28,10 @@ Open Prospector searches a place and business category, verifies each business, 
 website, and ranks genuine opportunities. Every material claim keeps its source and observation
 time.
 
-The application runs locally, stores work in SQLite, and uses an installed Codex, Claude, or
-OpenCode subscription. It requires no API keys and sends no outreach.
+Bring your own Claude, Codex, or OpenCode subscription. Open Prospector works through the
+corresponding installed client, so it needs no usage-based API keys or metered fallback. It stores
+work locally in SQLite and sends no outreach. Choose the runtime for each run and switch between
+your ready subscriptions whenever you want.
 
 ## How A Run Works
 
@@ -43,8 +49,9 @@ OpenCode subscription. It requires no API keys and sends no outreach.
 
 ## Quick Start
 
-Requirements: Node.js 22 or newer, pnpm 10 or newer, and a ready Codex, Claude, or OpenCode
-runtime. Docker, a database server, and search API keys are not required.
+Requirements: Node.js 22 or newer, pnpm 10 or newer, and a ready Claude, Codex, or OpenCode
+runtime connected to your subscription. Docker, a database server, and search API keys are not
+required.
 
 ```powershell
 pnpm install

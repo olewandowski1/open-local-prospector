@@ -23,7 +23,7 @@ pnpm dev
 ```
 
 You need Node.js 22 or newer and pnpm 10.32.1. `pnpm run setup` is safe to re-run. To exercise a
-real prospecting run you also need a ready Codex, Claude, or OpenCode runtime. See the
+real prospecting run you also need a ready Claude, Codex, or OpenCode runtime. See the
 [README](README.md#requirements).
 
 ## Before You Open A Pull Request
