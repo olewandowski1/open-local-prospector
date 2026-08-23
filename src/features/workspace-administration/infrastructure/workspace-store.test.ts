@@ -316,6 +316,56 @@ describe("workspace store", () => {
           "insert into run_businesses (id,run_id,discovered_business_id,canonical_business_id,status,identity_confidence,signals,created_at,updated_at) values ('business-gone','run-gone','discovered-gone','canonical-gone','Eligible','Corroborated','[]',1,1)",
         )
         .run()
+      database
+        .prepare(
+          "insert into discovered_businesses (id,run_id,source,source_identifier,discovery_key,name,normalized_name,result_url,raw_attributes,discovered_at) values ('discovered-kept','run-gone','Search','source','key-kept','Kept','kept','https://kept.example','{}',1)",
+        )
+        .run()
+      database
+        .prepare(
+          `insert into run_tasks
+           (id,run_id,business_id,stage,status,attempt_count,max_attempts,available_at,input,
+            checkpoint,schema_version,version,failure,created_at,updated_at)
+           values (?,?,?,'InspectWebsite','Blocked',1,3,1,'{}','{"page":1}',1,1,'{"code":"blocked"}',1,1)`,
+        )
+        .run("task-gone-1", "run-gone", "discovered-gone")
+      database
+        .prepare(
+          `insert into run_tasks
+           (id,run_id,business_id,stage,status,attempt_count,max_attempts,available_at,input,
+            checkpoint,schema_version,version,failure,created_at,updated_at)
+           values (?,?,?,'AssessWebsiteOpportunity','FailedPermanent',3,3,1,'{}','{"page":2}',1,1,'{"code":"failed"}',1,1)`,
+        )
+        .run("task-gone-2", "run-gone", "discovered-gone")
+      database
+        .prepare(
+          `insert into run_tasks
+           (id,run_id,business_id,stage,status,attempt_count,max_attempts,available_at,input,
+            schema_version,version,created_at,updated_at)
+           values ('task-kept','run-gone','discovered-kept','InspectWebsite','Completed',0,3,1,
+            '{}',1,1,1,1)`,
+        )
+        .run()
+      const insertEvent = database.prepare(
+        `insert into technical_run_events
+         (id,run_id,task_id,business_id,kind,message,created_at) values (?,?,?,?,?,'Recorded',1)`,
+      )
+      insertEvent.run(
+        "event-discovered-gone",
+        "run-gone",
+        "task-gone-1",
+        "discovered-gone",
+        "DiscoveryResult",
+      )
+      insertEvent.run(
+        "event-run-business-gone",
+        "run-gone",
+        "task-gone-2",
+        "business-gone",
+        "InspectionPage",
+      )
+      insertEvent.run("event-kept", "run-gone", "task-kept", "discovered-kept", "DiscoveryResult")
+      insertEvent.run("event-run", "run-gone", null, null, "RunCompleted")
       seedCandidate(database, "gone", "Shortlisted", evidence)
     } finally {
       database.close()
@@ -332,6 +382,22 @@ describe("workspace store", () => {
       expect(
         Number(checked.prepare("select count(*) from suppression_entries").pluck().get()),
       ).toBe(0)
+      expect(
+        checked
+          .prepare("select id from run_tasks where business_id='discovered-gone'")
+          .pluck()
+          .all(),
+      ).toEqual([])
+      expect(checked.prepare("select id from run_tasks where id='task-kept'").pluck().get()).toBe(
+        "task-kept",
+      )
+      const eventIds = checked
+        .prepare("select id from technical_run_events order by id")
+        .pluck()
+        .all()
+      expect(eventIds).not.toContain("event-discovered-gone")
+      expect(eventIds).not.toContain("event-run-business-gone")
+      expect(eventIds).toEqual(expect.arrayContaining(["event-kept", "event-run"]))
     } finally {
       checked.close()
     }

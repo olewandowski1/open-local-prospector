@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { createConfirmedProspectingRun } from "@/features/prospecting-runs/server/search-brief-services"
-import { withWorkspaceAdmission } from "@/features/workspace-administration"
+import { assertSameOrigin, withWorkspaceAdmission } from "@/features/workspace-administration"
 
 export async function POST(request: Request) {
   try {
+    assertSameOrigin(request)
     const body: unknown = await request.json()
     if (!isConfirmation(body)) throw new Error("invalid confirmation")
     const run = await withWorkspaceAdmission(() =>

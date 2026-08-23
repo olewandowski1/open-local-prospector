@@ -9,6 +9,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- API traffic now enforces the literal loopback Host, and state-changing routes reject foreign
+  browser origins.
+- Deleting a business now removes its task checkpoints, failures, and business-scoped Technical Run
+  Log entries while retaining unrelated run history.
+- Explicitly resuming with another runtime now updates unfinished discovery task input and removes
+  configuration belonging to the previous provider.
+- Supporting Observation timestamps must now exactly match the cited evidence supplied to the
+  assessment runtime.
+- The MVP quality gate now replays versioned synthetic discovery and assessment fixtures through
+  production verification, identity, citation, scoring, and qualification rules without network
+  access.
+- A deterministic offline integration suite now exercises the assembled worker pipeline, durable
+  payload handoffs, restart idempotency, and isolated per-business failure behavior.
 - Page scrolling now responds across the full content region while content remains centered and
   width limited.
 

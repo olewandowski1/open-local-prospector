@@ -40,10 +40,18 @@ export const withWorkspaceAdmission = <T>(work: () => T): T => {
   return work()
 }
 
+export function isLoopbackApiRequest(request: Request): boolean {
+  const host = request.headers.get("host")
+  if (!host) return false
+  const match = /^127\.0\.0\.1(?::([1-9]\d{0,4}))?$/.exec(host)
+  if (!match) return false
+  return match[1] === undefined || Number(match[1]) <= 65_535
+}
+
 export function assertSameOrigin(request: Request): void {
+  if (!isLoopbackApiRequest(request)) throw new Error("Local API request refused.")
   const origin = request.headers.get("origin")
   if (!origin) return
-  const requestHost = request.headers.get("host")
   let originUrl: URL
   try {
     originUrl = new URL(origin)
@@ -51,8 +59,8 @@ export function assertSameOrigin(request: Request): void {
     throw new Error("Cross-origin request refused.")
   }
   if (
-    !requestHost ||
-    originUrl.host !== requestHost ||
+    originUrl.host !== request.headers.get("host") ||
+    originUrl.origin !== origin ||
     !["http:", "https:"].includes(originUrl.protocol)
   ) {
     throw new Error("Cross-origin request refused.")

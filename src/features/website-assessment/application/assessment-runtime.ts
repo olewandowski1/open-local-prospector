@@ -1,6 +1,9 @@
 import { Data, type Effect } from "effect"
 import type { RuntimeExecutionConfiguration } from "@/features/runtime-settings"
-import type { AssessmentOutput } from "@/features/website-assessment/domain/assessment-output"
+import type {
+  AllowedAssessmentCitations,
+  AssessmentOutput,
+} from "@/features/website-assessment/domain/assessment-output"
 
 export type AssessmentEvidencePage = Readonly<{
   sourceUrl: string
@@ -53,13 +56,27 @@ export interface AssessmentRuntime {
   ) => Effect.Effect<AssessmentOutput, AssessmentRuntimeError>
 }
 
-export function assessmentSourceUrls(evidence: AssessmentEvidenceEnvelope): ReadonlySet<string> {
-  const urls = [
-    ...evidence.pages.map((page) => page.sourceUrl),
-    ...evidence.publicPresenceSources.map((presence) => presence.sourceUrl),
-    ...evidence.inspectionBlocks.flatMap((block) => (block.sourceUrl ? [block.sourceUrl] : [])),
+export function assessmentCitations(
+  evidence: AssessmentEvidenceEnvelope,
+): AllowedAssessmentCitations {
+  const citations = [
+    ...evidence.pages.map((page) => ({ sourceUrl: page.sourceUrl, observedAt: page.observedAt })),
+    ...evidence.publicPresenceSources.map((presence) => ({
+      sourceUrl: presence.sourceUrl,
+      observedAt: presence.observedAt,
+    })),
+    ...evidence.inspectionBlocks.flatMap((block) =>
+      block.sourceUrl ? [{ sourceUrl: block.sourceUrl, observedAt: block.observedAt }] : [],
+    ),
   ]
-  return new Set(urls.map(normalizeUrl))
+  const allowed = new Map<string, Set<string>>()
+  for (const citation of citations) {
+    const sourceUrl = normalizeUrl(citation.sourceUrl)
+    const times = allowed.get(sourceUrl) ?? new Set<string>()
+    times.add(citation.observedAt)
+    allowed.set(sourceUrl, times)
+  }
+  return allowed
 }
 
 export function buildAssessmentPrompt(

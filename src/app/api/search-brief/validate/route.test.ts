@@ -13,7 +13,7 @@ const validBrief = {
 const requestWithBody = (body: string) =>
   new Request("http://127.0.0.1/api/search-brief/validate", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { host: "127.0.0.1", "content-type": "application/json" },
     body,
   })
 

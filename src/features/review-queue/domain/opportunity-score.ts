@@ -18,6 +18,13 @@ export type ScoreBreakdown = Readonly<{
   rubricVersion: typeof SCORE_RUBRIC_VERSION
 }>
 
+export type QualificationEvidence = Readonly<{
+  hasOpportunity: boolean
+  hasObservation: boolean
+  hasContactRoute: boolean
+  suppressed: boolean
+}>
+
 export function calculateOpportunityScore(input: ScoreInputs): ScoreBreakdown {
   const severity = bounded(input.severity / 5) * 40
   const observationConfidence = bounded(input.observationConfidence) * 25
@@ -41,6 +48,19 @@ export function calculateOpportunityScore(input: ScoreInputs): ScoreBreakdown {
       ) / 100,
     rubricVersion: SCORE_RUBRIC_VERSION,
   }
+}
+
+export function qualifiesOpportunityScore(
+  score: ScoreBreakdown,
+  evidence: QualificationEvidence,
+): boolean {
+  return (
+    score.total >= REVIEW_QUEUE_THRESHOLD &&
+    evidence.hasOpportunity &&
+    evidence.hasObservation &&
+    evidence.hasContactRoute &&
+    !evidence.suppressed
+  )
 }
 
 function bounded(value: number) {

@@ -65,11 +65,15 @@ export function deleteBusiness(
         .all(business.id)
         .map((row) => (row as { path: string }).path)
       database.transaction(() => {
-        const deleteTasks = database.prepare("delete from run_tasks where business_id=?")
+        const deleteTasks = database.prepare("delete from run_tasks where business_id in (?, ?)")
+        const deleteEvents = database.prepare(
+          "delete from technical_run_events where business_id in (?, ?)",
+        )
         const deleteRunBusiness = database.prepare("delete from run_businesses where id=?")
         const deleteDiscovered = database.prepare("delete from discovered_businesses where id=?")
         for (const association of associations) {
-          deleteTasks.run(association.id)
+          deleteEvents.run(association.discovered_business_id, association.id)
+          deleteTasks.run(association.discovered_business_id, association.id)
           deleteRunBusiness.run(association.id)
           deleteDiscovered.run(association.discovered_business_id)
         }

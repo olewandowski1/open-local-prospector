@@ -18,7 +18,10 @@ export type {
   VerificationRejection,
 } from "@/features/business-discovery/domain/discovery-structure"
 export {
+  DISCOVERY_REPORT_PROMPT_VERSION,
+  DISCOVERY_STRUCTURE_PROMPT_VERSION,
   DISCOVERY_STRUCTURE_SCHEMA_VERSION,
+  decodeDiscoveryStructure,
   verifyAgainstReport,
 } from "@/features/business-discovery/domain/discovery-structure"
 export { discoveredBusinesses } from "@/features/business-discovery/infrastructure/schema"

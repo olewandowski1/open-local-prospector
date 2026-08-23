@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   calculateOpportunityScore,
+  qualifiesOpportunityScore,
   REVIEW_QUEUE_THRESHOLD,
 } from "@/features/review-queue/domain/opportunity-score"
 
@@ -44,5 +45,42 @@ describe("opportunity score", () => {
         apparentCommercialValue: 0,
       }).total,
     ).toBe(10)
+  })
+  it("requires threshold, evidence, contact, and no suppression", () => {
+    const score = calculateOpportunityScore({
+      severity: 2,
+      observationConfidence: 0.6,
+      hasContactRoute: true,
+      localDecisionLikelihood: 1,
+      apparentCommercialValue: 0.4,
+    })
+    expect(score.total).toBe(REVIEW_QUEUE_THRESHOLD)
+    expect(
+      qualifiesOpportunityScore(score, {
+        hasOpportunity: true,
+        hasObservation: true,
+        hasContactRoute: true,
+        suppressed: false,
+      }),
+    ).toBe(true)
+    for (const missing of ["hasOpportunity", "hasObservation", "hasContactRoute"] as const) {
+      expect(
+        qualifiesOpportunityScore(score, {
+          hasOpportunity: true,
+          hasObservation: true,
+          hasContactRoute: true,
+          suppressed: false,
+          [missing]: false,
+        }),
+      ).toBe(false)
+    }
+    expect(
+      qualifiesOpportunityScore(score, {
+        hasOpportunity: true,
+        hasObservation: true,
+        hasContactRoute: true,
+        suppressed: true,
+      }),
+    ).toBe(false)
   })
 })

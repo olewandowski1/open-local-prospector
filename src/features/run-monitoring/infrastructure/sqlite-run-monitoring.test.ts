@@ -7,7 +7,10 @@ import {
   getRun,
   listRuns,
 } from "@/features/run-monitoring/application/run-repositories"
-import { sqliteRunMonitoringLive } from "@/features/run-monitoring/infrastructure/sqlite-run-monitoring"
+import {
+  rewriteDiscoveryTaskInput,
+  sqliteRunMonitoringLive,
+} from "@/features/run-monitoring/infrastructure/sqlite-run-monitoring"
 import { createMigratedTestDatabase } from "@/test-support/local-database"
 import { createTestProspectingRun } from "@/test-support/prospecting-run"
 import { makeSqliteRunTaskRepository, type RunTask } from "@/test-support/run-task"
@@ -18,6 +21,170 @@ afterEach(() => {
 })
 
 describe("SQLite run monitoring", () => {
+  it("rewrites only a recognized versioned discovery input", () => {
+    const input = discoveryInput("codex", true)
+    const rewritten = JSON.parse(rewriteDiscoveryTaskInput(input, 1, "claude"))
+
+    expect(rewritten).toMatchObject({
+      marker: "preserved",
+      searchBrief: { runtime: "claude", category: "Dental clinics" },
+    })
+    expect(rewritten.searchBrief).not.toHaveProperty("runtimeConfiguration")
+    expect(
+      JSON.parse(rewriteDiscoveryTaskInput(discoveryInput("codex", false), 1, "claude")).searchBrief
+        .runtime,
+    ).toBe("claude")
+    expect(() => rewriteDiscoveryTaskInput("{", 1, "claude")).toThrow(
+      "invalid discovery task input",
+    )
+    expect(() => rewriteDiscoveryTaskInput("{}", 1, "claude")).toThrow(
+      "invalid discovery task input",
+    )
+    expect(() => rewriteDiscoveryTaskInput(input, 2, "claude")).toThrow(
+      "unsupported discovery task input version",
+    )
+  })
+
+  it.each([
+    ["codex", "claude"],
+    ["claude", "opencode"],
+    ["opencode", "codex"],
+  ] as const)("switches unfinished discovery input durably from %s to %s", async (from, to) => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, `runtime-switch-${from}`, {
+      runtime: from,
+      runtimeConfiguration: { model: "gpt-5.6-sol", reasoningEffort: "medium" },
+    })
+    const originalInput = discoveryInput(from, true)
+    const sqlite = new Database(database.path)
+    try {
+      sqlite
+        .prepare(`update prospecting_runs set state='Paused',completion_state='Paused' where id=?`)
+        .run(run.id)
+      sqlite
+        .prepare(
+          `update run_tasks set stage='DiscoverBusinesses',status='Blocked',input=?,schema_version=1,
+           failure='{"code":"runtime-unavailable"}' where run_id=?`,
+        )
+        .run(originalInput, run.id)
+      const insertTask = sqlite.prepare(
+        `insert into run_tasks
+         (id,run_id,stage,status,attempt_count,max_attempts,available_at,input,schema_version,
+          version,created_at,updated_at) values (?,?, 'DiscoverBusinesses', ?,0,3,1,?,1,1,1,1)`,
+      )
+      for (const status of ["Completed", "Cancelled", "FailedPermanent", "Leased"] as const) {
+        insertTask.run(`sentinel-${status}`, run.id, status, originalInput)
+      }
+    } finally {
+      sqlite.close()
+    }
+
+    await Effect.runPromise(
+      controlRun(run.id, "Resume", to).pipe(Effect.provide(sqliteRunMonitoringLive(database.path))),
+    )
+
+    const checked = new Database(database.path, { readonly: true })
+    try {
+      const runBrief = JSON.parse(
+        String(
+          checked
+            .prepare("select search_brief from prospecting_runs where id=?")
+            .pluck()
+            .get(run.id),
+        ),
+      )
+      expect(runBrief.runtime).toBe(to)
+      expect(runBrief).not.toHaveProperty("runtimeConfiguration")
+      const pending = checked
+        .prepare("select input,status,failure from run_tasks where run_id=? and status='Pending'")
+        .get(run.id) as { input: string; status: string; failure: string | null }
+      const pendingInput = JSON.parse(pending.input)
+      expect(pendingInput.searchBrief.runtime).toBe(to)
+      expect(pendingInput.searchBrief).not.toHaveProperty("runtimeConfiguration")
+      expect(pending.failure).toBeNull()
+      for (const status of ["Completed", "Cancelled", "FailedPermanent", "Leased"] as const) {
+        expect(
+          checked
+            .prepare("select input from run_tasks where id=?")
+            .pluck()
+            .get(`sentinel-${status}`),
+        ).toBe(originalInput)
+      }
+      const runtimeEvent = checked
+        .prepare(
+          "select details from technical_run_events where run_id=? and kind='RuntimeChanged'",
+        )
+        .pluck()
+        .get(run.id)
+      expect(JSON.parse(String(runtimeEvent))).toEqual({ from, to })
+    } finally {
+      checked.close()
+    }
+    await Effect.runPromise(
+      controlRun(run.id, "Resume", to).pipe(Effect.provide(sqliteRunMonitoringLive(database.path))),
+    )
+    expect(
+      readScalar(
+        database.path,
+        "select count(*) from technical_run_events where run_id=? and kind='RuntimeChanged'",
+        run.id,
+      ),
+    ).toBe(1)
+  })
+
+  it("rolls back a runtime switch when unfinished discovery input is malformed", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "invalid-runtime-switch")
+    const sqlite = new Database(database.path)
+    try {
+      sqlite
+        .prepare("update prospecting_runs set state='Paused',completion_state='Paused' where id=?")
+        .run(run.id)
+      sqlite
+        .prepare(
+          "update run_tasks set stage='DiscoverBusinesses',status='Blocked',input='{}' where run_id=?",
+        )
+        .run(run.id)
+    } finally {
+      sqlite.close()
+    }
+
+    await expect(
+      Effect.runPromise(
+        controlRun(run.id, "Resume", "claude").pipe(
+          Effect.provide(sqliteRunMonitoringLive(database.path)),
+        ),
+      ),
+    ).rejects.toBeDefined()
+
+    const checked = new Database(database.path, { readonly: true })
+    try {
+      expect(
+        JSON.parse(
+          String(
+            checked
+              .prepare("select search_brief from prospecting_runs where id=?")
+              .pluck()
+              .get(run.id),
+          ),
+        ).runtime,
+      ).toBe("codex")
+      expect(
+        checked.prepare("select status from run_tasks where run_id=?").pluck().get(run.id),
+      ).toBe("Blocked")
+      expect(
+        checked
+          .prepare("select count(*) from technical_run_events where kind='RuntimeChanged'")
+          .pluck()
+          .get(),
+      ).toBe(0)
+    } finally {
+      checked.close()
+    }
+  })
+
   it("reads every progress count and keeps source events in the Technical Run Log", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
@@ -181,6 +348,29 @@ describe("SQLite run monitoring", () => {
     })
   })
 })
+
+function discoveryInput(runtime: "codex" | "claude" | "opencode", configured: boolean): string {
+  return JSON.stringify({
+    marker: "preserved",
+    searchBrief: {
+      location: "KrakĂłw",
+      category: "Dental clinics",
+      targetCount: 5,
+      mode: "Quick",
+      runtime,
+      ...(configured
+        ? { runtimeConfiguration: { model: "provider-model", reasoningEffort: "medium" } }
+        : {}),
+      searchArea: {
+        id: "relation:276892",
+        displayName: "KrakĂłw, Polska",
+        latitude: 50.0614,
+        longitude: 19.9366,
+        countryCode: "PL",
+      },
+    },
+  })
+}
 
 function requiredTask(value: Option.Option<RunTask>): RunTask {
   const task = Option.getOrUndefined(value)

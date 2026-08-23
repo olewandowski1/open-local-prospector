@@ -7,8 +7,10 @@ export {
 export { DataStoragePage } from "@/features/workspace-administration/presentation/data-storage-page"
 export { WorkspaceActions } from "@/features/workspace-administration/presentation/workspace-actions"
 export {
+  assertSameOrigin,
   getSuppressions,
   getWorkspaceInventory,
+  isLoopbackApiRequest,
   withWorkspaceAdmission,
   workspaceMaintenanceIsActive,
 } from "@/features/workspace-administration/server/workspace-services"

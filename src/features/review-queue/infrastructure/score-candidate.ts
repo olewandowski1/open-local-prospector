@@ -2,7 +2,7 @@ import Database from "better-sqlite3"
 import { Effect } from "effect"
 import {
   calculateOpportunityScore,
-  REVIEW_QUEUE_THRESHOLD,
+  qualifiesOpportunityScore,
 } from "@/features/review-queue/domain/opportunity-score"
 import type { RunTask, TaskCheckpoint } from "@/features/run-execution"
 import { TaskExecutionError } from "@/features/run-execution"
@@ -73,12 +73,12 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
            where cb.id=?`,
         )
         .get(row.canonical_business_id)
-      const qualified =
-        breakdown.total >= REVIEW_QUEUE_THRESHOLD &&
-        row.opportunities > 0 &&
-        row.observations > 0 &&
-        Boolean(row.has_contact) &&
-        !suppressed
+      const qualified = qualifiesOpportunityScore(breakdown, {
+        hasOpportunity: row.opportunities > 0,
+        hasObservation: row.observations > 0,
+        hasContactRoute: Boolean(row.has_contact),
+        suppressed: Boolean(suppressed),
+      })
       const id = crypto.randomUUID()
       const now = Date.now()
       db.prepare(

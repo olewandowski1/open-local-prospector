@@ -7,9 +7,11 @@ import {
   updateCandidateReview,
 } from "@/features/review-queue/infrastructure/review-candidate"
 import { getQueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
+import { assertSameOrigin } from "@/features/workspace-administration"
 
 export async function POST(request: Request, context: { params: Promise<{ scoreId: string }> }) {
   try {
+    assertSameOrigin(request)
     const { scoreId } = await context.params
     const body = (await request.json()) as Record<string, unknown>
     const databasePath = loadLocalApplicationConfig().databasePath

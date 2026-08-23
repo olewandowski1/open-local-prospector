@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest"
 import { decodeAssessmentOutput } from "@/features/website-assessment/domain/assessment-output"
 
 const sourceUrl = "https://fixture.test/"
+const observedAt = "2026-08-16T10:00:00.000Z"
+const laterObservedAt = "2026-08-16T10:05:00.000Z"
+const citations = new Map([[sourceUrl, new Set([observedAt, laterObservedAt])]])
 const valid = {
   schemaVersion: "assessment-output-v1",
   assessmentState: "Completed",
@@ -20,7 +23,7 @@ const valid = {
         {
           statement: "No booking link appears in the navigation.",
           sourceUrl,
-          observedAt: "2026-08-16T10:00:00.000Z",
+          observedAt,
           evidenceState: "AIAssessment",
           confidence: 0.8,
         },
@@ -32,8 +35,29 @@ const valid = {
 describe("assessment output boundary", () => {
   it("accepts a cited assessment", async () => {
     await expect(
-      Effect.runPromise(decodeAssessmentOutput(valid, new Set([sourceUrl]))),
+      Effect.runPromise(decodeAssessmentOutput(valid, citations)),
     ).resolves.toMatchObject(valid)
+  })
+
+  it("accepts either exact time supplied for one normalized URL", async () => {
+    const value = observation({ sourceUrl: `${sourceUrl}#rendered`, observedAt: laterObservedAt })
+    await expect(
+      Effect.runPromise(decodeAssessmentOutput(value, citations)),
+    ).resolves.toMatchObject(value)
+  })
+
+  it("rejects an invented time for an allowed URL as an unsupported claim", async () => {
+    const value = observation({ observedAt: "2026-08-16T10:00:01.000Z" })
+    await expect(
+      Effect.runPromise(Effect.flip(decodeAssessmentOutput(value, citations))),
+    ).resolves.toMatchObject({ code: "unsupported-claim" })
+  })
+
+  it("rejects an unknown URL even when its time is allowed", async () => {
+    const value = observation({ sourceUrl: "https://invented.test/" })
+    await expect(
+      Effect.runPromise(Effect.flip(decodeAssessmentOutput(value, citations))),
+    ).resolves.toMatchObject({ code: "unsupported-claim" })
   })
 
   it.each([
@@ -65,8 +89,18 @@ describe("assessment output boundary", () => {
       { ...valid, opportunities: [{ ...valid.opportunities[0], observableEffect: "Ugly" }] },
     ],
   ])("rejects %s", async (_name, value) => {
-    await expect(
-      Effect.runPromise(decodeAssessmentOutput(value, new Set([sourceUrl]))),
-    ).rejects.toBeDefined()
+    await expect(Effect.runPromise(decodeAssessmentOutput(value, citations))).rejects.toBeDefined()
   })
 })
+
+function observation(values: { sourceUrl?: string; observedAt?: string }) {
+  return {
+    ...valid,
+    opportunities: [
+      {
+        ...valid.opportunities[0],
+        observations: [{ ...valid.opportunities[0].observations[0], ...values }],
+      },
+    ],
+  }
+}

@@ -62,6 +62,7 @@ export const AssessmentOutputSchema = Schema.Struct({
 })
 
 export type AssessmentOutput = typeof AssessmentOutputSchema.Type
+export type AllowedAssessmentCitations = ReadonlyMap<string, ReadonlySet<string>>
 
 export const assessmentOutputJsonSchema = JSONSchema.make(AssessmentOutputSchema, {
   target: "jsonSchema7",
@@ -81,7 +82,10 @@ export class AssessmentValidationError extends Error {
   }
 }
 
-export function decodeAssessmentOutput(value: unknown, allowedSourceUrls: ReadonlySet<string>) {
+export function decodeAssessmentOutput(
+  value: unknown,
+  allowedCitations: AllowedAssessmentCitations,
+) {
   return Schema.decodeUnknown(AssessmentOutputSchema, { onExcessProperty: "error" })(value).pipe(
     Effect.mapError(
       () =>
@@ -90,11 +94,11 @@ export function decodeAssessmentOutput(value: unknown, allowedSourceUrls: Readon
           "The runtime output does not match the assessment-only schema.",
         ),
     ),
-    Effect.flatMap((output) => validateCitations(output, allowedSourceUrls)),
+    Effect.flatMap((output) => validateCitations(output, allowedCitations)),
   )
 }
 
-function validateCitations(output: AssessmentOutput, allowedSourceUrls: ReadonlySet<string>) {
+function validateCitations(output: AssessmentOutput, allowedCitations: AllowedAssessmentCitations) {
   for (const opportunity of output.opportunities) {
     if (opportunity.observations.length === 0) {
       return Effect.fail(
@@ -105,11 +109,12 @@ function validateCitations(output: AssessmentOutput, allowedSourceUrls: Readonly
       )
     }
     for (const observation of opportunity.observations) {
-      if (!allowedSourceUrls.has(normalizeUrl(observation.sourceUrl))) {
+      const allowedTimes = allowedCitations.get(normalizeUrl(observation.sourceUrl))
+      if (!allowedTimes?.has(observation.observedAt)) {
         return Effect.fail(
           new AssessmentValidationError(
             "unsupported-claim",
-            "A Supporting Observation cited a URL outside the supplied evidence envelope.",
+            "A Supporting Observation cited a URL and time outside the supplied evidence envelope.",
           ),
         )
       }

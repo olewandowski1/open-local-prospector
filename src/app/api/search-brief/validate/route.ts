@@ -2,11 +2,13 @@ import { Effect } from "effect"
 import { NextResponse } from "next/server"
 
 import { validateSearchBrief } from "@/features/prospecting-runs/server/validate-search-brief"
+import { assertSameOrigin } from "@/features/workspace-administration"
 
 export async function POST(request: Request) {
   let input: unknown
 
   try {
+    assertSameOrigin(request)
     input = await request.json()
   } catch {
     return NextResponse.json({ valid: false }, { status: 400 })

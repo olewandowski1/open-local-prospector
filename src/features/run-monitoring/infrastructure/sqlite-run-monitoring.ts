@@ -288,14 +288,75 @@ function changeRuntime(
   if (typeof raw !== "string") throw new Error("run not found")
   const brief = JSON.parse(raw) as SearchBrief
   if (brief.runtime === runtime) return
+  const discoveryTasks = database
+    .prepare(
+      `select id,input,schema_version from run_tasks
+       where run_id=? and stage='DiscoverBusinesses' and status in ('Pending','Blocked')`,
+    )
+    .all(runId) as Array<{ id: string; input: string; schema_version: number }>
+  const rewrittenTasks = discoveryTasks.map((task) => ({
+    id: task.id,
+    input: rewriteDiscoveryTaskInput(task.input, task.schema_version, runtime),
+  }))
+  const updateTask = database.prepare(
+    `update run_tasks set input=?,updated_at=?,version=version+1
+     where id=? and stage='DiscoverBusinesses' and status in ('Pending','Blocked')`,
+  )
+  for (const task of rewrittenTasks) {
+    const result = updateTask.run(task.input, now, task.id)
+    if (result.changes !== 1) throw new Error("discovery task changed during runtime switch")
+  }
   database
     .prepare("update prospecting_runs set search_brief=? where id=?")
-    .run(JSON.stringify({ ...brief, runtime }), runId)
+    .run(JSON.stringify({ ...brief, runtime, runtimeConfiguration: undefined }), runId)
   database
     .prepare(
       `insert into technical_run_events (id,run_id,kind,message,details,schema_version,created_at) values (?,?,'RuntimeChanged','The selected subscription runtime changed during explicit resume.',?,1,?)`,
     )
     .run(crypto.randomUUID(), runId, JSON.stringify({ from: brief.runtime, to: runtime }), now)
+}
+
+export function rewriteDiscoveryTaskInput(
+  rawInput: string,
+  schemaVersion: number,
+  runtime: RuntimeId,
+): string {
+  if (schemaVersion !== 1) throw new Error("unsupported discovery task input version")
+  let input: unknown
+  try {
+    input = JSON.parse(rawInput)
+  } catch {
+    throw new Error("invalid discovery task input")
+  }
+  if (!isRecord(input) || !isSearchBriefRecord(input.searchBrief)) {
+    throw new Error("invalid discovery task input")
+  }
+  return JSON.stringify({
+    ...input,
+    searchBrief: {
+      ...input.searchBrief,
+      runtime,
+      runtimeConfiguration: undefined,
+    },
+  })
+}
+
+function isSearchBriefRecord(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value) || !isRecord(value.searchArea)) return false
+  return (
+    typeof value.location === "string" &&
+    typeof value.category === "string" &&
+    typeof value.targetCount === "number" &&
+    (value.mode === "Quick" || value.mode === "Thorough") &&
+    (value.runtime === "codex" || value.runtime === "claude" || value.runtime === "opencode") &&
+    typeof value.searchArea.id === "string" &&
+    typeof value.searchArea.displayName === "string" &&
+    typeof value.searchArea.countryCode === "string"
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function pause(database: Database.Database, runId: string, fromState: string, now: number): void {

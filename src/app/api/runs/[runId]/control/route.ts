@@ -2,9 +2,11 @@ import { NextResponse } from "next/server"
 
 import type { RunControl } from "@/features/run-monitoring/application/run-repositories"
 import { requestRunControl } from "@/features/run-monitoring/server/run-services"
+import { assertSameOrigin } from "@/features/workspace-administration"
 
 export async function POST(request: Request, context: { params: Promise<{ runId: string }> }) {
   try {
+    assertSameOrigin(request)
     const body: unknown = await request.json()
     if (!isControlRequest(body)) throw new Error("invalid control")
     const { runId } = await context.params

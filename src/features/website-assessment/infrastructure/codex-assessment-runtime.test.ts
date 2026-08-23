@@ -32,6 +32,32 @@ describe("Codex assessment adapter", () => {
     expect(captured?.arguments.join(" ")).not.toContain("INJECTION")
     expect(captured?.input).toContain("INJECTION")
   })
+
+  it("rejects a runtime observation time absent from the supplied evidence", async () => {
+    const runtime = makeCodexAssessmentRuntime("codex", () =>
+      Effect.succeed({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          ...output,
+          opportunities: [
+            {
+              ...output.opportunities[0],
+              observations: [
+                {
+                  ...output.opportunities[0]?.observations[0],
+                  observedAt: "2026-08-16T10:00:01.000Z",
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    )
+
+    await expect(Effect.runPromise(runtime.assess(evidence))).rejects.toThrow(
+      "URL and time outside the supplied evidence envelope",
+    )
+  })
 })
 
 const evidence: AssessmentEvidenceEnvelope = {

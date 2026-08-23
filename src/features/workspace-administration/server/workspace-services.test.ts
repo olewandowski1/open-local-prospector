@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { assertSameOrigin } from "@/features/workspace-administration/server/workspace-services"
+import {
+  assertSameOrigin,
+  isLoopbackApiRequest,
+} from "@/features/workspace-administration/server/workspace-services"
 
 describe("workspace mutation origin guard", () => {
   it("accepts the browser origin matching the request Host header", () => {
@@ -22,6 +25,27 @@ describe("workspace mutation origin guard", () => {
       ),
     ).not.toThrow()
   })
+
+  it("refuses a matching attacker Origin and Host", () => {
+    expect(() =>
+      assertSameOrigin(
+        new Request("http://attacker.example/api/workspace/reset", {
+          headers: { host: "attacker.example", origin: "http://attacker.example" },
+        }),
+      ),
+    ).toThrow("Local API request refused.")
+  })
+
+  it.each(["localhost:4310", "[::1]:4310", "127.0.0.2:4310", "127.0.0.1:65536"])(
+    "refuses non-product Host %s",
+    (host) => {
+      expect(
+        isLoopbackApiRequest(
+          new Request("http://127.0.0.1:4310/api/workspace/reset", { headers: { host } }),
+        ),
+      ).toBe(false)
+    },
+  )
 
   it.each(["https://attacker.example", "not a URL"])("refuses origin %s", (origin) => {
     expect(() =>

@@ -1,3 +1,14 @@
+export type {
+  QualificationEvidence,
+  ScoreBreakdown,
+  ScoreInputs,
+} from "@/features/review-queue/domain/opportunity-score"
+export {
+  calculateOpportunityScore,
+  qualifiesOpportunityScore,
+  REVIEW_QUEUE_THRESHOLD,
+  SCORE_RUBRIC_VERSION,
+} from "@/features/review-queue/domain/opportunity-score"
 export { exportCandidates } from "@/features/review-queue/infrastructure/export-candidates"
 export {
   addCandidateCorrection,
@@ -6,6 +17,7 @@ export {
   REVIEW_STATUSES,
   updateCandidateReview,
 } from "@/features/review-queue/infrastructure/review-candidate"
+export { makeScoreCandidateTaskExecutor } from "@/features/review-queue/infrastructure/score-candidate"
 export { suppressCandidate } from "@/features/review-queue/infrastructure/suppress-candidate"
 export { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
 export { ReviewQueuePage } from "@/features/review-queue/presentation/review-queue-page"

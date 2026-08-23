@@ -15,7 +15,7 @@ import {
 import {
   type AssessmentRuntime,
   AssessmentRuntimeError,
-  assessmentSourceUrls,
+  assessmentCitations,
   buildAssessmentPrompt,
 } from "@/features/website-assessment/application/assessment-runtime"
 import {
@@ -133,7 +133,7 @@ function makeRuntime(
                   `The runtime returned structured output that could not be read: ${describeUnreadableOutput(result.stdout)}.`,
                 ),
             })
-            return yield* decodeAssessmentOutput(raw, assessmentSourceUrls(evidence)).pipe(
+            return yield* decodeAssessmentOutput(raw, assessmentCitations(evidence)).pipe(
               Effect.mapError((error) => transient(error.code, error.message)),
             )
           }),

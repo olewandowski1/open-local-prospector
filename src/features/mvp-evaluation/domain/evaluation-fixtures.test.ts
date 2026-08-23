@@ -1,68 +1,107 @@
 import { describe, expect, it } from "vitest"
-import { evaluateBusinessIdentity } from "@/features/business-identity"
+
 import {
-  identityFixtures,
+  assertQualityFixtureContract,
+  evaluateQualityFixtures,
   MVP_EVALUATION_VERSION,
-  opportunityFixtures,
-  siteConditionFixtures,
-} from "@/features/mvp-evaluation/domain/evaluation-fixtures"
+  qualityFixtures,
+  qualityFixtureVersions,
+} from "@/features/mvp-evaluation"
+
+const opportunityClasses = [
+  "BrokenOrUnusable",
+  "ConfusingConversionJourney",
+  "MobileAccessibilityOrPerformance",
+  "NoDedicatedWebsite",
+  "OutdatedPresentation",
+  "WeakDiscoverability",
+]
 
 describe(MVP_EVALUATION_VERSION, () => {
-  it("covers Polish evidence, every opportunity class, no-site, strong, and inaccessible sites", () => {
-    expect(new Set(opportunityFixtures.map((fixture) => fixture.class))).toEqual(
-      new Set([
-        "NoDedicatedWebsite",
-        "BrokenOrUnusable",
-        "OutdatedPresentation",
-        "MobileAccessibilityOrPerformance",
-        "WeakDiscoverability",
-        "ConfusingConversionJourney",
-      ]),
+  it("replays structured attribution and identity decisions through production boundaries", async () => {
+    const evaluation = await evaluateQualityFixtures()
+    const result = evaluation.discoveryResults[0]
+    if (!result) throw new Error("Expected discovery fixture result")
+
+    expect(result.identities.map(({ name, actualStatus }) => ({ name, actualStatus }))).toEqual(
+      result.identities.map(({ name, expectedStatus }) => ({
+        name,
+        actualStatus: expectedStatus,
+      })),
     )
-    expect(opportunityFixtures.some((fixture) => fixture.websiteState === "NoWebsite")).toBe(true)
-    expect(siteConditionFixtures.map((fixture) => fixture.id)).toEqual([
-      "strong-existing-site",
-      "inaccessible-site",
-    ])
-    expect(opportunityFixtures.some((fixture) => /[ąćęłńóśźż]/iu.test(fixture.sourceContent))).toBe(
-      true,
+    expect(new Set(result.rejectionReasons)).toEqual(
+      new Set(["not-beside-its-source", "prefix-not-in-numbering-plan", "not-in-report"]),
     )
+    const fixture = qualityFixtures.discovery[0]
+    if (!fixture) throw new Error("Expected discovery fixture")
+    const distinctFingerprints = fixture.expectedDistinctCanonicalNames.map(
+      (name) => result.identities.find((identity) => identity.name === name)?.canonicalFingerprint,
+    )
+    expect(distinctFingerprints.every(Boolean)).toBe(true)
+    expect(new Set(distinctFingerprints).size).toBe(distinctFingerprints.length)
+    expect(evaluation.metrics.acceptedIdentityCount).toBeGreaterThan(0)
+    expect(evaluation.metrics.identityPrecision).toBeGreaterThanOrEqual(0.9)
   })
 
-  it("measures at least 90% identity precision without confirming ambiguous or false-positive identities", () => {
-    const results = identityFixtures.map((fixture) => ({
-      fixture,
-      evaluation: evaluateBusinessIdentity({
-        business: fixture.business,
-        countryCode: "PL",
-        collectedAt: new Date("2026-08-16T10:00:00.000Z"),
+  it("replays assessment schema, citation, timestamp, scoring, and qualification behavior", async () => {
+    const evaluation = await evaluateQualityFixtures()
+
+    for (const fixture of qualityFixtures.assessments) {
+      expect(evaluation.assessmentResults.find((result) => result.id === fixture.id)).toMatchObject(
+        fixture.expected,
+      )
+    }
+    expect(evaluation.metrics.opportunityClassCoverage).toEqual(opportunityClasses)
+    expect(evaluation.metrics.unsupportedClaimRejectionCount).toBe(2)
+    expect(
+      evaluation.assessmentResults.find((result) => result.id === "threshold-at"),
+    ).toMatchObject({ score: 60, qualified: true })
+    expect(
+      evaluation.assessmentResults.find((result) => result.id === "threshold-below"),
+    ).toMatchObject({ score: 59.75, qualified: false })
+  })
+
+  it("reports stable versioned metrics on repeated runs", async () => {
+    const first = await evaluateQualityFixtures()
+    const second = await evaluateQualityFixtures()
+
+    expect(first).toEqual(second)
+    expect(first.versions).toEqual(qualityFixtureVersions)
+    expect(first.metrics).toEqual({
+      acceptedIdentityCount: 4,
+      correctIdentityCount: 4,
+      identityPrecision: 1,
+      unsupportedClaimRejectionCount: 2,
+      opportunityClassCoverage: opportunityClasses,
+      qualifiedCases: 8,
+      nonQualifiedCases: 3,
+    })
+  })
+
+  it("rejects missing version metadata and non-reserved contact sources", () => {
+    expect(() =>
+      assertQualityFixtureContract({
+        ...qualityFixtures,
+        versions: { ...qualityFixtureVersions, assessmentSchema: "" },
       }),
-    }))
-    const confirmed = results.filter((result) => result.evaluation.status === "Eligible")
-    const truePositive = confirmed.filter((result) => result.fixture.expectedConfirmed).length
-    const precision = confirmed.length === 0 ? 0 : truePositive / confirmed.length
-    expect(precision).toBeGreaterThanOrEqual(0.9)
-    expect(
-      results
-        .filter((result) => !result.fixture.expectedConfirmed)
-        .every((result) => result.evaluation.status !== "Eligible"),
-    ).toBe(true)
-  })
-
-  it("requires a source-linked observation for every opportunity fixture and no inferred contact", () => {
-    const outputs = opportunityFixtures.map((fixture) => ({
-      class: fixture.class,
-      observations: [
-        { sourceUrl: `https://${fixture.id}.example/`, observedAt: "2026-08-16T10:00:00.000Z" },
-      ],
-    }))
-    expect(
-      outputs.every(
-        (output) =>
-          output.observations.length > 0 &&
-          output.observations.every((observation) => observation.sourceUrl.startsWith("https://")),
-      ),
-    ).toBe(true)
-    expect(outputs.some((output) => "contact" in output)).toBe(false)
+    ).toThrow("Fixture version assessmentSchema is required.")
+    expect(() =>
+      assertQualityFixtureContract({
+        versions: qualityFixtureVersions,
+        sourceUrl: "https://real-example.com/",
+      }),
+    ).toThrow("Fixture URLs must use reserved .test hosts.")
+    expect(() =>
+      assertQualityFixtureContract({
+        versions: qualityFixtureVersions,
+        contact: "person@example.com",
+      }),
+    ).toThrow("Fixture emails must use reserved .test hosts.")
+    expect(() =>
+      assertQualityFixtureContract({
+        versions: qualityFixtureVersions,
+        telephone: "+48500123456",
+      }),
+    ).toThrow("Fixture telephone is not an approved synthetic rejection value.")
   })
 })
