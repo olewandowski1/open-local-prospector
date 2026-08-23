@@ -87,11 +87,11 @@ export function estimateWorkload(draft: SearchBriefDraft): WorkloadEstimate {
 }
 
 /**
- * How much longer than a Claude run to expect. OpenCode's hosted model drives its fetches one at a
- * time: measured against the same brief, Claude finished a whole run in seven minutes while
- * OpenCode had not finished discovery alone in fifteen. Quoting one number for every runtime would
- * promise a reader something the run cannot keep.
+ * Relative pace measured with the same Quick brief. Claude completed in 6.8–9.3 minutes, OpenCode
+ * in 5.6–7.6 minutes, and Codex did not finish discovery within its 15-minute attempt. Quoting one
+ * number for every runtime would promise a reader something the run cannot keep.
  */
 function runtimePace(runtime: SearchBriefDraft["runtime"]): number {
-  return runtime === "opencode" ? 6 : 1
+  if (runtime === "codex") return 4
+  return 2
 }

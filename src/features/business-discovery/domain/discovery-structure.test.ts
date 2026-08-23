@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import {
   type DiscoveryStructure,
   decodeDiscoveryStructure,
+  discoveryStructureJsonSchema,
   type StructuredBusiness,
   verifyAgainstReport,
 } from "@/features/business-discovery/domain/discovery-structure"
@@ -26,6 +27,25 @@ const REPORT = [
 const isPublicUrl = (value: string) => /^https:\/\//u.test(value)
 
 describe("discovery structure verification", () => {
+  it("gives strict runtimes a required nullable website", async () => {
+    const schema = JSON.stringify(discoveryStructureJsonSchema)
+    expect(schema).toContain('"websiteUrl"')
+    expect(schema).toMatch(/"required":\[[^\]]*"websiteUrl"/u)
+
+    const decoded = await Effect.runPromise(
+      decodeDiscoveryStructure({
+        schemaVersion: "discovery-structure-v1",
+        businesses: [
+          {
+            ...business({ name: "No Website", sourceUrls: ["https://example.com/business"] }),
+            websiteUrl: null,
+          },
+        ],
+      }),
+    )
+    expect(decoded.businesses[0]).not.toHaveProperty("websiteUrl")
+  })
+
   it("keeps what the report supports", () => {
     const { businesses, rejections } = verify([
       business({

@@ -66,7 +66,7 @@ test.describe("OpenCode discovery smoke", () => {
       const cityArea = areaRadios.first()
       await expect(cityArea).toBeVisible({ timeout: 30_000 })
       await cityArea.click()
-      await expect(page.getByText(/OpenCode · Ox Alpha Free · None reasoning/u)).toBeVisible()
+      await expect(page.getByText(/OpenCode · Ox Alpha Free · High reasoning/u)).toBeVisible()
 
       const confirmButton = page.getByRole("button", { name: "Confirm and create run" })
       await expect(confirmButton).toBeEnabled()

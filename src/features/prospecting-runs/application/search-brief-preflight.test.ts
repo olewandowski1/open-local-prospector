@@ -89,9 +89,10 @@ describe("workload estimate", () => {
     expect(estimateWorkload(draft({ mode: "Thorough" })).discoveryQueries).toBe(4)
   })
 
-  // Claude finished this brief in seven minutes; OpenCode had not finished discovery in fifteen.
+  // Live repetitions keep each runtime's very different wall-clock behavior visible.
   it("quotes a longer run for a slower runtime rather than one number for all", () => {
-    expect(estimateWorkload(draft()).duration).toBe("3–6 minutes")
-    expect(estimateWorkload(draft({ runtime: "opencode" })).duration).toBe("18–33 minutes")
+    expect(estimateWorkload(draft()).duration).toBe("6–11 minutes")
+    expect(estimateWorkload(draft({ runtime: "codex" })).duration).toBe("12–22 minutes")
+    expect(estimateWorkload(draft({ runtime: "opencode" })).duration).toBe("6–11 minutes")
   })
 })

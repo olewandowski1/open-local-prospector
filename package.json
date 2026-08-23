@@ -21,6 +21,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:live": "playwright test --config playwright.live.config.ts",
     "test:e2e:workspace": "playwright test --config playwright.workspace.config.ts",
     "worker:check": "node --env-file-if-exists=.env.local --import tsx src/worker/main.ts --check",
     "db:generate": "drizzle-kit generate",

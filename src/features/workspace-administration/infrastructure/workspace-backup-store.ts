@@ -10,7 +10,6 @@ import {
   renameSync,
   rmSync,
   statSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -403,8 +402,7 @@ function checkpointDatabase(path: string): void {
     database.close()
   }
   for (const sidecar of [`${path}-wal`, `${path}-shm`]) {
-    // The database path is runtime configuration, not an application file for output tracing.
-    if (existsSync(/* turbopackIgnore: true */ sidecar)) unlinkSync(sidecar)
+    rmSync(sidecar, { force: true })
   }
 }
 

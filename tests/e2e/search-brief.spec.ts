@@ -17,6 +17,26 @@ const searchAreas = [
   },
 ]
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/search-brief/bootstrap", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        runtimes: [
+          {
+            runtimeId: "codex",
+            label: "Codex",
+            status: "Ready",
+            version: "1.0.0",
+            detail: "Ready",
+          },
+        ],
+        selectedRuntime: "codex",
+      }),
+    })
+  })
+})
+
 test("requires explicit Search Area selection for an ambiguous non-Polish custom brief", async ({
   page,
 }) => {

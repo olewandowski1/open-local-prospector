@@ -30,16 +30,20 @@ export const StructuredPresenceSchema = Schema.Struct({
   url: Url,
 })
 
-export const StructuredBusinessSchema = Schema.Struct({
+const StructuredBusinessFields = {
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(300)),
   locality: Schema.String.pipe(Schema.maxLength(200)),
   decisionScope: DecisionScopeSchema,
   centrallyControlled: Schema.Boolean,
   onlineOnly: Schema.Boolean,
-  websiteUrl: Schema.optional(Url),
   sourceUrls: Schema.Array(Url).pipe(Schema.minItems(1), Schema.maxItems(20)),
   presences: Schema.Array(StructuredPresenceSchema).pipe(Schema.maxItems(20)),
   contacts: Schema.Array(StructuredContactSchema).pipe(Schema.maxItems(20)),
+} as const
+
+export const StructuredBusinessSchema = Schema.Struct({
+  ...StructuredBusinessFields,
+  websiteUrl: Schema.optional(Url),
 })
 
 export const DiscoveryStructureSchema = Schema.Struct({
@@ -52,7 +56,21 @@ export type StructuredPresence = typeof StructuredPresenceSchema.Type
 export type StructuredBusiness = typeof StructuredBusinessSchema.Type
 export type DiscoveryStructure = typeof DiscoveryStructureSchema.Type
 
-export const discoveryStructureJsonSchema = JSONSchema.make(DiscoveryStructureSchema)
+// Codex requires every output-schema property to be required. A missing website is therefore null
+// at the runtime boundary and is normalized back to the domain's optional property before decode.
+const RuntimeDiscoveryStructureSchema = Schema.Struct({
+  schemaVersion: Schema.Literal(DISCOVERY_STRUCTURE_SCHEMA_VERSION),
+  businesses: Schema.Array(
+    Schema.Struct({
+      ...StructuredBusinessFields,
+      websiteUrl: Schema.NullOr(Url),
+    }),
+  ).pipe(Schema.maxItems(40)),
+})
+
+export const discoveryStructureJsonSchema = JSONSchema.make(RuntimeDiscoveryStructureSchema, {
+  target: "jsonSchema7",
+})
 
 export class DiscoveryStructureError extends Error {
   constructor(
@@ -85,7 +103,9 @@ const OUT_OF_STAGE_KEYS = [
 ]
 
 export function decodeDiscoveryStructure(value: unknown) {
-  return Schema.decodeUnknown(DiscoveryStructureSchema, { onExcessProperty: "error" })(value).pipe(
+  return Schema.decodeUnknown(DiscoveryStructureSchema, { onExcessProperty: "error" })(
+    withoutNullWebsiteUrls(value),
+  ).pipe(
     Effect.mapError(
       () =>
         new DiscoveryStructureError(
@@ -94,6 +114,20 @@ export function decodeDiscoveryStructure(value: unknown) {
         ),
     ),
   )
+}
+
+function withoutNullWebsiteUrls(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value
+  const businesses = (value as { businesses?: unknown }).businesses
+  if (!Array.isArray(businesses)) return value
+  return {
+    ...value,
+    businesses: businesses.map((business) => {
+      if (typeof business !== "object" || business === null) return business
+      const { websiteUrl, ...rest } = business as Record<string, unknown>
+      return websiteUrl === null ? rest : business
+    }),
+  }
 }
 
 /**
