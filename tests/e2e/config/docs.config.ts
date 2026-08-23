@@ -13,7 +13,7 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     baseURL: `http://127.0.0.1:${port}`,
-    colorScheme: "light",
+    colorScheme: "dark",
     trace: "retain-on-failure",
     viewport: { width: 1440, height: 900 },
   },

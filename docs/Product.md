@@ -12,7 +12,7 @@ leave the user to repeat discovery, verification, and review by hand.
 
 ### Proposed Solution
 
-Open Local Prospector is a single-user, local-first application that discovers independent
+Open Prospector is a single-user, local-first application that discovers independent
 businesses for a bounded Search Brief, verifies their public Online Presence, inspects their
 websites in a controlled browser, and ranks evidence-backed Website Opportunities for review. The
 application owns orchestration, validation, scoring, safety, and persistence; Codex, Claude, or
@@ -84,7 +84,7 @@ completed discovery or assessment work.
 As the user, I want every recommendation tied to observable evidence so that I can verify it before
 acting.
 
-- The Review Queue is ordered by deterministic Opportunity Score.
+- Candidates are ordered by deterministic Opportunity Score.
 - Candidate detail shows Supporting Observations, source URLs, inspection limitations, contact
   routes, and score components.
 - The user can shortlist, reject with a reason, mark contacted, archive, or reset a decision.

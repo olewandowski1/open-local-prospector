@@ -232,7 +232,7 @@ function RunActions({ run }: { run: RunRow }) {
       <IconLink label="Open Run" href={`/runs/${run.id}`}>
         <Icon icon={LinkSquare02Icon} />
       </IconLink>
-      <IconLink label="Open Review Queue" href="/review">
+      <IconLink label="Open Candidates" href="/review">
         <Icon icon={Route01Icon} />
       </IconLink>
       {run.settled ? (

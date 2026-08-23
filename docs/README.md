@@ -1,6 +1,6 @@
 # Documentation
 
-Open Local Prospector keeps one living document for each kind of project truth.
+Open Prospector keeps one living document for each kind of project truth.
 
 | Document | Purpose |
 |---|---|

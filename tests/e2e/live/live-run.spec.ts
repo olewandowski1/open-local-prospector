@@ -45,8 +45,8 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
   console.log(`LIVE_RUN_ID=${runId}`)
 
   // The page polls itself; wait for the run to settle rather than for a fixed time. Status is a
-  // labelled row of semantic text, not a badge — a detail page states its condition rather than
-  // tagging it — and the row's title holds the recorded wording the shortened label stands for.
+  // labelled row of semantic text, not a badge. A detail page states its condition rather than
+  // tagging it, and the row's title holds the recorded wording the shortened label stands for.
   await expect(async () => {
     const state = await page.evaluate(() => {
       const label = [...document.querySelectorAll("dl")].find(

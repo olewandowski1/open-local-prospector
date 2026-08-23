@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: "mobile-chromium",
       // `devices["iPhone 12"]` carries `defaultBrowserType: "webkit"`, so without this override the
-      // project silently launched WebKit — which `pnpm run setup` does not install, so every mobile
+      // project silently launched WebKit. `pnpm run setup` does not install it, so every mobile
       // test failed on a fresh machine asking for browsers. What is under test is the responsive
       // layout at a phone viewport, not Safari.
       use: { ...devices["iPhone 12"], browserName: "chromium" },

@@ -10,15 +10,15 @@ import {
 } from "@/features/business-discovery/domain/discovery-structure"
 
 const REPORT = [
-  "Salon fryzjerski Justyna — Reda.",
+  "Salon fryzjerski Justyna: Reda.",
   "  https://www.facebook.com/fryzjerjustynareda",
   "  Telephone written on the page: 504 713 619. No website of its own.",
   "",
-  "Salon fryzjerski Bellezza — Reda.",
+  "Salon fryzjerski Bellezza: Reda.",
   "  https://www.facebook.com/p/Salon-fryzjerski-Bellezza-61579265013667",
   "  No telephone was published. No website of its own.",
   "",
-  "Fryzjernia Krasa — Reda.",
+  "Fryzjernia Krasa: Reda.",
   "  https://www.fryzjerniakrasa.pl/",
   "  https://www.fryzjerniakrasa.pl/kontakt",
   "  Telephone 794 002 525, email kontakt@fryzjerniakrasa.pl.",

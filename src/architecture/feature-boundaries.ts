@@ -205,7 +205,7 @@ if (import.meta.url === entryPoint) {
   const violations = checkFeatureBoundaries()
   if (violations.length > 0) {
     for (const violation of violations) {
-      console.error(`${violation.importer}: ${violation.imported} — ${violation.reason}`)
+      console.error(`${violation.importer}: ${violation.imported}: ${violation.reason}`)
     }
     process.exitCode = 1
   }

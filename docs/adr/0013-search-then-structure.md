@@ -5,7 +5,7 @@ Status: Accepted
 Amends [ADR 0012](0012-use-subscription-runtime-web-search.md).
 
 Discovery asked the runtime to search the web and answer in a closed JSON schema in one step. The
-schema it had to satisfy while searching was `{ title, url, description }[]` — a search-results page,
+schema it had to satisfy while searching was `{ title, url, description }[]`: a search-results page,
 not a finding. Every judgement that turns results into businesses was therefore left to application
 code, which had no language model available and did it with string similarity and regular
 expressions.

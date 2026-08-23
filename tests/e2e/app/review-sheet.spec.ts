@@ -46,7 +46,7 @@ test("keeps the review page inside the viewport while showing long evidence", as
   expect(overflow).toBeLessThanOrEqual(4)
 })
 
-test("scrolls the review queue as one page instead of trapping its table", async ({ page }) => {
+test("scrolls Candidates as one page instead of trapping its table", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 600 })
   await page.goto("/review")
 
@@ -63,7 +63,7 @@ test("keeps candidate evidence out of the queue payload", async ({ page, isMobil
   const html = (await response?.text()) ?? ""
 
   // The grid needs six fields per candidate. Evidence belongs to the one candidate on screen, so it
-  // must not be serialised for the whole queue — that payload grows with every run.
+  // must not be serialised for the whole queue because that payload grows with every run.
   for (const field of ["observations", "screenshots", "measurements", "limitations"]) {
     expect(html, `${field} should not be in the queue payload`).not.toContain(field)
   }

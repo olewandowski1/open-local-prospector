@@ -8,6 +8,7 @@ import type { ReactNode } from "react"
 
 import { type NavigationItem, primaryNavigation } from "@/components/app-shell/app-navigation"
 import { useWorkspaceCommand, WorkspaceCommand } from "@/components/app-shell/workspace-command"
+import { BrandMark } from "@/components/brand-mark"
 import { IconButton, IconLink } from "@/components/icon-button"
 import {
   Sidebar,
@@ -85,7 +86,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       : pathname.startsWith("/settings")
         ? "Settings"
         : pathname === "/review"
-          ? "Review Queue"
+          ? "Candidates"
           : pathname.startsWith("/runs/")
             ? "Run Detail"
             : pathname === "/runs"
@@ -98,9 +99,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Sidebar collapsible="offcanvas" className="app-sidebar-gradient">
           <SidebarHeader>
             <div className="flex h-10 items-center justify-between gap-2 px-2">
-              <Link href="/" className="truncate font-heading text-sm font-semibold">
-                OpenProspector{" "}
-                <span className="text-[0.8em] text-sidebar-foreground/55">Local</span>
+              <Link
+                href="/"
+                className="flex min-w-0 items-center gap-2 font-heading text-sm font-semibold"
+              >
+                <BrandMark className="size-5 text-sidebar-primary" />
+                <span className="truncate">Open Prospector</span>
               </Link>
               <div className="ml-auto flex items-center gap-1">
                 <WorkspaceSearchTrigger onClick={() => command.setOpen(true)} />

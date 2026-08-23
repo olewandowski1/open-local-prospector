@@ -20,7 +20,7 @@ export function ReviewQueuePage() {
     <PageScroller>
       <div className="flex flex-col gap-6">
         <PageHeader
-          title="Review Queue"
+          title="Candidates"
           description="Review evidence, record decisions, and preserve machine history."
         />
         {candidates.length === 0 ? (

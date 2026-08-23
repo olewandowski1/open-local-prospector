@@ -32,7 +32,7 @@ export interface DiscoveryRuntime {
 
 export function buildReportPrompt(brief: DiscoveryBrief): string {
   return [
-    "You are the discovery step of Open Local Prospector, a local-first tool that finds independent",
+    "You are the discovery step of Open Prospector, a local-first tool that finds independent",
     "businesses whose public online presence suggests they would benefit from a better website.",
     "",
     `Search the public web for: ${brief.category} in ${brief.searchAreaName}.`,
@@ -73,7 +73,7 @@ export function buildStructurePrompt(
   const delimiter = `UNTRUSTED_SOURCE_CONTENT_${nonce.replace(/[^a-zA-Z0-9]/gu, "")}`
   if (report.includes(delimiter)) throw new Error("source delimiter collision")
   return [
-    "You are the structuring step of Open Local Prospector.",
+    "You are the structuring step of Open Prospector.",
     ...(options.schema
       ? [
           "Return only a JSON object matching this JSON Schema exactly. Use its field names and its",

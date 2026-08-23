@@ -220,7 +220,7 @@ function asBlock(text: string): ReportBlock {
 /**
  * A business's own part of the report: from where the report first names it to where it names the
  * next one. Splitting on blank lines alone made the check depend on how the runtime happened to lay
- * the report out — one that listed a business's pages under "Pages read about it" and its telephone
+ * the report out, such as one that listed a business's pages under "Pages read about it" and its telephone
  * under "Contacts seen" put them in different paragraphs, and lost every contact it had found.
  */
 function businessSections(

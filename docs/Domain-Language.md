@@ -78,7 +78,7 @@ A website condition that prevents a compliant Website Assessment, such as requir
 _Avoid_: Failed website, inaccessible business
 
 **Contact Route**:
-A publicly listed means of contacting a Candidate Business, classified as a generic business email, named professional email, business telephone, contact form, social-messaging channel, or other route. Generic business routes are preferred. A Candidate Business must have at least one Contact Route to enter the Review Queue; named personal details are collected only when essential, publicly presented in a professional role, and never inferred or generated. Every Contact Route retains its source URL and collection date.
+A publicly listed means of contacting a Candidate Business, classified as a generic business email, named professional email, business telephone, contact form, social-messaging channel, or other route. Generic business routes are preferred. A Candidate Business must have at least one Contact Route to appear under Candidates; named personal details are collected only when essential, publicly presented in a professional role, and never inferred or generated. Every Contact Route retains its source URL and collection date.
 _Avoid_: Contact details, scraped contact
 
 **Suppression Entry**:
@@ -90,7 +90,7 @@ The v1 application stores prospecting data locally and minimizes personal data r
 _Avoid_: GDPR mode, compliance dashboard
 
 **Opportunity Score**:
-An explainable score from 0 to 100 calculated by application code from structured assessment fields: Website Opportunity severity (40%), confidence in the Supporting Observations (25%), Contact Route availability (15%), likelihood of local decision-making (10%), and the apparent value a better website could create (10%). A score of at least 60 initially qualifies a Candidate Business for the Review Queue. No single opportunity class, including having no website, automatically determines rank, and every score retains the rubric version used.
+An explainable score from 0 to 100 calculated by application code from structured assessment fields: Website Opportunity severity (40%), confidence in the Supporting Observations (25%), Contact Route availability (15%), likelihood of local decision-making (10%), and the apparent value a better website could create (10%). A score of at least 60 initially qualifies a Candidate Business for Candidates. No single opportunity class, including having no website, automatically determines rank, and every score retains the rubric version used.
 _Avoid_: AI score, lead score
 
 **Review Example**:
@@ -109,7 +109,7 @@ _Avoid_: Match score, discovery accuracy
 A versioned, deterministic synthetic or safely captured test case representing a normal or difficult assessment, such as a Polish-language site, ambiguous identity, no-site business, inaccessible site, good existing site, or false-positive opportunity. Evaluation Fixtures contain no shipped real-person contact data and are rerun when prompts, extraction, or scoring changes.
 _Avoid_: Seed lead, production example
 
-**Review Queue**:
+**Candidates**:
 A ranked collection of Candidate Businesses and their Supporting Observations for Oliver to assess before any outreach occurs. Inclusion does not authorize or initiate contact.
 _Avoid_: Outreach list, mailing list
 

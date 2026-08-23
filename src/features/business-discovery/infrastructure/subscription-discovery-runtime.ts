@@ -29,8 +29,8 @@ import {
 
 /**
  * A report searches the public web and reads the pages it finds, so minutes are normal. OpenCode's
- * hosted model drives its fetches one at a time and is far slower than the others — measured at
- * ninety-seven seconds for three businesses — so it is given room rather than cut off. One number
+ * hosted model drives its fetches one at a time and is far slower than the others. It was measured at
+ * ninety-seven seconds for three businesses, so it is given room rather than cut off. One number
  * for every runtime would mean either failing OpenCode or letting a hung Claude hold a worker slot
  * for three quarters of an hour.
  */

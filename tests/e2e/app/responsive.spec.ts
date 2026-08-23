@@ -6,7 +6,7 @@ const widths = [375, 640, 768, 1024, 1280] as const
 const pages = [
   { path: "/", name: "Overview" },
   { path: "/runs", name: "Runs" },
-  { path: "/review", name: "Review Queue" },
+  { path: "/review", name: "Candidates" },
 ] as const
 
 const settingsPages = [

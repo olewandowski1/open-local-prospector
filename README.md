@@ -1,19 +1,23 @@
-<h1 align="center">Open Local Prospector</h1>
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="Open Prospector Radar Logo" width="96" height="96">
+</p>
+
+<h1 align="center">Open Prospector</h1>
 
 <p align="center">
-  Find independent businesses whose public online presence shows a real website opportunity—on
-  your own machine, with evidence you can inspect.
+  Find independent businesses whose public online presence shows a real website opportunity.
+  Work on your own machine, with evidence you can inspect.
 </p>
 
 <p align="center">
-  <a href="https://github.com/olewandowski1/open-local-prospector/actions/workflows/check.yml"><img alt="Checks" src="https://img.shields.io/github/actions/workflow/status/olewandowski1/open-local-prospector/check.yml?branch=main&label=checks&style=flat-square"></a>
-  <a href="LICENSE"><img alt="MIT Licence" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square"></a>
-  <img alt="Node 22 Or Newer" src="https://img.shields.io/badge/node-%E2%89%A522-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
-  <img alt="Next.js 16" src="https://img.shields.io/badge/next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white">
-  <img alt="No API Keys Required" src="https://img.shields.io/badge/API%20keys-none%20required-success?style=flat-square">
+  <a href="https://github.com/olewandowski1/open-local-prospector/actions/workflows/check.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/olewandowski1/open-local-prospector/check.yml?branch=main&label=CI&style=flat-square"></a>
+  <a href="LICENSE"><img alt="MIT Licence" src="https://img.shields.io/badge/Licence-MIT-blue?style=flat-square"></a>
+  <img alt="Node 22 Or Newer" src="https://img.shields.io/badge/Node-%E2%89%A522-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white">
+  <img alt="API Keys: None Required" src="https://img.shields.io/badge/API%20Keys-None%20Required-success?style=flat-square">
 </p>
 
-![Open Local Prospector Overview With Synthetic Businesses](docs/assets/overview.png)
+![Open Prospector Overview With Synthetic Businesses](docs/assets/overview.png)
 
 ## What It Does
 
@@ -21,7 +25,7 @@ Lead lists tell you that a business exists. They rarely explain whether the busi
 Website Opportunity, and they happily mix independent businesses with chains whose website
 decisions are made elsewhere.
 
-Open Local Prospector handles the research loop: it searches a place and category you choose,
+Open Prospector handles the research loop: it searches a place and category you choose,
 corroborates which public presence belongs to each business, inspects websites in a controlled
 browser, and ranks evidence-backed opportunities. Every material claim points to a source URL you
 can open yourself.
@@ -54,7 +58,7 @@ Run Preflight         storage, browser, runtime, Search Area, workload
 └─────────────────────────────────────────────────────────────────┘
       │
       ▼
-Review Queue          evidence, score, screenshots, sources, contact routes
+Candidates            evidence, score, screenshots, sources, contact routes
       │
       ▼
 Your Decision         shortlist, reject, correct, suppress, or export

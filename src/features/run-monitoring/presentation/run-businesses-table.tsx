@@ -65,7 +65,7 @@ export function RunBusinessesTable({
     <section aria-labelledby="business-progress-heading" className="flex flex-col gap-4">
       <SectionHeader
         title={<span id="business-progress-heading">Per-Business Progress</span>}
-        description={`A business reaches the Review Queue at ${REVIEW_QUEUE_THRESHOLD} points. Select one to narrow the Technical Run Log to its events.`}
+        description={`A business appears under Candidates at ${REVIEW_QUEUE_THRESHOLD} points. Select one to narrow the Technical Run Log to its events.`}
         actions={
           <>
             {selectedBusinessId ? (
@@ -126,7 +126,7 @@ export function RunBusinessesTable({
                       <span className="text-muted-foreground">&mdash;</span>
                     ) : (
                       <span
-                        title={`${formatBusinessScore(business.score)} points; ${REVIEW_QUEUE_THRESHOLD} needed to reach the Review Queue`}
+                        title={`${formatBusinessScore(business.score)} points; ${REVIEW_QUEUE_THRESHOLD} needed to appear under Candidates`}
                         className={cn(
                           "font-medium tabular-nums",
                           business.qualified ? "text-success" : "text-muted-foreground",
@@ -155,7 +155,7 @@ export function RunBusinessesTable({
                       columnClass.issue,
                     )}
                   >
-                    {business.failureReason ?? "—"}
+                    {business.failureReason ?? "Not Available"}
                   </TableCell>
                 </TableRow>
               )

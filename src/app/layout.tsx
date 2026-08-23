@@ -30,7 +30,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Local Prospector",
+  title: "Open Prospector",
   description: "Find local businesses that could benefit from a better website.",
 }
 

@@ -1,10 +1,19 @@
 import { expect, test } from "@playwright/test"
 import { expectPageScroll, pageScroller } from "@/test-support/e2e-page-scroll"
 
-test("renders the persisted overview without sample data", async ({ page }) => {
+test("renders the persisted overview without sample data", async ({ page, isMobile }) => {
   await page.goto("/")
 
-  await expect(page).toHaveTitle("Local Prospector")
+  await expect(page).toHaveTitle("Open Prospector")
+  if (!isMobile) {
+    const brandLink = page.getByRole("link", { name: "Open Prospector" })
+    await expect(brandLink).toBeVisible()
+    await expect(brandLink.locator("svg")).toBeVisible()
+  }
+  await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute(
+    "href",
+    /\/icon\.svg\?/,
+  )
   await expect(page.locator("main")).toHaveCount(1)
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible()
   await expect(page.getByRole("region", { name: "Prospecting Summary" })).toContainText(
@@ -94,16 +103,16 @@ test.describe
     })
   })
 
-test("renders the persisted review queue", async ({ page }) => {
+test("renders the persisted candidates", async ({ page }) => {
   await page.goto("/review")
 
-  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Candidates" })).toBeVisible()
   // The local database may hold qualified candidates or none; neither state may use fixtures.
   const empty = page.getByText(/nothing to review yet/i)
   const queue = page.getByRole("columnheader", { name: /Business/ })
   await expect(empty.or(queue).first()).toBeVisible()
   await expect(page.getByText("sample data")).toHaveCount(0)
-  // Starting a run belongs to the Runs page; this queue only offers it when there is nothing to review.
+  // Starting a run belongs to the Runs page; Candidates only offers it when there is nothing to review.
   await expect(page.getByRole("main").getByRole("link", { name: "New Run" })).toHaveCount(
     (await empty.count()) > 0 ? 1 : 0,
   )
@@ -143,7 +152,7 @@ test("opens mobile navigation", async ({ page, isMobile }) => {
   }).toPass({ timeout: 20_000 })
 
   await expect(sidebar).toContainText(/overview/i)
-  await expect(sidebar).toContainText(/review queue/i)
+  await expect(sidebar).toContainText(/candidates/i)
 })
 
 test("collapses desktop navigation", async ({ page, isMobile }) => {

@@ -8,7 +8,11 @@ test("captures the product with synthetic fixture data", async ({ page }) => {
   await page.goto("/")
   await page.waitForLoadState("networkidle")
   await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator("html")).toHaveClass(/dark/)
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible()
+  await expect(page.getByText("Amber Bloom Florist", { exact: true })).toBeVisible()
+  await expect(page.getByText("Reda", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("Rumia", { exact: true }).first()).toBeVisible()
   await page.screenshot({
     path: resolve(assets, "overview.png"),
     animations: "disabled",

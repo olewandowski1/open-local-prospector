@@ -8,7 +8,7 @@ import { migrateLocalDatabase } from "@/features/local-application"
  * A workspace the browser suite can rely on. The businesses are invented: this repository is public,
  * and a snapshot of a real run would publish the telephone numbers of real shops.
  *
- * Everything a spec asserts on comes from here — a settled run named for florists, a run still
+ * Everything a spec asserts on comes from here: a settled run named for florists, a run still
  * moving, candidates in the queue, and a business whose inspection was blocked.
  */
 export function seedE2eWorkspace(databasePath: string): void {
@@ -39,6 +39,8 @@ type SeedRun = Readonly<{
   key: string
   category: string
   locality: string
+  latitude: number
+  longitude: number
   state: "Completed" | "Running"
   completion?: string
   stage: string
@@ -47,56 +49,60 @@ type SeedRun = Readonly<{
 
 const RUNS: readonly SeedRun[] = [
   {
-    key: "florists",
-    category: "Florists",
-    locality: "Kwiatowo",
+    key: "reda-florist",
+    category: "Florist",
+    locality: "Reda",
+    latitude: 54.6053,
+    longitude: 18.3472,
     state: "Completed",
     completion: "Target Reached",
     stage: "ScoreCandidate",
     businesses: [
       {
-        name: "Kwiaciarnia Stokrotka",
-        locality: "Kwiatowo",
+        name: "Amber Bloom Florist",
+        locality: "Reda",
         telephone: "+48511000001",
         score: 88,
         opportunity: "NoDedicatedWebsite",
       },
       {
-        name: "Kwiaciarnia Pod Lipą",
-        locality: "Kwiatowo",
+        name: "Willow And Stem",
+        locality: "Reda",
         telephone: "+48511000002",
-        website: "https://przyklad.test/pod-lipa",
+        website: "https://example.test/willow-and-stem",
         score: 74.5,
         opportunity: "BrokenOrUnusable",
       },
       {
-        name: "Bukieciarnia Malwa",
-        locality: "Kwiatowo",
+        name: "Meadow Petals",
+        locality: "Reda",
         telephone: "+48511000003",
         score: 66.25,
         opportunity: "WeakDiscoverability",
       },
-      { name: "Zieleń i Kwiaty", locality: "Kwiatowo", telephone: "+48511000004", blocked: true },
+      { name: "Coastal Flowers", locality: "Reda", telephone: "+48511000004", blocked: true },
     ],
   },
   {
-    key: "dentists",
-    category: "Dental clinics",
-    locality: "Zębowo",
+    key: "rumia-florist",
+    category: "Florist",
+    locality: "Rumia",
+    latitude: 54.5709,
+    longitude: 18.388,
     state: "Completed",
     completion: "Search Exhausted",
     stage: "ScoreCandidate",
     businesses: [
       {
-        name: "Gabinet Uśmiech",
-        locality: "Zębowo",
+        name: "Harbour Bloom Florist",
+        locality: "Rumia",
         telephone: "+48512000001",
         score: 81.75,
         opportunity: "NoDedicatedWebsite",
       },
       {
-        name: "Dentysta Rodzinny",
-        locality: "Zębowo",
+        name: "North Garden Flowers",
+        locality: "Rumia",
         telephone: "+48512000002",
         score: 62.5,
         opportunity: "MobileAccessibilityOrPerformance",
@@ -104,14 +110,16 @@ const RUNS: readonly SeedRun[] = [
     ],
   },
   {
-    key: "barbers",
-    category: "Hair salons and barbers",
-    locality: "Grzebykowo",
+    key: "rumia-florist-running",
+    category: "Florist",
+    locality: "Rumia",
+    latitude: 54.5709,
+    longitude: 18.388,
     state: "Running",
     stage: "InspectWebsite",
     businesses: [
-      { name: "Salon Fryzjerski Iskra", locality: "Grzebykowo", telephone: "+48513000001" },
-      { name: "Barber Kowalski", locality: "Grzebykowo", telephone: "+48513000002" },
+      { name: "Moss And Rose", locality: "Rumia", telephone: "+48513000001" },
+      { name: "Bluebell Studio", locality: "Rumia", telephone: "+48513000002" },
     ],
   },
 ]
@@ -161,9 +169,9 @@ function writeRun(database: Database.Database, run: SeedRun, runIndex: number): 
     runtimeConfiguration: { model: "claude-sonnet-5", reasoningEffort: "high" },
     searchArea: {
       id: `relation:${900000 + runIndex}`,
-      displayName: `${run.locality}, Polska`,
-      latitude: 52 + runIndex / 100,
-      longitude: 19 + runIndex / 100,
+      displayName: `${run.locality}, Poland`,
+      latitude: run.latitude,
+      longitude: run.longitude,
       countryCode: "PL",
     },
   }
@@ -251,7 +259,7 @@ function writeBusiness(
   const canonicalId = id(`canonical-${slug}`)
   const runBusinessId = id(`run-business-${slug}`)
   const at = base + 120_000 + index * 30_000
-  const url = business.website ?? `https://przyklad.test/${slug}`
+  const url = business.website ?? `https://example.test/${slug}`
 
   // An inspection, an assessment and a score are each unique per task, so every business gets one.
   database

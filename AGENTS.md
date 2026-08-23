@@ -2,13 +2,13 @@
 
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+This version has breaking changes: APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+This block is written and re-added by `next dev`; verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
 
-# Open Local Prospector
+# Open Prospector
 
 A local-first application that finds independent businesses whose public online presence suggests a
 website opportunity. One local user, no outreach. This file is the only instruction file: `CLAUDE.md`
@@ -36,12 +36,12 @@ tests/e2e/                browser flows grouped by app, live, workspace, and doc
 ```
 
 A feature owns its own layers and exposes a public interface; cross-feature imports go through it.
-`pnpm check:architecture` enforces this — read `src/architecture/feature-boundaries.ts` for the exact
+`pnpm check:architecture` enforces this. Read `src/architecture/feature-boundaries.ts` for the exact
 rules before working around one.
 
 # Design Rules
 
-How this workspace looks and behaves. These are settled decisions — follow them without asking, and
+How this workspace looks and behaves. These are settled decisions. Follow them without asking, and
 treat a deviation as a bug. Where a rule has a reason attached, the reason is the part that stops the
 mistake being made again.
 
@@ -49,8 +49,9 @@ mistake being made again.
 
 - **Title Case every label**: buttons, headings, field labels, column headers, tabs, badges, menu
   items, `aria-label`s. Sentences and descriptions stay sentence case.
+- **Do not use em dashes.** Use sentence breaks, commas, colons, or parentheses instead.
 - **Never show raw data.** No UUIDs (shorten to `#8chars`, full value in `title`), no raw floats
-  (round — `24.666666666666668` is a bug), no PascalCase identifiers (space them), no ISO timestamps.
+  (round because `24.666666666666668` is a bug), no PascalCase identifiers (space them), no ISO timestamps.
 - **Statuses are one or two words.** Persisted states read as sentences; shorten them for the badge
   and keep the recorded wording in `title` so nothing is lost. See `runStatusPresentation`.
 - **Echo, never invent.** When a tool or CLI reports something, show its words. Do not synthesise a
@@ -70,11 +71,11 @@ mistake being made again.
 - **Semantic variants exist on Button and Badge**: `success`, `warning`, `info`, `destructive`.
   Semantic badges carry an accent border, not a bare tint.
 - **A status earns its colour from what it means**, not from where it sits:
-  - `destructive` — a settled failure, or an outcome that stopped short of its goal.
-  - `warning` — recoverable or blocked work that may yet succeed; a paused run.
-  - `success` — finished well, qualified, connected.
-  - `secondary` — a real outcome that simply did not make the cut. Not alarming.
-  - `outline` — neutral, in flight, or the state everything starts in.
+  - `destructive`: a settled failure, or an outcome that stopped short of its goal.
+  - `warning`: recoverable or blocked work that may yet succeed; a paused run.
+  - `success`: finished well, qualified, connected.
+  - `secondary`: a real outcome that simply did not make the cut. Not alarming.
+  - `outline`: neutral, in flight, or the state everything starts in.
 - Full-height side panels take the page background, not a raised popover surface.
 
 ## Layout
@@ -94,7 +95,7 @@ mistake being made again.
 - **Use container queries (`@container`, `@md:`, `@2xl:`) for that, not viewport breakpoints.** The
   sidebar appears at `md`, which makes the content area *narrower* at 768px than at 640px. A viewport
   breakpoint cannot express that; a container query can.
-- **A truncating column needs an explicit width**, not a maximum — automatic table layout is free to
+- **A truncating column needs an explicit width**, not a maximum. Automatic table layout is free to
   overrule a maximum.
 - **`truncate` belongs on the text element.** A flex row cannot truncate its children.
 - **A flex child needs `min-w-0`** to shrink below its content; without it, it pushes the page wider
@@ -126,7 +127,7 @@ mistake being made again.
   actions column.
 - **Badges are for statuses.** A fact is plain text. Reaching for a badge to style a value is the
   usual way a page ends up looking noisy. Reach for `Badge` only where its compact shape materially
-  improves scanning of a categorical state in a dense collection — a table, list or card grid. Never
+  improves scanning of a categorical state in a dense collection, such as a table, list or card grid. Never
   for counts, metadata, filters, action labels, or a detail page's current state.
 - **A detail page states its current state as a labeled row** with concise semantic text, not a
   badge. Ordinary facts stay neutral; `success`, `warning`, `info` and `destructive` are reserved for
@@ -140,7 +141,7 @@ mistake being made again.
   than over the field being changed.
 - **`DialogFooter layout="stretch"`** when the primary action should fill the row.
 - **No toasts.** `sonner` was removed deliberately; do not reintroduce it. An action confirms itself
-  by changing what is on screen — the decided row restates its status, a lifted suppression leaves
+  by changing what is on screen. The decided row restates its status, a lifted suppression leaves
   the list. Where an action genuinely leaves nothing behind, show the outcome in place, next to the
   control that caused it, rather than in a corner the reader has to catch.
 
@@ -150,7 +151,7 @@ mistake being made again.
   exports server work, and a value import drags `better-sqlite3` and `node:child_process` into the
   browser bundle. Turbopack fails with a chunking-context panic.
 - **Pure presentation logic lives in `*-presentation.ts` with unit tests.** Anything a reader could
-  misread — a score, a range, a relative time, a status label — is a tested function, not inline JSX.
+  misread, such as a score, a range, a relative time, or a status label, is a tested function, not inline JSX.
 - **A write that replaces every column it is given needs the untouched values sent back.** Omitting
   them silently erases data. See `updateCandidateReview`.
 - **Reset state by remounting with `key`**, not with an effect watching the selection.
