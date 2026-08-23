@@ -29,9 +29,6 @@ import {
 import { ThemeToggle } from "@/features/local-application/presentation/theme-toggle"
 import { NewRunProvider } from "@/features/prospecting-runs/client"
 import { RuntimeUpdatePanel } from "@/features/runtime-settings/presentation/runtime-update-panel"
-import { cn } from "@/lib/utils"
-
-const workspaceWidth = "mx-auto w-full max-w-5xl"
 
 function NavigationGroup({ label, items }: { label: string; items: readonly NavigationItem[] }) {
   const pathname = usePathname()
@@ -138,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <ThemeToggle />
             </div>
           </header>
-          <div className={cn(workspaceWidth, "flex min-h-0 flex-1 flex-col")}>{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </SidebarInset>
 
         <WorkspaceCommand open={command.open} onOpenChange={command.setOpen} />

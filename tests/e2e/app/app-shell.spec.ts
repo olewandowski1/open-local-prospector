@@ -32,6 +32,27 @@ test("scrolls the overview inside the bounded app shell", async ({ page }) => {
   await expectPageScroll(page, 160)
 })
 
+test("scrolls from the gutter outside the centered page content", async ({ page, isMobile }) => {
+  test.skip(isMobile, "The narrow viewport has no page gutter")
+  await page.setViewportSize({ width: 1600, height: 600 })
+  await page.goto("/")
+
+  const scroller = pageScroller(page)
+  const content = page.locator("[data-page-content]")
+  const scrollerBox = await scroller.boundingBox()
+  const contentBox = await content.boundingBox()
+  expect(scrollerBox).not.toBeNull()
+  expect(contentBox).not.toBeNull()
+  if (!scrollerBox || !contentBox) return
+
+  expect(contentBox.width).toBeLessThan(scrollerBox.width)
+  const gutterX = (contentBox.x + contentBox.width + scrollerBox.x + scrollerBox.width) / 2
+  await page.mouse.move(gutterX, scrollerBox.y + 100)
+  await page.mouse.wheel(0, 300)
+
+  await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+})
+
 test("scrolls Settings as one page instead of an inner content pane", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 600 })
   await page.goto("/settings/data")

@@ -9,7 +9,11 @@ import { cn } from "@/lib/utils"
 export function PageScroller({ className, ...props }: ComponentProps<"div">) {
   return (
     <ScrollArea data-page-scroller className="min-h-0 flex-1">
-      <div className={cn("min-h-full p-4 sm:p-6", className)} {...props} />
+      <div
+        data-page-content
+        className={cn("@container mx-auto min-h-full w-full max-w-5xl p-4 sm:p-6", className)}
+        {...props}
+      />
     </ScrollArea>
   )
 }
