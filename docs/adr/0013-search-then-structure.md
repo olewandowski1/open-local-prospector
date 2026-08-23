@@ -1,4 +1,6 @@
-# Search first, structure second
+# Search First, Structure Second
+
+Status: Accepted
 
 Amends [ADR 0012](0012-use-subscription-runtime-web-search.md).
 

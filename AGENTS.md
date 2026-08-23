@@ -16,16 +16,15 @@ imports it, and Codex reads it directly. Everything an agent must follow is here
 
 ## Orientation
 
-- [`CONTEXT.md`](CONTEXT.md) is the domain glossary. Name concepts the way it names them; do not
+- [`docs/Domain-Language.md`](docs/Domain-Language.md) is the domain glossary. Name concepts the way it names them; do not
   drift to synonyms it avoids.
 - [`docs/adr/`](docs/adr) holds the architecture decisions. Read the ones touching the area you are
   about to change. If your work contradicts an ADR, surface the conflict rather than silently
   overriding it.
-- [`docs/PRD.md`](docs/PRD.md) is the product requirements; [`docs/MVP-QUALITY-GATE.md`](docs/MVP-QUALITY-GATE.md)
-  is what the MVP had to satisfy.
+- [`docs/Product.md`](docs/Product.md) is the living product requirements.
 - [`README.md`](README.md) documents the commands. `pnpm check` is the verification gate.
 
-## Source layout
+## Source Layout
 
 ```text
 src/app/                  Next.js routes and composition
@@ -33,23 +32,14 @@ src/components/           app shell, shared components, generated shadcn primiti
 src/features/<feature>/   feature-owned domain, application, infrastructure, server, presentation
 src/worker/               independent worker composition root
 src/test-support/         unit fixtures and e2e helpers
-tests/e2e/                cross-feature browser flows
+tests/e2e/                browser flows grouped by app, live, workspace, and docs purpose
 ```
 
 A feature owns its own layers and exposes a public interface; cross-feature imports go through it.
 `pnpm check:architecture` enforces this — read `src/architecture/feature-boundaries.ts` for the exact
 rules before working around one.
 
-## Issues
-
-Issues and specs live as Markdown files under `.scratch/<feature-slug>/`: the spec at `spec.md`, one
-file per ticket at `issues/<NN>-<slug>.md` numbered from `01`. A `Status:` line near the top records
-state — `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `claimed`, `resolved` or
-`wontfix`. Claim before working; move to `resolved` only once every acceptance item passes, and
-record implementation and verification evidence under an `## Answer` heading. Conversation appends
-under `## Comments`.
-
-# Design rules
+# Design Rules
 
 How this workspace looks and behaves. These are settled decisions — follow them without asking, and
 treat a deviation as a bug. Where a rule has a reason attached, the reason is the part that stops the
@@ -65,8 +55,8 @@ mistake being made again.
   and keep the recorded wording in `title` so nothing is lost. See `runStatusPresentation`.
 - **Echo, never invent.** When a tool or CLI reports something, show its words. Do not synthesise a
   friendlier message, and never claim a state you have not verified.
-- **Providers are "Codex" and "Claude"**, not "Codex CLI" or "Claude Code". Models are short:
-  `Sonnet 5`, `GPT-5.6 Sol`.
+- **Providers are "Codex", "Claude", and "OpenCode"**, not CLI product names. Models are short:
+  `Sonnet 5`, `GPT-5.6 Sol`, `Ox Alpha Free`.
 - Say what is being held back. A bounded list states its bound rather than reading as complete.
 
 ## Colour
@@ -154,7 +144,7 @@ mistake being made again.
   the list. Where an action genuinely leaves nothing behind, show the outcome in place, next to the
   control that caused it, rather than in a corner the reader has to catch.
 
-## Engineering guards
+## Engineering Guards
 
 - **A client component imports from `@/features/x/client`, never `@/features/x`.** The feature index
   exports server work, and a value import drags `better-sqlite3` and `node:child_process` into the
@@ -184,7 +174,7 @@ mistake being made again.
     request, and a click landing during that compile is a genuine no-op, so parallel workers raced
     hydration and failed on a healthy application.
   - **Backup, restore, reset and deletion round trips** keep their own single-worker server on
-    `127.0.0.1:4311` under `playwright.workspace.config.ts`, resolving beneath
+    `127.0.0.1:4311` under `tests/e2e/config/workspace.config.ts`, resolving beneath
     `.scratch/workspace-e2e`, gated by `PROSPECTOR_ISOLATED_WORKSPACE_TEST` and skipped by the
     normal `pnpm test:e2e` run.
 - One server serves every worker, so a click or hover landing before hydration is a genuine no-op.

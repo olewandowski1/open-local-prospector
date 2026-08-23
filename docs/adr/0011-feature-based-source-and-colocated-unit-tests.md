@@ -1,4 +1,6 @@
-# Organize source by feature and colocate unit tests
+# Organize Source By Feature And Colocate Unit Tests
+
+Status: Accepted
 
 Application source will be organized around product features such as Prospecting Runs and the Prospecting Overview. A feature owns its domain rules, application execution, infrastructure adapters, server integration, and presentation where those concerns exist. Internal folders are introduced only when they hide real complexity; tiny features remain flat rather than copying a complete folder template.
 

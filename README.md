@@ -1,104 +1,95 @@
 <h1 align="center">Open Local Prospector</h1>
 
 <p align="center">
-  Find independent businesses whose public online presence shows a real website opportunity —
-  entirely on your own machine.
+  Find independent businesses whose public online presence shows a real website opportunity—on
+  your own machine, with evidence you can inspect.
 </p>
 
 <p align="center">
   <a href="https://github.com/olewandowski1/open-local-prospector/actions/workflows/check.yml"><img alt="Checks" src="https://img.shields.io/github/actions/workflow/status/olewandowski1/open-local-prospector/check.yml?branch=main&label=checks&style=flat-square"></a>
-  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square"></a>
-  <img alt="Node 22+" src="https://img.shields.io/badge/node-%E2%89%A522-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
+  <a href="LICENSE"><img alt="MIT Licence" src="https://img.shields.io/badge/licence-MIT-blue?style=flat-square"></a>
+  <img alt="Node 22 Or Newer" src="https://img.shields.io/badge/node-%E2%89%A522-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
   <img alt="Next.js 16" src="https://img.shields.io/badge/next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white">
-  <img alt="No API keys required" src="https://img.shields.io/badge/API%20keys-none%20required-success?style=flat-square">
+  <img alt="No API Keys Required" src="https://img.shields.io/badge/API%20keys-none%20required-success?style=flat-square">
 </p>
 
----
+![Open Local Prospector Overview With Synthetic Businesses](docs/assets/overview.png)
 
-## What this is
+## What It Does
 
-Lead lists tell you that a business exists. They do not tell you **why** its website is costing it
-enquiries, and they happily mix in chains, franchises, and businesses whose website decisions are
-made three cities away.
+Lead lists tell you that a business exists. They rarely explain whether the business has a genuine
+Website Opportunity, and they happily mix independent businesses with chains whose website
+decisions are made elsewhere.
 
-Open Local Prospector is a single-user, local-first web application that does the tedious part
-itself: it searches for businesses in a place and category you choose, works out which website
-actually belongs to each one, opens that website in a real browser, and ranks what it finds by an
-explainable score — every claim tied to a source URL you can click.
+Open Local Prospector handles the research loop: it searches a place and category you choose,
+corroborates which public presence belongs to each business, inspects websites in a controlled
+browser, and ranks evidence-backed opportunities. Every material claim points to a source URL you
+can open yourself.
 
-It runs on your machine, keeps everything in one SQLite file, and **sends no outreach**. What you do
-with a shortlist afterwards is your business, not the application's.
+The application runs locally, keeps durable work in SQLite, and sends no outreach.
 
-## What makes it different
+## Why It Is Different
 
-| | |
+| Principle | What It Means |
 |---|---|
-| **No API keys, no credits** | Discovery uses the web-search capability of a CLI you already have: Codex, Claude, or OpenCode. There is no search API to register for, and no usage-based fallback that could quietly start spending. |
-| **Evidence, not opinions** | Every website opportunity cites at least one Supporting Observation with a source URL and a timestamp. A claim with nothing behind it is treated as a bug. |
-| **The application is in charge** | The AI runtime classifies and explains. The application owns search, browsing, validation, scoring, retries, limits, and persistence — see [ADR 0002](docs/adr/0002-application-owned-agent-orchestration.md). |
-| **Deterministic scoring** | The 0–100 Opportunity Score is calculated by versioned application code from structured fields, not asked for from a model. Every score records the rubric version that produced it. |
-| **Untrusted by construction** | Web pages are evidence, never instructions. The inspector blocks private networks, unsafe protocols, downloads, pop-ups and unexpected navigation, and records authentication walls and CAPTCHAs rather than trying to get past them. |
-| **Resumable** | Every stage checkpoints into SQLite. Kill the worker mid-run and it resumes from committed work rather than from the beginning. |
-| **Local by default** | Loopback-only web server, one SQLite file, artifacts on disk. No account, no telemetry, no crash reporting. |
+| No API Keys Or Credits | Discovery uses an installed Codex, Claude, or OpenCode runtime. There is no metered fallback. |
+| Evidence Before Opinion | Every Website Opportunity includes a Supporting Observation, source URL, and observation time. |
+| Application-Owned Control | The application owns search bounds, browsing, validation, scoring, retries, persistence, and safety. |
+| Deterministic Scoring | Versioned application code calculates the 0–100 Opportunity Score from structured evidence. |
+| Untrusted By Construction | Web content is evidence, never instruction. Unsafe navigation and private networks are blocked. |
+| Resumable Work | Every stage checkpoints to SQLite so interrupted runs continue from committed work. |
+| Local By Default | The server binds to loopback; there is no account, telemetry, cloud service, or remote access. |
 
-## How a run works
+## How A Run Works
 
 ```text
-Search Brief          you pick a place, a category, a target of 5-50, a depth, a runtime
-      |
-      v
-Run Preflight         database, browser, disk, runtime authentication, workload estimate
-      |
-      v
-  +------------------- background worker, checkpointed in SQLite --------------------+
-  |                                                                                  |
-  |  Discover  ->  Deduplicate  ->  Corroborate  ->  Inspect  ->  Assess  ->  Score  |
-  |  runtime       canonical       name, address    Playwright   schema-      app    |
-  |  web search    business        phone, links     desktop      constrained  code   |
-  |                                                 and mobile                       |
-  |                                                                                  |
-  +----------------------------------------------------------------------------------+
-      |
-      v
-Review Queue          ranked candidates, score breakdown, screenshots, sources, contact routes
-      |
-      v
-Your decision         shortlist, reject with a reason, correct the record, export CSV or JSON
+Search Brief          place, category, target, Run Mode, runtime
+      │
+      ▼
+Run Preflight         storage, browser, runtime, Search Area, workload
+      │
+      ▼
+┌────────────────────── background worker ──────────────────────┐
+│ Discover → Deduplicate → Corroborate → Inspect → Assess → Score │
+└─────────────────────────────────────────────────────────────────┘
+      │
+      ▼
+Review Queue          evidence, score, screenshots, sources, contact routes
+      │
+      ▼
+Your Decision         shortlist, reject, correct, suppress, or export
 ```
 
-A run ends in one stated outcome — Target Reached, Search Exhausted, Cancelled with Partial Results,
-Paused, Runtime Unavailable, Completed with Warnings, or Infrastructure Failed — and one failed
+A run ends in one recorded outcome: Target Reached, Search Exhausted, Cancelled With Partial
+Results, Paused, Runtime Unavailable, Completed With Warnings, or Infrastructure Failed. One failed
 business never fails the whole run.
 
-## What it deliberately does not do
+![Candidate Review With Synthetic Evidence](docs/assets/candidate-review.png)
 
-Knowing the edges matters as much as knowing the features.
+## Product Boundaries
 
-- No outreach. It does not send, schedule, or draft email, calls, forms, or messages.
-- No CRM, no pipeline automation, no recurring runs, no monitoring.
-- No CAPTCHA solving, no authentication bypass, no scraping of consumer search-result pages.
-- No paid datasets, no private account data, no named-person enrichment.
-- No cloud, no multi-user, no remote access, no application account.
-- No automatic tuning of prompts, weights, or thresholds from your review decisions.
+- No email, calls, forms, messages, outreach drafts, or scheduling.
+- No CRM, pipeline automation, recurring runs, or monitoring.
+- No CAPTCHA solving, authentication bypass, or consumer search-result scraping.
+- No paid datasets, named-person enrichment, or private account data.
+- No cloud, multi-user workspace, telemetry, or remote access.
+- No automatic tuning of prompts, weights, or thresholds from review decisions.
 
 ## Requirements
 
-- **Node.js 22 or newer**
-- **pnpm 10.32.1**, through Corepack or a direct install
-- **At least one authenticated CLI**, signed in through its own terminal flow:
-  - Codex — `npm install -g @openai/codex`, then `codex login`
-  - Claude — `irm https://claude.ai/install.ps1 | iex` on Windows, or
-    `curl -fsSL https://claude.ai/install.sh | bash`, then `claude auth login`
-  - OpenCode — `npm install -g opencode-ai`. No login needed: its hosted catalog answers without
-    one, and a provider login only adds more models (`opencode providers login`).
+- Node.js 22 or newer.
+- pnpm 10 or newer, through Corepack or a direct installation.
+- At least one ready runtime:
+  - Codex: `npm install -g @openai/codex`, then `codex login`.
+  - Claude: install the official client, then `claude auth login`.
+  - OpenCode: `npm install -g opencode-ai`; provider login is optional.
 
-No Docker. No PostgreSQL. No search API key. No Python or C++ toolchain — `better-sqlite3` installs
-from its prebuilt binaries.
+No Docker, PostgreSQL, search API key, Python, or C++ toolchain is required.
 
-The application never performs provider login, and never reads, copies, or stores provider
-credentials. It only reports what each official client says about itself.
+The application never performs provider login and never reads, copies, or stores provider
+credentials. It only reports what each installed client says about its own readiness.
 
-## Quick start
+## Quick Start
 
 ```powershell
 pnpm install
@@ -106,110 +97,102 @@ pnpm run setup
 pnpm run app
 ```
 
-Then open <http://127.0.0.1:4310>.
+Open <http://127.0.0.1:4310>.
 
-`pnpm run setup` creates or migrates the SQLite database, prepares artifact storage, copies the
-non-secret `.env.local.example` template if you have no `.env.local`, and installs the matching
-Playwright Chromium build. It is safe to run again at any time. Use the explicit `run`: `pnpm setup`
-is a reserved pnpm command and will not invoke this script.
+`pnpm run setup` creates or migrates the database, prepares artifact storage, copies the non-secret
+environment template when needed, and installs the matching Playwright Chromium build. It is safe
+to run repeatedly. Use the explicit `run`: `pnpm setup` is a reserved pnpm command.
 
-`pnpm run app` runs setup, produces a production build, and starts the web process and the worker
-together. Once a build exists, `pnpm start` goes straight to running both.
+Run commands from the repository root. Database and artifact paths resolve against the current
+working directory.
 
-> Run every command from the repository root. Database and artifact paths resolve against the
-> current working directory, so starting elsewhere quietly creates an empty workspace instead of
-> reporting an error.
+## Commands
 
-## Using it versus changing it
-
-| Command | For |
+| Command | Purpose |
 |---|---|
-| `pnpm run app` | Using the application: setup, production build, web and worker. |
-| `pnpm start` | The same, from an existing build. |
-| `pnpm dev` | Changing the application: Next dev server plus a watching worker. |
-| `pnpm start:web`, `pnpm start:worker` | One process at a time. |
+| `pnpm run app` | Set up, build, and run the production web process and worker |
+| `pnpm start` | Run both processes from an existing production build |
+| `pnpm dev` | Run the development server and watching worker |
+| `pnpm check` | Run the repository verification gate |
+| `pnpm test:e2e` | Run synthetic desktop and mobile browser flows |
+| `pnpm test:e2e:workspace` | Run destructive workspace round trips in isolation |
+| `pnpm test:e2e:live` | Run explicitly enabled real-runtime checks |
+| `pnpm docs:screenshots` | Rebuild documentation images from synthetic fixture data |
 
-Both `pnpm dev` and `pnpm start` bind `127.0.0.1:4310`, so only one can run at a time; the second
-reports `EADDRINUSE`. The build lives in the ignored `.next/` directory, so it belongs to the
-machine rather than to the repository — rebuild after pulling.
-
-The development worker reloads on save. The production worker does not, so a stray save cannot
-restart a worker in the middle of a run.
+Both development and production bind `127.0.0.1:4310`, so only one can run at a time. The
+development worker reloads on save; the production worker does not.
 
 ## Configuration
 
-Everything here is optional and non-secret. Copy `.env.local.example` to `.env.local` to change it.
+Every setting is optional and non-secret. Copy `.env.local.example` to `.env.local` to override a
+default.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PROSPECTOR_DATABASE_PATH` | `.local/open-local-prospector.sqlite` | SQLite file |
+| `PROSPECTOR_DATABASE_PATH` | `.local/open-local-prospector.sqlite` | SQLite workspace |
 | `PROSPECTOR_ARTIFACTS_PATH` | `.local/artifacts` | Screenshots and page evidence |
-| `PROSPECTOR_BUSINESS_CONCURRENCY` | `2` | Concurrent inspections, 1 through 4 |
-| `PROSPECTOR_GEOCODER_URL` | Nominatim `/search` | Any compatible geocoding endpoint |
-| `PROSPECTOR_CODEX_EXECUTABLE` | resolved from `PATH` | Absolute path to the Codex CLI |
-| `PROSPECTOR_CLAUDE_EXECUTABLE` | resolved from `PATH` | Absolute path to the Claude CLI |
-| `PROSPECTOR_OPENCODE_EXECUTABLE` | resolved from `PATH` | Absolute path to the OpenCode CLI |
+| `PROSPECTOR_BUSINESS_CONCURRENCY` | `2` | Concurrent inspections, from 1 to 4 |
+| `PROSPECTOR_GEOCODER_URL` | Nominatim `/search` | Compatible geocoding endpoint |
+| `PROSPECTOR_CODEX_EXECUTABLE` | Resolved from `PATH` | Codex executable |
+| `PROSPECTOR_CLAUDE_EXECUTABLE` | Resolved from `PATH` | Claude executable |
+| `PROSPECTOR_OPENCODE_EXECUTABLE` | Resolved from `PATH` | OpenCode executable |
 
-`.local/` is git-ignored. If you override a path, set it in the terminal that runs setup as well.
+Search Area interpretation uses OpenStreetMap Nominatim by default. It runs only after an explicit
+action, is limited to one request per second, caches results locally for seven days, and identifies
+the application with a User-Agent. Review the
+[Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/) before sustained
+use.
 
-Search Area interpretation uses the public OpenStreetMap Nominatim endpoint by default. It is
-triggered only by an explicit action — never autocomplete — limited to one request per second,
-cached locally for seven days, and identified with an application User-Agent. Please read the
-[Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/) before leaning on
-it, and point `PROSPECTOR_GEOCODER_URL` elsewhere if you need to.
-
-## How it is built
+## Architecture
 
 ```text
 src/app/                  Next.js routes and composition
-src/components/           app shell, shared components, generated shadcn primitives
-src/features/<feature>/   domain, application, infrastructure, server, presentation
-src/worker/               independent worker composition root
-src/test-support/         unit fixtures and e2e helpers
-tests/e2e/                cross-feature browser flows
+src/components/           Application shell and shared shadcn primitives
+src/features/<feature>/   Feature-owned layers and public interfaces
+src/worker/               Independent worker composition root
+src/test-support/         Synthetic fixtures and test helpers
+tests/e2e/                App, live, workspace, and documentation browser flows
 ```
 
-A feature owns its own layers and exposes a narrow public interface; cross-feature imports go
-through it, and `pnpm check:architecture` enforces that. Next.js and React stay conventional;
-[Effect](https://effect.website) is used inside the worker and the server domain for typed errors,
-scoped resources, bounded concurrency and schema validation. SQLite — not Effect — remains the
-source of truth for anything that has to survive a restart.
+Features expose narrow public interfaces, and `pnpm check:architecture` enforces their boundaries.
+Persistence uses Drizzle over `better-sqlite3` in WAL mode. Effect manages typed worker execution,
+bounded concurrency, timeouts, and resource lifetimes while SQLite remains the durable source of
+truth. The interface uses Tailwind CSS, shadcn/ui on Base UI, and Hugeicons.
 
-Persistence is Drizzle over `better-sqlite3` in WAL mode. Migrations live in `drizzle/` and are
-applied by setup. The interface is Tailwind CSS with shadcn/ui on Base UI primitives, and Hugeicons
-throughout.
+Read [Architecture](docs/Architecture.md) for the system shape and the
+[Architecture Decision Records](docs/adr/) for the reasoning behind it.
 
 ## Verification
 
 ```powershell
-pnpm check          # Biome, feature boundaries, TypeScript, unit tests, production build
-pnpm test:e2e       # Chromium desktop and mobile flows
-pnpm worker:check   # the worker composition root, on its own
+pnpm check
+pnpm worker:check
+pnpm test:e2e
+pnpm test:e2e:workspace
 ```
 
-Unit tests sit beside the code they exercise as `*.test.ts` or `*.test.tsx`. Cross-feature browser
-flows live in `tests/e2e`. Biome owns formatting and linting (`pnpm format`, `pnpm check:biome`),
-and Lefthook runs it over staged files before a commit, then typecheck and unit tests before a push.
+Unit tests are colocated with source as `*.test.ts` or `*.test.tsx`. Cross-feature browser flows are
+grouped under `tests/e2e`. Biome owns formatting and linting, while Lefthook runs fast checks before
+commits and pushes.
 
 ## Documentation
 
-| Document | What it settles |
+| Document | Purpose |
 |---|---|
-| [CONTEXT.md](CONTEXT.md) | The domain language. Names here are the names used in code and in the interface. |
-| [AGENTS.md](AGENTS.md) | Working agreements, design rules, and engineering guards. |
-| [docs/PRD.md](docs/PRD.md) | Product requirements and user stories. |
-| [docs/adr/](docs/adr) | Architecture decisions, with the reasoning kept. |
-| [docs/MVP-QUALITY-GATE.md](docs/MVP-QUALITY-GATE.md) | What the MVP had to satisfy. |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to propose a change. |
+| [Documentation Index](docs/README.md) | Entry point for maintained project documents |
+| [Product Requirements](docs/Product.md) | Product boundary, user journeys, and measurable requirements |
+| [Domain Language](docs/Domain-Language.md) | Canonical product vocabulary |
+| [Architecture](docs/Architecture.md) | Current system, source, and trust boundaries |
+| [Agent Instructions](AGENTS.md) | Design rules and engineering guards |
+| [Contributing](CONTRIBUTING.md) | Setup and contribution workflow |
 
-## Responsible use
+## Responsible Use
 
-This tool reads publicly accessible pages and helps you form a judgement about them. It contacts
-nobody. You remain responsible for your provider's subscription terms, the terms of the sources you
-read, applicable privacy law, and any outreach law that applies where you and the business are.
-Suppression entries exist so that a request not to be contacted is honoured across every run and
-every export — use them.
+This application reads public pages and helps one user form a judgement. It contacts nobody. The
+user remains responsible for provider terms, source terms, privacy law, and any outreach law that
+applies. Suppression Entries exist so that a request not to be contacted is honored across every run
+and export.
 
 ## Licence
 
-[MIT](LICENSE).
+[MIT](LICENSE)

@@ -4,7 +4,7 @@ import { resolve } from "node:path"
 import { expect, test } from "@playwright/test"
 import Database from "better-sqlite3"
 
-import { migrateLocalDatabase } from "../../src/features/local-application/infrastructure/database/local-database"
+import { migrateLocalDatabase } from "@/features/local-application/infrastructure/database/local-database"
 
 const root = resolve(".scratch/workspace-e2e")
 const databasePath = resolve(root, "workspace.sqlite")
@@ -110,7 +110,8 @@ test("downloads, resets and restores the complete workspace through the UI", asy
   await deleteDialog.getByLabel("Type DELETE To Confirm").fill("DELETE")
   await deleteDialog.getByRole("button", { name: "Delete Business" }).click()
   await expect(page.getByRole("button", { name: "Open For Review" })).toHaveCount(0)
-  expect(existsSync(evidencePath)).toBe(false)
+  // Windows can keep a successfully unlinked file observable until its final handle closes.
+  await expect.poll(() => existsSync(evidencePath)).toBe(false)
 
   writeFileSync(orphanPath, "orphan", "utf8")
   await page.goto("/settings/maintenance")

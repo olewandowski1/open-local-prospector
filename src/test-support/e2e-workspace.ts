@@ -446,7 +446,7 @@ function writeBusiness(
        (id, run_id, task_id, run_business_id, canonical_business_id, assessment_id, rubric_version,
         severity_component, confidence_component, contact_component, local_decision_component,
         commercial_value_component, total, qualified, scored_at)
-       values (?, ?, ?, ?, ?, ?, 'opportunity-score-v1', ?, ?, 15, 10, ?, ?, ?, ?)`,
+       values (?, ?, ?, ?, ?, ?, 'opportunity-score-v1', ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id(`score-${slug}`),
@@ -455,9 +455,11 @@ function writeBusiness(
       runBusinessId,
       canonicalId,
       assessmentId,
-      32,
-      20,
-      Math.max(0, score - 77),
+      score * 0.4,
+      score * 0.25,
+      score * 0.15,
+      score * 0.1,
+      score * 0.1,
       score,
       score >= 60 ? 1 : 0,
       at + 60_000,

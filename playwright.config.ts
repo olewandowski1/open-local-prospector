@@ -5,7 +5,8 @@ const workspace = resolve(".scratch/e2e")
 const port = 4312
 
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: "./tests/e2e/app",
+  outputDir: resolve(".scratch/e2e-results"),
   fullyParallel: true,
   retries: 0,
   // One server serves every worker, and several pages spawn provider CLIs to probe readiness.
@@ -20,7 +21,7 @@ export default defineConfig({
     // the server opens the database as soon as it boots. A production build, not `next dev`:
     // Turbopack compiles a route on its first request, and a click landing during that compile is
     // a genuine no-op, so parallel workers raced hydration and failed on a healthy application.
-    command: `node --import tsx tests/e2e/seed-workspace.ts && pnpm exec next build && pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
+    command: `node --import tsx tests/e2e/support/seed-workspace.ts && pnpm exec next build && pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,
     // The suite owns this port and this workspace. It used to attach to the developer's server on
     // 4310, which meant the specs could only pass on a machine that already held the right runs,

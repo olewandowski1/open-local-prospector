@@ -1,8 +1,8 @@
-# Local Business Prospecting
+# Domain Language
 
 This context describes a prospecting system that helps Oliver find businesses whose public online presence suggests an opportunity for website creation or improvement. Poland is the initial market focus, but searches are not geographically restricted.
 
-## Language
+## Core Terms
 
 **Discovered Business**:
 A business returned by a configured Public Source before eligibility and opportunity qualification. A Discovered Business may be excluded without becoming a Candidate Business, with the reason retained to avoid unnecessary repeated assessment.

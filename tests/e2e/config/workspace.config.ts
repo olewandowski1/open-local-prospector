@@ -5,8 +5,8 @@ const workspaceRoot = resolve(".scratch/workspace-e2e")
 process.env.PROSPECTOR_ISOLATED_WORKSPACE_TEST = "1"
 
 export default defineConfig({
-  testDir: "./tests/e2e",
-  testMatch: "workspace-backup-restore.spec.ts",
+  testDir: resolve("tests/e2e/workspace"),
+  outputDir: resolve(".scratch/workspace-results"),
   workers: 1,
   fullyParallel: false,
   retries: 0,
@@ -15,6 +15,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
+    cwd: resolve("."),
     command: "pnpm exec next start --hostname 127.0.0.1 --port 4311",
     url: "http://127.0.0.1:4311/settings/appearance",
     reuseExistingServer: false,

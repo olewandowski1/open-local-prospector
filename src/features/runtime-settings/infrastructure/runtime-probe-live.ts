@@ -1,7 +1,8 @@
-import { spawn } from "node:child_process"
+import { type ChildProcessByStdio, spawn } from "node:child_process"
 import { constants } from "node:fs"
 import { access } from "node:fs/promises"
 import { isAbsolute, join, delimiter as pathDelimiter } from "node:path"
+import type { Readable } from "node:stream"
 
 import { Effect, Layer, Option } from "effect"
 
@@ -24,12 +25,18 @@ export function executeRuntimeCommand(
   timeoutMilliseconds = COMMAND_TIMEOUT_MILLISECONDS,
 ): Effect.Effect<RuntimeCommandResult, RuntimeCommandError> {
   return Effect.async<RuntimeCommandResult, RuntimeCommandError>((resume) => {
-    const child = spawn(executable, arguments_, {
-      shell: false,
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-      env: safeRuntimeEnvironment(environment),
-    })
+    let child: ChildProcessByStdio<null, Readable, Readable>
+    try {
+      child = spawn(executable, arguments_, {
+        shell: false,
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: safeRuntimeEnvironment(environment),
+      })
+    } catch {
+      resume(Effect.fail(new RuntimeCommandError({ reason: "spawn" })))
+      return
+    }
     const stdout: Buffer[] = []
     const stderr: Buffer[] = []
     let outputBytes = 0

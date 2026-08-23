@@ -1,3 +1,5 @@
-# Run prospecting as resumable bounded jobs
+# Run Prospecting As Resumable Bounded Jobs
+
+Status: Accepted
 
 Every Prospecting Run and per-business stage will checkpoint progress in SQLite so an interrupted application resumes from completed work. The worker claims jobs and writes checkpoints through short transactions under WAL mode, and startup returns abandoned in-progress stages to a resumable state. Quick mode inspects two pages and Thorough mode up to five, with two concurrent browser inspections by default and a configurable range of one to four. Transient failures receive at most two retries, permanent access barriers become partial results, and one failed business never fails the entire run.

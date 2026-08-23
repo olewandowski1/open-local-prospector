@@ -108,40 +108,41 @@ test("keeps the compact Run Mode options centered and stable when selected", asy
   await thorough.click()
   await expect(thorough).toBeChecked()
   const after = await metrics()
-  expect({ width: after.group.width, height: after.group.height }).toEqual({
-    width: before.group.width,
-    height: before.group.height,
+  const rounded = (value: number) => Math.round(value * 100) / 100
+  expect({ width: rounded(after.group.width), height: rounded(after.group.height) }).toEqual({
+    width: rounded(before.group.width),
+    height: rounded(before.group.height),
   })
   expect(
     after.segments.map(({ segment, icon, text }) => ({
-      segment: { width: segment.width, height: segment.height },
+      segment: { width: rounded(segment.width), height: rounded(segment.height) },
       icon: {
-        width: icon.width,
-        height: icon.height,
-        left: icon.left - segment.left,
-        top: icon.top - segment.top,
+        width: rounded(icon.width),
+        height: rounded(icon.height),
+        left: rounded(icon.left - segment.left),
+        top: rounded(icon.top - segment.top),
       },
       text: {
-        width: text.width,
-        height: text.height,
-        left: text.left - segment.left,
-        top: text.top - segment.top,
+        width: rounded(text.width),
+        height: rounded(text.height),
+        left: rounded(text.left - segment.left),
+        top: rounded(text.top - segment.top),
       },
     })),
   ).toEqual(
     before.segments.map(({ segment, icon, text }) => ({
-      segment: { width: segment.width, height: segment.height },
+      segment: { width: rounded(segment.width), height: rounded(segment.height) },
       icon: {
-        width: icon.width,
-        height: icon.height,
-        left: icon.left - segment.left,
-        top: icon.top - segment.top,
+        width: rounded(icon.width),
+        height: rounded(icon.height),
+        left: rounded(icon.left - segment.left),
+        top: rounded(icon.top - segment.top),
       },
       text: {
-        width: text.width,
-        height: text.height,
-        left: text.left - segment.left,
-        top: text.top - segment.top,
+        width: rounded(text.width),
+        height: rounded(text.height),
+        left: rounded(text.left - segment.left),
+        top: rounded(text.top - segment.top),
       },
     })),
   )

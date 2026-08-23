@@ -1,4 +1,6 @@
-# Use SQLite for local persistence
+# Use SQLite For Local Persistence
+
+Status: Accepted
 
 The single-user local application will persist prospecting runs, canonical businesses, historical assessments, evidence metadata, review decisions, and resumable job checkpoints in one SQLite database file. SQLite runs in WAL mode with foreign keys enabled, a busy timeout, and short transactions. The background worker owns job claiming and most checkpoint writes, while the web application performs comparatively infrequent review updates.
 

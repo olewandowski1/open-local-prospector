@@ -49,6 +49,15 @@ describe("runtime probe infrastructure", () => {
     if (Either.isLeft(result)) expect(result.left.reason).toBe("timeout")
   })
 
+  it("contains synchronous spawn failures", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(executeRuntimeCommand("invalid\0executable", [])),
+    )
+
+    expect(Either.isLeft(result)).toBe(true)
+    if (Either.isLeft(result)) expect(result.left.reason).toBe("spawn")
+  })
+
   it("does not forward provider API credentials", async () => {
     const result = await Effect.runPromise(
       executeRuntimeCommand(

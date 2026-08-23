@@ -21,8 +21,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:live": "playwright test --config playwright.live.config.ts",
-    "test:e2e:workspace": "playwright test --config playwright.workspace.config.ts",
+    "test:e2e:live": "playwright test --config tests/e2e/config/live.config.ts",
+    "test:e2e:workspace": "playwright test --config tests/e2e/config/workspace.config.ts",
+    "docs:screenshots": "playwright test --config tests/e2e/config/docs.config.ts",
     "worker:check": "node --env-file-if-exists=.env.local --import tsx src/worker/main.ts --check",
     "db:generate": "drizzle-kit generate",
     "check": "pnpm check:biome && pnpm check:architecture && pnpm typecheck && pnpm test && pnpm build"
@@ -68,6 +69,7 @@
   },
   "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "pnpm": ">=10"
   }
 }

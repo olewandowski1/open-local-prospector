@@ -19,10 +19,8 @@
 # local application data
 /.local/
 
-# isolated workspaces the browser suites own
-/.scratch/e2e/
-/.scratch/live-e2e/
-/.scratch/workspace-e2e/
+# disposable plans, audit notes, and isolated browser-test workspaces
+/.scratch/
 
 # next.js
 /.next/

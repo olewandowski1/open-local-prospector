@@ -3,18 +3,18 @@
 Thanks for looking. This is a small, opinionated project, so a short read now saves a long review
 later.
 
-## Before you write code
+## Before You Write Code
 
 Read [`AGENTS.md`](AGENTS.md). It is the single instruction file for this repository — `CLAUDE.md`
 imports it and Codex reads it directly — and it holds the design rules and engineering guards that a
-review will be measured against. Then read [`CONTEXT.md`](CONTEXT.md) for the domain language: this
+review will be measured against. Then read [`docs/Domain-Language.md`](docs/Domain-Language.md) for the domain language: this
 project names things deliberately, and a pull request that calls a Candidate Business a "lead" will
 be asked to rename it.
 
 If a change contradicts an [architecture decision](docs/adr), say so in the pull request rather than
 routing around it. ADRs are changeable; silently overriding one is not.
 
-## Getting set up
+## Getting Set Up
 
 ```powershell
 pnpm install
@@ -23,10 +23,10 @@ pnpm dev
 ```
 
 You need Node.js 22 or newer and pnpm 10.32.1. `pnpm run setup` is safe to re-run. To exercise a
-real prospecting run you also need an authenticated Codex or Claude CLI — see the
+real prospecting run you also need a ready Codex, Claude, or OpenCode runtime — see the
 [README](README.md#requirements).
 
-## Before you open a pull request
+## Before You Open A Pull Request
 
 ```powershell
 pnpm check          # Biome, feature boundaries, TypeScript, unit tests, production build
@@ -47,7 +47,7 @@ A few things that reliably come up in review:
 - **Icons come from `@/components/icon`**, backed by Hugeicons. There is one icon set.
 - **Do not start, stop, or take port 4310.** Playwright attaches to whatever is already there.
 
-## Commits and pull requests
+## Commits And Pull Requests
 
 Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`,
 `perf:`, `test:`), optionally scoped by feature — `fix(run-execution): ...`. Write the subject as
@@ -57,7 +57,7 @@ Keep a pull request to one coherent change, describe what you verified, and past
 something is still failing. An honest "e2e passes, `live-run` skipped locally" is more useful than
 silence.
 
-## Reporting something
+## Reporting Something
 
 Open an issue with what you expected, what happened, your OS, Node version, and which runtime you
 had selected. If it involves a run, the Technical Run Log on the run detail page is the right place
