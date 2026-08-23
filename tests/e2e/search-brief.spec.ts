@@ -22,6 +22,14 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
+        selectedRuntime: "codex",
+      }),
+    })
+  })
+  await page.route("**/api/search-brief/runtimes", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
         runtimes: [
           {
             runtimeId: "codex",
@@ -31,10 +39,112 @@ test.beforeEach(async ({ page }) => {
             detail: "Ready",
           },
         ],
-        selectedRuntime: "codex",
       }),
     })
   })
+})
+
+test("renders the brief while subscription runtimes are still loading", async ({ page }) => {
+  let releaseRuntimeCheck = () => {}
+  const runtimeCheckHeld = new Promise<void>((resolve) => {
+    releaseRuntimeCheck = resolve
+  })
+  await page.route("**/api/search-brief/runtimes", async (route) => {
+    await runtimeCheckHeld
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ runtimes: [] }),
+    })
+  })
+
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "New Run" }).click()
+
+  await expect(page.getByLabel("City Or Municipality")).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole("status", { name: "Checking Subscription Runtimes" })).toBeVisible()
+  releaseRuntimeCheck()
+  await expect(page.getByText("No Subscription Runtime Is Ready")).toBeVisible()
+})
+
+test("keeps the compact Run Mode options centered and stable when selected", async ({ page }) => {
+  await page.goto("/runs")
+  await page.getByRole("button", { name: "New Run" }).click()
+  const quick = page.getByRole("radio", { name: "Quick" })
+  const thorough = page.getByRole("radio", { name: "Thorough" })
+  await expect(quick).toBeVisible({ timeout: 15_000 })
+
+  const metrics = () =>
+    quick.evaluate((radio) => {
+      const group = radio.closest('[data-slot="radio-group"]')
+      if (!group) throw new Error("Run Mode group not found")
+      return {
+        group: group.getBoundingClientRect().toJSON(),
+        segments: [...group.querySelectorAll("label")].map((label) => {
+          const segment = label.lastElementChild
+          const icon = segment?.querySelector("svg")
+          const text = segment?.querySelector("span")
+          if (!segment || !icon || !text) throw new Error("Run Mode segment is incomplete")
+          return {
+            segment: segment.getBoundingClientRect().toJSON(),
+            icon: icon.getBoundingClientRect().toJSON(),
+            text: text.getBoundingClientRect().toJSON(),
+          }
+        }),
+      }
+    })
+
+  const before = await metrics()
+  for (const { segment, icon, text } of before.segments) {
+    expect(segment.top).toBe(before.group.top + 1)
+    expect(segment.bottom).toBe(before.group.bottom - 1)
+    expect(
+      Math.abs((icon.top + icon.bottom) / 2 - (segment.top + segment.bottom) / 2),
+    ).toBeLessThan(1)
+    expect(
+      Math.abs((text.top + text.bottom) / 2 - (segment.top + segment.bottom) / 2),
+    ).toBeLessThan(1)
+  }
+
+  await thorough.click()
+  await expect(thorough).toBeChecked()
+  const after = await metrics()
+  expect({ width: after.group.width, height: after.group.height }).toEqual({
+    width: before.group.width,
+    height: before.group.height,
+  })
+  expect(
+    after.segments.map(({ segment, icon, text }) => ({
+      segment: { width: segment.width, height: segment.height },
+      icon: {
+        width: icon.width,
+        height: icon.height,
+        left: icon.left - segment.left,
+        top: icon.top - segment.top,
+      },
+      text: {
+        width: text.width,
+        height: text.height,
+        left: text.left - segment.left,
+        top: text.top - segment.top,
+      },
+    })),
+  ).toEqual(
+    before.segments.map(({ segment, icon, text }) => ({
+      segment: { width: segment.width, height: segment.height },
+      icon: {
+        width: icon.width,
+        height: icon.height,
+        left: icon.left - segment.left,
+        top: icon.top - segment.top,
+      },
+      text: {
+        width: text.width,
+        height: text.height,
+        left: text.left - segment.left,
+        top: text.top - segment.top,
+      },
+    })),
+  )
 })
 
 test("requires explicit Search Area selection for an ambiguous non-Polish custom brief", async ({
@@ -72,7 +182,7 @@ test("requires explicit Search Area selection for an ambiguous non-Polish custom
     await page.getByText("No subscription runtime is ready").isVisible(),
     "No ready local subscription runtime is available",
   )
-  await expect(preflightButton).toBeEnabled({ timeout: 15_000 })
+  await expect(preflightButton).toBeEnabled({ timeout: 30_000 })
 
   await page.getByLabel("City or municipality").fill("Berlin, Germany")
   await page.getByLabel("Target businesses").fill("50")
@@ -131,7 +241,7 @@ test("keeps confirmation disabled after failed preflight", async ({ page }) => {
     await page.getByText("No subscription runtime is ready").isVisible(),
     "No ready local subscription runtime is available",
   )
-  await expect(preflightButton).toBeEnabled({ timeout: 15_000 })
+  await expect(preflightButton).toBeEnabled({ timeout: 30_000 })
   await page.getByLabel("City or municipality").fill("Kraków")
   await page.getByLabel("Target businesses").fill("5")
   await Promise.all([

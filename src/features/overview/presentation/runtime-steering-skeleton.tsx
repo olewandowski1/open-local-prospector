@@ -17,7 +17,7 @@ export function RuntimeSteeringSkeleton() {
       <div className="flex flex-col gap-2">
         <div className="grid gap-5 sm:grid-cols-3">
           {["runtime", "model", "effort"].map((field) => (
-            <div key={field} className="grid gap-1.5">
+            <div key={field} className="grid gap-1">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-8 w-full rounded-lg" />
               <Skeleton className="h-4 w-40" />

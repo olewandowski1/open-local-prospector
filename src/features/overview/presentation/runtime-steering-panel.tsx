@@ -9,11 +9,12 @@ import {
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useState, useTransition } from "react"
+import { FormFieldLabel } from "@/components/form-field-label"
 import { Icon } from "@/components/icon"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 import {
   Select,
   SelectContent,
@@ -41,7 +42,7 @@ export type RuntimeSteering = Readonly<{
   reasoningEffort: RuntimeReasoningEffort
 }>
 
-const fieldSpacing = "gap-1.5"
+const fieldSpacing = "gap-1"
 
 const steeringOf = (runtimeId: RuntimeId): RuntimeSteering => ({
   runtimeId,
@@ -131,7 +132,11 @@ export function RuntimeSteeringPanel({
         {draft ? (
           <div className="grid gap-5 sm:grid-cols-3">
             <Field className={fieldSpacing}>
-              <FieldLabel htmlFor="steering-runtime">Subscription Runtime</FieldLabel>
+              <FormFieldLabel
+                htmlFor="steering-runtime"
+                label="Subscription Runtime"
+                description="Only authenticated runtimes can be selected."
+              />
               <Select
                 items={runtimes.map((runtime) => ({
                   label: runtime.label,
@@ -173,11 +178,17 @@ export function RuntimeSteeringPanel({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <FieldDescription>Only authenticated runtimes can be selected.</FieldDescription>
             </Field>
 
             <Field className={fieldSpacing}>
-              <FieldLabel htmlFor="steering-model">Model</FieldLabel>
+              <FormFieldLabel
+                htmlFor="steering-model"
+                label="Model"
+                description={
+                  models.find((model) => model.value === draft.model)?.detail ??
+                  "Choose the model this workspace should default to."
+                }
+              />
               <Select
                 items={models.map((model) => ({ label: model.label, value: model.value }))}
                 value={draft.model}
@@ -204,20 +215,24 @@ export function RuntimeSteeringPanel({
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <FieldDescription>
-                {models.find((model) => model.value === draft.model)?.detail ??
-                  "Choose the model this workspace should default to."}
-              </FieldDescription>
             </Field>
 
             <Field className={fieldSpacing}>
-              <FieldLabel htmlFor="steering-effort">Reasoning Effort</FieldLabel>
+              <FormFieldLabel
+                htmlFor="steering-effort"
+                label="Reasoning Effort"
+                description={
+                  efforts.length === 0
+                    ? "This model does not accept a reasoning effort."
+                    : "Higher effort spends more usage per run."
+                }
+              />
               {efforts.length === 0 ? (
                 <div
                   id="steering-effort"
                   className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
                 >
-                  Not applicable
+                  Not Applicable
                 </div>
               ) : (
                 <Select
@@ -252,11 +267,6 @@ export function RuntimeSteeringPanel({
                   </SelectContent>
                 </Select>
               )}
-              <FieldDescription>
-                {efforts.length === 0
-                  ? "This model does not accept a reasoning effort."
-                  : "Higher effort spends more usage per run."}
-              </FieldDescription>
             </Field>
           </div>
         ) : (

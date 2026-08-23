@@ -76,20 +76,21 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
           title={<span id="supporting-evidence-heading">Supporting Evidence</span>}
           description="Every statement carries the public page it was observed on."
         />
-        <ul className="grid gap-3">
+        <ul className="grid divide-y rounded-lg border">
           {candidate.observations.map((observation) => (
             <li
               key={`${observation.sourceUrl}-${observation.statement}`}
-              className="grid gap-1.5 border-b pb-3 last:border-0 last:pb-0"
+              className="grid gap-1.5 p-3"
             >
-              <p className="text-sm text-pretty">{observation.statement}</p>
-              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                <span className="font-medium">{humanizeTerm(observation.evidenceState)}</span>
-                <span aria-hidden="true">·</span>
-                <time>{formatObservedAt(observation.observedAt)}</time>
-                <span aria-hidden="true">·</span>
-                <SourceLink url={observation.sourceUrl} />
+              <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h3 className="text-sm font-medium">{humanizeTerm(observation.evidenceState)}</h3>
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <time>{formatObservedAt(observation.observedAt)}</time>
+                  <span aria-hidden="true">·</span>
+                  <SourceLink url={observation.sourceUrl} label="Source" />
+                </div>
               </div>
+              <p className="text-sm text-pretty text-muted-foreground">{observation.statement}</p>
             </li>
           ))}
         </ul>

@@ -1,21 +1,19 @@
 "use client"
 
-import { AlertCircleIcon, Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons"
+import {
+  AlertCircleIcon,
+  Loading03Icon,
+  Search01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons"
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Icon } from "@/components/icon"
+import { InfoButton } from "@/components/info-button"
 
-import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -27,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { SearchBriefDefaults } from "@/features/prospecting-runs/application/prospecting-run"
 import type { SearchBriefPreflight } from "@/features/prospecting-runs/application/search-brief-preflight"
 import { RunPreflightSection } from "@/features/prospecting-runs/presentation/run-preflight-panel"
@@ -50,13 +48,101 @@ import {
   runtimeReasoningEfforts,
 } from "@/features/runtime-settings/client"
 
-const fieldSpacing = "gap-1.5"
+const fieldSpacing = "gap-1"
+
+const categoryLabels: Record<(typeof categoryPresets)[number], string> = {
+  "Dental clinics": "Dental Clinics",
+  Restaurants: "Restaurants",
+  "Beauty salons": "Beauty Salons",
+  "Construction companies": "Construction Companies",
+  "Law firms": "Law Firms",
+  "Custom category": "Custom Category",
+}
+
+const skeletonFieldIds = ["primary", "secondary", "tertiary"] as const
+
+function FormSectionHeading({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
+      <InfoButton description={description} />
+    </div>
+  )
+}
+
+function FieldHeading({
+  htmlFor,
+  label,
+  description,
+}: {
+  htmlFor: string
+  label: string
+  description: string
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <FieldLabel htmlFor={htmlFor} className="font-normal">
+        {label}
+      </FieldLabel>
+      <InfoButton description={description} />
+    </div>
+  )
+}
+
+function FormSkeletonSection({ fields = 2 }: { fields?: number }) {
+  return (
+    <section className="grid gap-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="size-4 rounded-full" />
+      </div>
+      <div className="grid gap-4">
+        {skeletonFieldIds.slice(0, fields).map((fieldId) => (
+          <div key={fieldId} className="grid gap-1">
+            <div className="flex items-center gap-1.5">
+              <Skeleton className="h-3.5 w-28" />
+              <Skeleton className="size-3.5 rounded-full" />
+            </div>
+            <Skeleton className="h-8 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function RuntimeFieldsSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Checking Subscription Runtimes"
+      className="grid gap-4"
+    >
+      <div className="grid gap-1">
+        <Skeleton className="h-3.5 w-20" />
+        <Skeleton className="h-8 w-full rounded-lg" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-1">
+          <Skeleton className="h-3.5 w-16" />
+          <Skeleton className="h-8 w-full rounded-lg" />
+        </div>
+        <div className="grid gap-1">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-8 w-full rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export type SearchBriefBootstrap = Readonly<{
   defaults?: SearchBriefDefaults
-  runtimes: readonly RuntimeReadiness[]
   selectedRuntime?: RuntimeId
 }>
+
+type RuntimeOptions = Readonly<{ runtimes: readonly RuntimeReadiness[] }>
 
 /**
  * The whole New Run flow beside whatever page launched it. Mounted fresh by `NewRunProvider`
@@ -74,7 +160,6 @@ export function NewRunSheet() {
           Define the market, confirm how the location was interpreted, and verify local readiness.
         </SheetDescription>
       </SheetHeader>
-      <Separator />
       <NewRunBootstrap key={attempt} onRetry={() => setAttempt((current) => current + 1)} />
     </>
   )
@@ -82,7 +167,9 @@ export function NewRunSheet() {
 
 function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
   const [bootstrap, setBootstrap] = useState<SearchBriefBootstrap>()
+  const [runtimeOptions, setRuntimeOptions] = useState<RuntimeOptions>()
   const [loadError, setLoadError] = useState("")
+  const [runtimeError, setRuntimeError] = useState("")
 
   useEffect(() => {
     let cancelled = false
@@ -102,6 +189,23 @@ function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
           )
         }
       })
+    fetch("/api/search-brief/runtimes")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Subscription runtimes could not be checked.")
+        return (await response.json()) as RuntimeOptions
+      })
+      .then((body) => {
+        if (!cancelled) setRuntimeOptions(body)
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setRuntimeError(
+            reason instanceof Error
+              ? reason.message
+              : "Subscription runtimes could not be checked.",
+          )
+        }
+      })
     return () => {
       cancelled = true
     }
@@ -112,7 +216,7 @@ function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
       <div className="p-4">
         <Alert variant="destructive">
           <Icon icon={AlertCircleIcon} />
-          <AlertTitle>The form could not be loaded</AlertTitle>
+          <AlertTitle>The Form Could Not Be Loaded</AlertTitle>
           <AlertDescription>{loadError}</AlertDescription>
         </Alert>
         <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
@@ -123,24 +227,31 @@ function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
   }
   if (!bootstrap) {
     return (
-      <div
-        role="status"
-        aria-busy="true"
-        aria-label="Loading the Search Brief"
-        className="grid gap-3 p-4"
-      >
-        <div className="h-4 w-40 rounded-md bg-muted" />
-        <div className="h-8 w-full rounded-lg bg-muted" />
-        <div className="h-4 w-52 rounded-md bg-muted" />
-        <div className="h-8 w-full rounded-lg bg-muted" />
-        <div className="h-8 w-full rounded-lg bg-muted" />
-      </div>
+      <>
+        <ScrollArea className="min-h-0 flex-1">
+          <div
+            role="status"
+            aria-busy="true"
+            aria-label="Loading The Search Brief"
+            className="grid gap-8 px-4 pb-6 pt-2"
+          >
+            <FormSkeletonSection fields={3} />
+            <FormSkeletonSection fields={2} />
+            <FormSkeletonSection fields={2} />
+          </div>
+        </ScrollArea>
+        <SheetFooter className="border-t p-3">
+          <Skeleton className="h-8 w-full rounded-lg" />
+        </SheetFooter>
+      </>
     )
   }
   return (
     <SearchBriefForm
       defaults={bootstrap.defaults}
-      readyRuntimes={bootstrap.runtimes.filter((runtime) => runtime.status === "Ready")}
+      readyRuntimes={runtimeOptions?.runtimes.filter((runtime) => runtime.status === "Ready") ?? []}
+      runtimeLoading={!runtimeOptions && !runtimeError}
+      runtimeError={runtimeError}
       selectedRuntime={bootstrap.selectedRuntime}
     />
   )
@@ -149,10 +260,14 @@ function NewRunBootstrap({ onRetry }: { onRetry: () => void }) {
 function SearchBriefForm({
   defaults,
   readyRuntimes,
+  runtimeLoading,
+  runtimeError,
   selectedRuntime,
 }: {
   defaults?: SearchBriefDefaults
   readyRuntimes: readonly RuntimeReadiness[]
+  runtimeLoading: boolean
+  runtimeError: string
   selectedRuntime?: RuntimeId
 }) {
   const [draft, setDraft] = useState<SearchBriefDraftState>(() =>
@@ -176,8 +291,24 @@ function SearchBriefForm({
     () => readyRuntimes.map((runtime) => ({ label: runtime.label, value: runtime.runtimeId })),
     [readyRuntimes],
   )
-  const categoryItems = categoryPresets.map((category) => ({ label: category, value: category }))
-  const selectedEfforts = draft.runtime ? runtimeReasoningEfforts(draft.runtime, draft.model) : []
+  const preferredRuntime = readyRuntimes.some((runtime) => runtime.runtimeId === selectedRuntime)
+    ? selectedRuntime
+    : readyRuntimes[0]?.runtimeId
+  const effectiveDraft = useMemo<SearchBriefDraftState>(() => {
+    if (draft.runtime || !preferredRuntime) return draft
+    return {
+      ...draft,
+      runtime: preferredRuntime,
+      ...defaultRuntimeExecutionConfiguration(preferredRuntime),
+    }
+  }, [draft, preferredRuntime])
+  const categoryItems = categoryPresets.map((category) => ({
+    label: categoryLabels[category],
+    value: category,
+  }))
+  const selectedEfforts = effectiveDraft.runtime
+    ? runtimeReasoningEfforts(effectiveDraft.runtime, effectiveDraft.model)
+    : []
 
   const invalidate = (next: Partial<SearchBriefDraftState>) => {
     setDraft((current) => ({ ...current, ...next }))
@@ -197,7 +328,7 @@ function SearchBriefForm({
       const response = await fetch("/api/prospecting-runs/preflight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serializeSearchBriefDraft(draft)),
+        body: JSON.stringify(serializeSearchBriefDraft(effectiveDraft)),
       })
       const body = (await response.json()) as SearchBriefPreflight & { error?: string }
       if (!response.ok) throw new Error(body.error ?? "Preflight failed.")
@@ -220,7 +351,7 @@ function SearchBriefForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          draft: serializeSearchBriefDraft(draft),
+          draft: serializeSearchBriefDraft(effectiveDraft),
           searchAreaId: selectedAreaId,
           requestId,
         }),
@@ -240,57 +371,56 @@ function SearchBriefForm({
   return (
     <>
       <ScrollArea className="min-h-0 flex-1">
-        <div className="grid gap-6 p-4">
-          {readyRuntimes.length === 0 ? (
-            <Alert variant="destructive">
-              <Icon icon={AlertCircleIcon} />
-              <AlertTitle>No subscription runtime is ready</AlertTitle>
-              <AlertDescription>
-                <Link href="/settings/subscription">Open Settings</Link> and follow the terminal
-                instructions before creating a run.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <section aria-labelledby="search-scope-heading" className="border-y py-5">
-            <SectionHeader
-              title={<span id="search-scope-heading">Search Scope</span>}
-              description="Poland is assumed when no country is provided. Add a country to search elsewhere."
-              className="mb-5"
-            />
+        <div className="grid gap-8 px-4 pb-6 pt-2">
+          <section aria-labelledby="search-scope-heading">
+            <div id="search-scope-heading">
+              <FormSectionHeading
+                title="Search Criteria"
+                description="Choose the market and the number of businesses to find. Poland is assumed unless you include another country."
+              />
+            </div>
             <form id="new-run-brief" onSubmit={checkPreflight}>
-              <FieldGroup>
+              <FieldGroup className="mt-4 gap-4 [&_[data-slot=field]]:gap-1 [&_[data-slot=field-label]]:font-normal">
                 <Field>
-                  <FieldLabel htmlFor="location">City or Municipality</FieldLabel>
+                  <FieldHeading
+                    htmlFor="location"
+                    label="City Or Municipality"
+                    description="Include a country when searching outside Poland. The location is checked before the run is created."
+                  />
                   <Input
                     id="location"
                     name="location"
                     placeholder="e.g. Kraków or Berlin, Germany"
-                    value={draft.location}
+                    value={effectiveDraft.location}
                     onChange={(event) => invalidate({ location: event.target.value })}
                     required
                   />
-                  <FieldDescription>
-                    Search runs only when you choose Check Preflight; there is no location
-                    autocomplete.
-                  </FieldDescription>
                 </Field>
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel htmlFor="radius">Radius in Kilometres (Optional)</FieldLabel>
+                    <FieldHeading
+                      htmlFor="radius"
+                      label="Radius In Kilometres (Optional)"
+                      description="Leave blank to search within the place itself."
+                    />
                     <Input
                       id="radius"
                       name="radius"
                       type="number"
                       min="0"
                       step="1"
-                      value={draft.radiusKm}
+                      value={effectiveDraft.radiusKm}
                       onChange={(event) => invalidate({ radiusKm: event.target.value })}
+                      placeholder="City Limits"
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="target">Target Businesses</FieldLabel>
+                    <FieldHeading
+                      htmlFor="target"
+                      label="Target Businesses"
+                      description="Choose any value from 5 through 50."
+                    />
                     <Input
                       id="target"
                       name="target"
@@ -298,89 +428,111 @@ function SearchBriefForm({
                       min="5"
                       max="50"
                       step="1"
-                      value={draft.targetCount}
+                      value={effectiveDraft.targetCount}
                       onChange={(event) => invalidate({ targetCount: event.target.value })}
                       required
                     />
-                    <FieldDescription>Choose any value from 5 through 50.</FieldDescription>
                   </Field>
                 </div>
 
                 <Field>
-                  <FieldLabel htmlFor="category">Business Category</FieldLabel>
+                  <FieldLabel htmlFor="category" className="font-normal">
+                    Business Category
+                  </FieldLabel>
                   <Select
                     items={categoryItems}
-                    value={draft.categoryChoice}
+                    value={effectiveDraft.categoryChoice}
                     onValueChange={(value) => value && invalidate({ categoryChoice: value })}
                   >
-                    <SelectTrigger id="category" aria-label="Business category" className="w-full">
+                    <SelectTrigger id="category" aria-label="Business Category" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {[...categoryPresets].map((category) => (
                           <SelectItem key={category} value={category}>
-                            {category}
+                            {categoryLabels[category]}
                           </SelectItem>
                         ))}
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
-                {draft.categoryChoice === "Custom category" ? (
+                {effectiveDraft.categoryChoice === "Custom category" ? (
                   <Field>
-                    <FieldLabel htmlFor="custom-category">Custom Category</FieldLabel>
+                    <FieldLabel htmlFor="custom-category" className="font-normal">
+                      Custom Category
+                    </FieldLabel>
                     <Input
                       id="custom-category"
-                      value={draft.customCategory}
+                      value={effectiveDraft.customCategory}
                       onChange={(event) => invalidate({ customCategory: event.target.value })}
-                      placeholder="e.g. Independent climbing gyms"
+                      placeholder="e.g. Independent Climbing Gyms"
                       required
                     />
                   </Field>
                 ) : null}
 
-                <FieldSet>
-                  <FieldLegend>Run Mode</FieldLegend>
+                <FormSectionHeading
+                  title="Run Settings"
+                  description="Choose how deeply to search and how to handle businesses assessed before."
+                />
+
+                <FieldSet className="gap-1">
+                  <FieldLegend variant="label" className="font-normal">
+                    Run Mode
+                  </FieldLegend>
                   <RadioGroup
-                    value={draft.mode}
+                    value={effectiveDraft.mode}
                     onValueChange={(value) =>
                       value && invalidate({ mode: value as SearchBriefDraftState["mode"] })
                     }
-                    className="grid sm:grid-cols-2"
+                    className="flex h-8 w-52 max-w-full gap-0 overflow-hidden rounded-lg border border-input bg-transparent dark:bg-input/20"
                   >
                     {(["Quick", "Thorough"] as const).map((mode) => (
-                      <FieldLabel key={mode}>
-                        <Field orientation="horizontal">
-                          <RadioGroupItem value={mode} aria-label={mode} />
-                          <div>
-                            <p className="font-medium">{mode}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {mode === "Quick"
-                                ? "Faster initial qualification"
-                                : "More sources and evidence"}
-                            </p>
-                          </div>
-                        </Field>
-                      </FieldLabel>
+                      <label
+                        key={mode}
+                        htmlFor={`run-mode-${mode.toLowerCase()}`}
+                        className="block h-full min-w-0 flex-1 cursor-pointer"
+                      >
+                        <RadioGroupItem
+                          id={`run-mode-${mode.toLowerCase()}`}
+                          value={mode}
+                          aria-label={mode}
+                          className="peer absolute! size-px! overflow-hidden border-0! p-0! opacity-0"
+                        />
+                        <span className="flex h-full w-full items-center justify-center gap-1.5 px-3 text-sm leading-normal text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground peer-data-checked:bg-muted peer-data-checked:text-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-inset peer-focus-visible:ring-ring/50">
+                          <Icon
+                            icon={Tick02Icon}
+                            className={
+                              effectiveDraft.mode === mode
+                                ? "size-3.5 text-success"
+                                : "invisible size-3.5"
+                            }
+                          />
+                          <span>{mode}</span>
+                        </span>
+                      </label>
                     ))}
                   </RadioGroup>
                 </FieldSet>
 
                 <Field>
-                  <FieldLabel htmlFor="recent-business-policy">
-                    Recently Assessed Businesses
-                  </FieldLabel>
+                  <FieldHeading
+                    htmlFor="recent-business-policy"
+                    label="Recently Assessed Businesses"
+                    description="Reassessment is always an explicit choice and never overwrites history."
+                  />
                   <Select
                     items={[
-                      { label: "Skip by default", value: "Skip" },
+                      { label: "Skip By Default", value: "Skip" },
                       {
-                        label: "Include existing assessment",
+                        label: "Include Existing Assessment",
                         value: "IncludeWithoutReassessment",
                       },
-                      { label: "Explicitly reassess", value: "Reassess" },
+                      { label: "Explicitly Reassess", value: "Reassess" },
                     ]}
-                    value={draft.recentBusinessPolicy}
+                    value={effectiveDraft.recentBusinessPolicy}
                     onValueChange={(value) =>
                       value &&
                       invalidate({
@@ -398,162 +550,195 @@ function SearchBriefForm({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="Skip">Skip by default</SelectItem>
+                        <SelectItem value="Skip">Skip By Default</SelectItem>
                         <SelectItem value="IncludeWithoutReassessment">
-                          Include existing assessment
+                          Include Existing Assessment
                         </SelectItem>
-                        <SelectItem value="Reassess">Explicitly reassess</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>
-                    Reassessment is always an explicit choice and never overwrites history.
-                  </FieldDescription>
-                </Field>
-
-                <Field className={fieldSpacing}>
-                  <FieldLabel htmlFor="runtime">Subscription Runtime</FieldLabel>
-                  <Select
-                    items={runtimeItems}
-                    value={draft.runtime}
-                    onValueChange={(value) =>
-                      value &&
-                      invalidate({
-                        runtime: value as RuntimeId,
-                        ...defaultRuntimeExecutionConfiguration(value as RuntimeId),
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      id="runtime"
-                      aria-label="Subscription Runtime"
-                      className="w-full"
-                      disabled={!runtimeItems.length}
-                    >
-                      <SelectValue placeholder="No ready runtime">
-                        {(value: string | null) => {
-                          const runtime = readyRuntimes.find((item) => item.runtimeId === value)
-                          if (!runtime) return "No ready runtime"
-                          return (
-                            <>
-                              <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                              {runtime.label}
-                            </>
-                          )
-                        }}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {readyRuntimes.map((runtime) => (
-                          <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
-                            <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
-                            {runtime.label}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="Reassess">Explicitly Reassess</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                 </Field>
 
-                {draft.runtime ? (
-                  <div className="grid gap-5 sm:grid-cols-2">
+                <FormSectionHeading
+                  title="Subscription Runtime"
+                  description="Use a ready local subscription and choose how much reasoning to apply."
+                />
+
+                {runtimeLoading ? (
+                  <RuntimeFieldsSkeleton />
+                ) : (
+                  <>
+                    {runtimeError ? (
+                      <Alert variant="destructive">
+                        <Icon icon={AlertCircleIcon} />
+                        <AlertTitle>Runtime Check Failed</AlertTitle>
+                        <AlertDescription>{runtimeError}</AlertDescription>
+                      </Alert>
+                    ) : null}
+                    {!runtimeError && readyRuntimes.length === 0 ? (
+                      <Alert variant="destructive">
+                        <Icon icon={AlertCircleIcon} />
+                        <AlertTitle>No Subscription Runtime Is Ready</AlertTitle>
+                        <AlertDescription>
+                          <Link href="/settings/subscription">Open Settings</Link> and follow the
+                          terminal instructions before creating a run.
+                        </AlertDescription>
+                      </Alert>
+                    ) : null}
                     <Field className={fieldSpacing}>
-                      <FieldLabel htmlFor="runtime-model">Model</FieldLabel>
+                      <FieldLabel htmlFor="runtime" className="font-normal">
+                        Provider
+                      </FieldLabel>
                       <Select
-                        items={runtimeModelOptions(draft.runtime).map((model) => ({
-                          label: model.label,
-                          value: model.value,
-                        }))}
-                        value={draft.model}
+                        items={runtimeItems}
+                        value={effectiveDraft.runtime}
                         onValueChange={(value) =>
                           value &&
-                          draft.runtime &&
-                          invalidate(
-                            resolveRuntimeConfiguration(
-                              draft.runtime,
-                              value,
-                              draft.reasoningEffort,
-                            ),
-                          )
+                          invalidate({
+                            runtime: value as RuntimeId,
+                            ...defaultRuntimeExecutionConfiguration(value as RuntimeId),
+                          })
                         }
                       >
-                        <SelectTrigger id="runtime-model" aria-label="Model" className="w-full">
-                          <SelectValue>
-                            {(value: string | null) => (
-                              <>
-                                {draft.runtime ? (
-                                  <RuntimeProviderIcon runtimeId={draft.runtime} />
-                                ) : null}
-                                {runtimeModelOptions(draft.runtime as RuntimeId).find(
-                                  (model) => model.value === value,
-                                )?.label ?? "Select a model"}
-                              </>
-                            )}
+                        <SelectTrigger
+                          id="runtime"
+                          aria-label="Subscription Runtime"
+                          className="w-full"
+                          disabled={!runtimeItems.length}
+                        >
+                          <SelectValue placeholder="No Ready Runtime">
+                            {(value: string | null) => {
+                              const runtime = readyRuntimes.find((item) => item.runtimeId === value)
+                              if (!runtime) return "No Ready Runtime"
+                              return (
+                                <>
+                                  <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                                  {runtime.label}
+                                </>
+                              )
+                            }}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {runtimeModelOptions(draft.runtime).map((model) => (
-                              <SelectItem key={model.value} value={model.value}>
-                                {draft.runtime ? (
-                                  <RuntimeProviderIcon runtimeId={draft.runtime} />
-                                ) : null}
-                                {model.label}
+                            {readyRuntimes.map((runtime) => (
+                              <SelectItem key={runtime.runtimeId} value={runtime.runtimeId}>
+                                <RuntimeProviderIcon runtimeId={runtime.runtimeId} />
+                                {runtime.label}
                               </SelectItem>
                             ))}
                           </SelectGroup>
                         </SelectContent>
                       </Select>
-                      <FieldDescription>
-                        {runtimeModelOptions(draft.runtime).find(
-                          (model) => model.value === draft.model,
-                        )?.detail ?? "The selected model ID is pinned for this run."}
-                      </FieldDescription>
                     </Field>
-                    <Field className={fieldSpacing}>
-                      <FieldLabel htmlFor="reasoning-effort">Reasoning Effort</FieldLabel>
-                      {selectedEfforts.length === 0 ? (
-                        <div
-                          id="reasoning-effort"
-                          className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
-                        >
-                          Not applicable
-                        </div>
-                      ) : (
-                        <Select
-                          items={selectedEfforts.map((effort) => ({
-                            label: reasoningEffortLabel(effort),
-                            value: effort,
-                          }))}
-                          value={draft.reasoningEffort}
-                          onValueChange={(value) =>
-                            value &&
-                            invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
-                          }
-                        >
-                          <SelectTrigger id="reasoning-effort" className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {selectedEfforts.map((effort) => (
-                                <SelectItem key={effort} value={effort}>
-                                  {reasoningEffortLabel(effort)}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      )}
-                      <FieldDescription>
-                        {selectedEfforts.length === 0
-                          ? "This model does not accept a reasoning effort."
-                          : "Higher effort spends more subscription usage per run."}
-                      </FieldDescription>
-                    </Field>
-                  </div>
-                ) : null}
+
+                    {effectiveDraft.runtime ? (
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <Field className={fieldSpacing}>
+                          <FieldHeading
+                            htmlFor="runtime-model"
+                            label="Model"
+                            description={
+                              runtimeModelOptions(effectiveDraft.runtime).find(
+                                (model) => model.value === effectiveDraft.model,
+                              )?.detail ?? "The selected model ID is pinned for this run."
+                            }
+                          />
+                          <Select
+                            items={runtimeModelOptions(effectiveDraft.runtime).map((model) => ({
+                              label: model.label,
+                              value: model.value,
+                            }))}
+                            value={effectiveDraft.model}
+                            onValueChange={(value) =>
+                              value &&
+                              effectiveDraft.runtime &&
+                              invalidate(
+                                resolveRuntimeConfiguration(
+                                  effectiveDraft.runtime,
+                                  value,
+                                  effectiveDraft.reasoningEffort,
+                                ),
+                              )
+                            }
+                          >
+                            <SelectTrigger id="runtime-model" aria-label="Model" className="w-full">
+                              <SelectValue>
+                                {(value: string | null) => (
+                                  <>
+                                    {effectiveDraft.runtime ? (
+                                      <RuntimeProviderIcon runtimeId={effectiveDraft.runtime} />
+                                    ) : null}
+                                    {runtimeModelOptions(effectiveDraft.runtime as RuntimeId).find(
+                                      (model) => model.value === value,
+                                    )?.label ?? "Select A Model"}
+                                  </>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {runtimeModelOptions(effectiveDraft.runtime).map((model) => (
+                                  <SelectItem key={model.value} value={model.value}>
+                                    {effectiveDraft.runtime ? (
+                                      <RuntimeProviderIcon runtimeId={effectiveDraft.runtime} />
+                                    ) : null}
+                                    {model.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                        <Field className={fieldSpacing}>
+                          <FieldHeading
+                            htmlFor="reasoning-effort"
+                            label="Reasoning Effort"
+                            description={
+                              selectedEfforts.length === 0
+                                ? "This model does not accept a reasoning effort."
+                                : "Higher effort spends more subscription usage per run."
+                            }
+                          />
+                          {selectedEfforts.length === 0 ? (
+                            <div
+                              id="reasoning-effort"
+                              className="flex h-8 items-center rounded-lg border border-dashed px-2.5 text-sm text-muted-foreground"
+                            >
+                              Not Applicable
+                            </div>
+                          ) : (
+                            <Select
+                              items={selectedEfforts.map((effort) => ({
+                                label: reasoningEffortLabel(effort),
+                                value: effort,
+                              }))}
+                              value={effectiveDraft.reasoningEffort}
+                              onValueChange={(value) =>
+                                value &&
+                                invalidate({ reasoningEffort: value as RuntimeReasoningEffort })
+                              }
+                            >
+                              <SelectTrigger id="reasoning-effort" className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {selectedEfforts.map((effort) => (
+                                    <SelectItem key={effort} value={effort}>
+                                      {reasoningEffortLabel(effort)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </Field>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </FieldGroup>
             </form>
           </section>
@@ -564,24 +749,31 @@ function SearchBriefForm({
               selectedAreaId={selectedAreaId}
               onSelectedAreaChange={setSelectedAreaId}
               error={error}
-              busy={busy}
               createdRun={createdRun}
-              onCreateRun={createRun}
             />
           </div>
         </div>
       </ScrollArea>
 
-      {!preflight && !createdRun ? (
-        <SheetFooter className="flex-row items-center justify-end gap-3 border-t p-3">
-          <Button type="submit" form="new-run-brief" disabled={busy || !draft.runtime}>
-            {busy ? (
-              <Icon icon={Loading03Icon} className="animate-spin" />
-            ) : (
-              <Icon icon={Search01Icon} />
-            )}
-            Check Preflight
-          </Button>
+      {!createdRun ? (
+        <SheetFooter className="border-t p-3">
+          {!preflight ? (
+            <Button type="submit" form="new-run-brief" disabled={busy || !effectiveDraft.runtime}>
+              <Icon
+                icon={busy ? Loading03Icon : Search01Icon}
+                className={busy ? "animate-spin" : undefined}
+              />
+              {busy ? "Checking Preflight" : "Check Preflight"}
+            </Button>
+          ) : (
+            <Button onClick={createRun} disabled={busy || !preflight.ready || !selectedAreaId}>
+              <Icon
+                icon={busy ? Loading03Icon : Search01Icon}
+                className={busy ? "animate-spin" : undefined}
+              />
+              {busy ? "Creating Run" : "Confirm And Create Run"}
+            </Button>
+          )}
         </SheetFooter>
       ) : null}
     </>

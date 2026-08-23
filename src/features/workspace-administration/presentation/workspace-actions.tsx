@@ -10,6 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
+import { FormFieldLabel } from "@/components/form-field-label"
 import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   formatBytes,
@@ -176,7 +177,11 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
                 </DialogHeader>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="workspace-backup">Workspace Backup</FieldLabel>
+                    <FormFieldLabel
+                      htmlFor="workspace-backup"
+                      label="Workspace Backup"
+                      description="Select a backup downloaded from this application."
+                    />
                     <Input
                       ref={fileInput}
                       id="workspace-backup"
@@ -184,9 +189,6 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
                       accept=".tgz,.olp-backup.tgz,application/gzip"
                       onChange={(event) => setRestoreFile(event.target.files?.[0])}
                     />
-                    <FieldDescription>
-                      Select a backup downloaded from this application.
-                    </FieldDescription>
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="restore-confirmation">Type RESTORE To Confirm</FieldLabel>

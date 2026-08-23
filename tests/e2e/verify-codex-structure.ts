@@ -2,7 +2,7 @@ import { resolve } from "node:path"
 import Database from "better-sqlite3"
 import { Effect, Option } from "effect"
 
-import { makeSubscriptionDiscoveryRuntime } from "@/features/business-discovery"
+import { makeSubscriptionDiscoveryRuntime } from "@/features/business-discovery/worker"
 import { resolveRuntimeExecutable } from "@/features/runtime-settings"
 
 const database = new Database(resolve(".scratch/live-e2e/workspace.sqlite"), { readonly: true })

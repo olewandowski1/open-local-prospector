@@ -3,9 +3,8 @@ import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
-  Loading03Icon,
+  InformationCircleIcon,
   MapPinIcon,
-  PlayIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons"
 import Link from "next/link"
@@ -13,7 +12,6 @@ import Link from "next/link"
 import { Icon } from "@/components/icon"
 import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { SearchBriefPreflight } from "@/features/prospecting-runs/application/search-brief-preflight"
@@ -30,20 +28,16 @@ export function RunPreflightSection({
   selectedAreaId,
   onSelectedAreaChange,
   error,
-  busy,
   createdRun,
-  onCreateRun,
 }: {
   preflight?: SearchBriefPreflight
   selectedAreaId: string
   onSelectedAreaChange: (value: string) => void
   error: string
-  busy: boolean
   createdRun?: { id: string; state: string }
-  onCreateRun: () => void
 }) {
   return (
-    <section aria-labelledby="run-preflight-heading" className="border-y py-5">
+    <section aria-labelledby="run-preflight-heading">
       <SectionHeader
         title={<span id="run-preflight-heading">Run Preflight</span>}
         description="Nothing is persisted as a run until you confirm here."
@@ -59,10 +53,14 @@ export function RunPreflightSection({
         ) : null}
 
         {!preflight ? (
-          <p className="text-sm text-muted-foreground">
-            Complete the Search Brief and check preflight to interpret the area and verify
-            dependencies.
-          </p>
+          <Alert variant="info">
+            <Icon icon={InformationCircleIcon} />
+            <AlertTitle>Before You Create A Run</AlertTitle>
+            <AlertDescription>
+              Complete the Search Brief and check preflight to interpret the area and verify
+              dependencies.
+            </AlertDescription>
+          </Alert>
         ) : (
           <>
             <SearchAreaChoice
@@ -85,15 +83,7 @@ export function RunPreflightSection({
                   <Link href={`/runs/${createdRun.id}`}>View Progress</Link>.
                 </AlertDescription>
               </Alert>
-            ) : (
-              <Button onClick={onCreateRun} disabled={busy || !preflight.ready || !selectedAreaId}>
-                <Icon
-                  icon={busy ? Loading03Icon : PlayIcon}
-                  className={busy ? "animate-spin" : undefined}
-                />
-                Confirm And Create Run
-              </Button>
-            )}
+            ) : null}
           </>
         )}
       </div>

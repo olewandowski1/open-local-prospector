@@ -12,11 +12,12 @@ import {
   SentIcon,
 } from "@hugeicons/core-free-icons"
 import { useEffect, useRef, useState } from "react"
+import { FormFieldLabel } from "@/components/form-field-label"
 import { Icon } from "@/components/icon"
 import { IconButton } from "@/components/icon-button"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -278,8 +279,12 @@ function CandidateDecisionBar({
           </div>
 
           {/* "Other" cannot be a single click: the write rejects it without a note. */}
-          <Field className="gap-1.5 pt-1">
-            <FieldLabel htmlFor="reject-other">Other</FieldLabel>
+          <Field className="gap-1 pt-1">
+            <FormFieldLabel
+              htmlFor="reject-other"
+              label="Other"
+              description="A reason of its own needs a note."
+            />
             <div className="flex items-center gap-2">
               <Input
                 id="reject-other"
@@ -311,7 +316,6 @@ function CandidateDecisionBar({
                 Reject
               </Button>
             </div>
-            <FieldDescription>A reason of its own needs a note.</FieldDescription>
           </Field>
         </div>
       ) : null}

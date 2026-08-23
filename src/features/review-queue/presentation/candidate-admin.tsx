@@ -1,5 +1,6 @@
 "use client"
 
+import { FormFieldLabel } from "@/components/form-field-label"
 import {
   Accordion,
   AccordionItem,
@@ -7,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -25,7 +26,7 @@ import {
 } from "@/features/review-queue/presentation/review-presentation"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-const fieldSpacing = "gap-1.5"
+const fieldSpacing = "gap-1"
 
 /**
  * Everything a reader reaches for after deciding rather than before. Collapsed by default so the
@@ -64,13 +65,16 @@ export function CandidateAdmin({
 
             <FieldGroup className="gap-3">
               <Field className={fieldSpacing}>
-                <FieldLabel htmlFor="privateNotes">Private Review Notes</FieldLabel>
+                <FormFieldLabel
+                  htmlFor="privateNotes"
+                  label="Private Review Notes"
+                  description="Stored locally and never sent anywhere."
+                />
                 <Textarea
                   id="privateNotes"
                   name="privateNotes"
                   defaultValue={candidate.privateNotes}
                 />
-                <FieldDescription>Stored locally and never sent anywhere.</FieldDescription>
               </Field>
 
               <div className="flex flex-wrap items-end justify-between gap-3">

@@ -58,7 +58,7 @@ export function CandidateDangerZone({
         description="Suppression prevents future recommendation, reassessment for outreach, and export. It does not contact anyone."
       >
         <form onSubmit={onSuppress} className="grid gap-2">
-          <Field className="gap-1.5">
+          <Field className="gap-1">
             <FieldLabel htmlFor="suppressionReason">Suppression Reason</FieldLabel>
             <Input id="suppressionReason" name="reason" required />
           </Field>
@@ -87,7 +87,7 @@ export function CandidateDangerZone({
                   a later run may discover it again.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <Field className="gap-1.5">
+              <Field className="gap-1">
                 <FieldLabel htmlFor={`delete-business-${candidate.id}`}>
                   Type DELETE To Confirm
                 </FieldLabel>
@@ -130,7 +130,7 @@ function DangerRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="grid gap-3 rounded-lg border border-destructive/25 bg-background p-3">
+    <div className="grid gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/15">
       <div>
         <h3 className="text-sm font-medium">{title}</h3>
         <p className="mt-0.5 text-sm text-pretty text-muted-foreground">{description}</p>
