@@ -5,11 +5,11 @@
 <h1 align="center">Open Prospector</h1>
 
 <p align="center">
-  Turn your existing AI subscription into a local prospect research workflow.
+  Open Prospector is a local app that finds independent businesses with evidence-backed website opportunities.
 </p>
 
 <p align="center">
-  <strong>Bring Your Own Claude, Codex, Or OpenCode Subscription. Use Your Subscriptions Your Way.</strong>
+  <strong>Use Claude, Codex, Or OpenCode Already Installed And Authenticated On Your Computer.</strong>
 </p>
 
 <p align="center">
@@ -28,14 +28,14 @@ Open Prospector searches a place and business category, verifies each business, 
 website, and ranks genuine opportunities. Every material claim keeps its source and observation
 time.
 
-Bring your own Claude, Codex, or OpenCode subscription. Open Prospector works through the
-corresponding installed client, so it needs no usage-based API keys or metered fallback. It stores
-work locally in SQLite and sends no outreach. Choose the runtime for each run and switch between
-your ready subscriptions whenever you want.
+Open Prospector runs the Claude, Codex, or OpenCode client already installed and authenticated on
+your computer. It does not perform login, handle provider credentials, require usage-based API keys,
+or add a metered fallback. It stores work locally in SQLite and sends no outreach. Choose any ready
+runtime for each run.
 
 ## How A Run Works
 
-![Open Prospector Run Workflow](docs/assets/run-workflow.svg)
+![Open Prospector Run Workflow](docs/assets/open-prospector-workflow.svg)
 
 ![Candidate Review In Dark Mode](docs/assets/candidate-review.png)
 
@@ -49,8 +49,8 @@ your ready subscriptions whenever you want.
 
 ## Quick Start
 
-Requirements: Node.js 22 or newer, pnpm 10 or newer, and a ready Claude, Codex, or OpenCode
-runtime connected to your subscription. Docker, a database server, and search API keys are not
+Requirements: Node.js 22 or newer, pnpm 10 or newer, and a Claude, Codex, or OpenCode client already
+installed and authenticated on your computer. Docker, a database server, and search API keys are not
 required.
 
 ```powershell

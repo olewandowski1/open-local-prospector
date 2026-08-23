@@ -16,8 +16,9 @@ Open Prospector is a single-user, local-first application that discovers indepen
 businesses for a bounded Search Brief, verifies their public Online Presence, inspects their
 websites in a controlled browser, and ranks evidence-backed Website Opportunities for review. The
 application owns orchestration, validation, scoring, safety, and persistence. Users bring their own
-Claude, Codex, or OpenCode subscriptions, choose one for each Search Brief, and switch between ready
-runtimes whenever they want. The selected runtime performs narrowly scoped search and
+installed and authenticated Claude, Codex, or OpenCode client, choose one for each Search Brief, and
+switch between ready runtimes whenever they want. The application does not perform provider login
+or handle provider credentials. The selected runtime performs narrowly scoped search and
 interpretation work.
 
 ### Success Criteria

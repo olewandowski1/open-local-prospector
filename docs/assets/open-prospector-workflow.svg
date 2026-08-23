@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 520" role="img" aria-labelledby="title description">
   <title id="title">From Search Brief To Shortlist</title>
-  <desc id="description">A three-stage local research workflow powered by the user's Claude, Codex, or OpenCode subscriptions.</desc>
+  <desc id="description">A three-stage local research workflow using a Claude, Codex, or OpenCode client already authenticated on the user's computer.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#55b58d" />
@@ -9,7 +9,7 @@
 
   <rect width="1440" height="520" rx="30" fill="#0f0f0e" />
   <text x="72" y="72" fill="#f4f1eb" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700">From Search Brief To Shortlist</text>
-  <text x="72" y="108" fill="#aaa59d" font-family="Arial, Helvetica, sans-serif" font-size="20">Bring your own Claude, Codex, or OpenCode subscription.</text>
+  <text x="72" y="108" fill="#aaa59d" font-family="Arial, Helvetica, sans-serif" font-size="20">Use Claude, Codex, or OpenCode already authenticated on your computer.</text>
 
   <g fill="none" stroke="#55b58d" stroke-width="4" marker-end="url(#arrow)">
     <path d="M 356 276 H 412" />
@@ -30,7 +30,7 @@
       <rect x="412" y="142" width="588" height="268" rx="24" fill="#15251f" stroke="#55b58d" stroke-width="3" />
       <text x="448" y="190" fill="#55b58d" font-size="17" font-weight="700">02</text>
       <text x="448" y="232" fill="#f4f1eb" font-size="30" font-weight="700">Run Local Research</text>
-      <text x="448" y="270" fill="#78ccaa" font-size="20" font-weight="700">Use Your Subscriptions Your Way</text>
+      <text x="448" y="270" fill="#78ccaa" font-size="20" font-weight="700">Authenticated On Your Computer</text>
       <text x="448" y="306" fill="#f4f1eb" font-size="22">Claude  •  Codex  •  OpenCode</text>
 
       <g font-size="18" font-weight="700" text-anchor="middle">
