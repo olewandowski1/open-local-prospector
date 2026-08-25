@@ -78,6 +78,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     queryFn: () => fetchCandidate(open?.id ?? ""),
     enabled: open !== undefined,
     staleTime: 30_000,
+    retry: false,
   })
 
   // Only the review status is remembered: a saved town would quietly hide a run made later
@@ -266,6 +267,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
       <CandidateSheet
         candidate={open}
         detail={detail.data}
+        detailError={detail.error instanceof Error ? detail.error.message : undefined}
         position={index + 1}
         total={visible.length}
         busy={busy}
@@ -276,6 +278,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         }}
         onPrevious={() => step(-1)}
         onNext={() => step(1)}
+        onRetryDetail={() => void detail.refetch()}
         onQuickDecision={(decision) => void quickDecision(decision)}
         onSaveReview={submitForm}
         onCorrect={submitForm}
@@ -287,9 +290,26 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
 }
 
 async function fetchCandidate(scoreId: string): Promise<QueueCandidate> {
-  const response = await fetch(`/api/review/${encodeURIComponent(scoreId)}`)
-  if (!response.ok) throw new Error("candidate unavailable")
-  return (await response.json()) as QueueCandidate
+  try {
+    const response = await fetch(`/api/review/${encodeURIComponent(scoreId)}`, {
+      signal: AbortSignal.timeout(15_000),
+    })
+    const body = (await response.json().catch(() => undefined)) as
+      | QueueCandidate
+      | { error?: string }
+      | undefined
+    if (!response.ok) {
+      const message = body && "error" in body ? body.error : undefined
+      throw new Error(message ?? `Candidate detail request failed with status ${response.status}.`)
+    }
+    if (!body || "error" in body) throw new Error("Candidate detail response was empty.")
+    return body as QueueCandidate
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new Error("Candidate detail did not respond within 15 seconds.")
+    }
+    throw error
+  }
 }
 
 function QueueFilterSelect({

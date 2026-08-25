@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  Alert01Icon,
   ArchiveIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -17,6 +18,14 @@ import { Icon } from "@/components/icon"
 import { IconButton } from "@/components/icon-button"
 
 import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
@@ -40,6 +49,7 @@ import type {
   QueueCandidate,
   QueueCandidateSummary,
 } from "@/features/review-queue/server/review-queue-read-model"
+import { cn } from "@/lib/utils"
 
 export type QuickDecision = Readonly<{
   status: "Shortlisted" | "Rejected" | "Unreviewed" | "Contacted" | "Archived"
@@ -48,10 +58,13 @@ export type QuickDecision = Readonly<{
 }>
 
 const secondaryStatuses = ["Contacted", "Archived"] as const
+const scoreSkeletonKeys = ["severity", "confidence", "contact", "decision", "value"] as const
+const skeletonRowKeys = ["first", "second", "third"] as const
 
 export function CandidateSheet({
   candidate,
   detail,
+  detailError,
   position,
   total,
   busy,
@@ -60,6 +73,7 @@ export function CandidateSheet({
   onOpenChange,
   onPrevious,
   onNext,
+  onRetryDetail,
   onQuickDecision,
   onSaveReview,
   onCorrect,
@@ -68,6 +82,7 @@ export function CandidateSheet({
 }: {
   candidate?: QueueCandidateSummary
   detail?: QueueCandidate
+  detailError?: string
   position: number
   total: number
   busy: boolean
@@ -76,6 +91,7 @@ export function CandidateSheet({
   onOpenChange: (open: boolean) => void
   onPrevious: () => void
   onNext: () => void
+  onRetryDetail: () => void
   onQuickDecision: (decision: QuickDecision) => void
   onSaveReview: (event: React.FormEvent<HTMLFormElement>) => void
   onCorrect: (event: React.FormEvent<HTMLFormElement>) => void
@@ -127,8 +143,10 @@ export function CandidateSheet({
 
             <ScrollArea className="min-h-0 flex-1">
               <div className="grid gap-8 p-4">
-                {detail === undefined ? (
-                  <EvidenceSkeleton />
+                {detailError ? (
+                  <DetailError message={detailError} onRetry={onRetryDetail} />
+                ) : detail === undefined ? (
+                  <ReviewDetailSkeleton />
                 ) : (
                   <>
                     <CandidateEvidence candidate={detail} />
@@ -374,14 +392,116 @@ function useKeyboardShortcuts({
   }, [enabled])
 }
 
-function EvidenceSkeleton() {
+function DetailError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <Empty role="alert" className="min-h-80">
+      <EmptyHeader>
+        <EmptyMedia variant="icon" className="bg-destructive/15 text-destructive">
+          <Icon icon={Alert01Icon} />
+        </EmptyMedia>
+        <EmptyTitle>Candidate Could Not Be Loaded</EmptyTitle>
+        <EmptyDescription>{message}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button type="button" size="sm" onClick={onRetry}>
+          Retry
+        </Button>
+      </EmptyContent>
+    </Empty>
+  )
+}
+
+function ReviewDetailSkeleton() {
   return (
     // A bare div takes no accessible name, so the status role carries it.
-    <div role="status" aria-busy="true" aria-label="Loading Evidence" className="grid gap-3">
-      <Skeleton className="h-4 w-40" />
-      <Skeleton className="h-24 w-full rounded-lg" />
-      <Skeleton className="h-4 w-52" />
-      <Skeleton className="h-24 w-full rounded-lg" />
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Loading Candidate Details"
+      className="flex flex-col gap-8"
+    >
+      <SkeletonSection titleWidth="w-36" descriptionWidth="w-4/5">
+        <div className="grid gap-2.5">
+          {scoreSkeletonKeys.map((key) => (
+            <div key={key} className="grid gap-1">
+              <div className="flex items-center justify-between gap-3">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-2 w-full" />
+            </div>
+          ))}
+        </div>
+      </SkeletonSection>
+
+      <Separator />
+      <SkeletonSection titleWidth="w-28" descriptionWidth="w-72">
+        <SkeletonRows rows={2} />
+      </SkeletonSection>
+
+      <Separator />
+      <SkeletonSection titleWidth="w-40" descriptionWidth="w-80">
+        <SkeletonRows rows={2} />
+      </SkeletonSection>
+
+      <Separator />
+      <SkeletonSection titleWidth="w-52" descriptionWidth="w-4/5">
+        <SkeletonRows rows={3} compact />
+        <div className="grid gap-2">
+          <Skeleton className="h-3 w-24" />
+          <SkeletonRows rows={2} compact />
+        </div>
+      </SkeletonSection>
+
+      <div className="grid divide-y rounded-lg border px-3">
+        {skeletonRowKeys.map((key) => (
+          <div key={key} className="flex items-center justify-between gap-4 py-3">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 rounded-lg border border-destructive/40 p-4">
+        <Skeleton className="h-4 w-24" />
+        <SkeletonRows rows={2} />
+      </div>
+    </div>
+  )
+}
+
+function SkeletonSection({
+  titleWidth,
+  descriptionWidth,
+  children,
+}: {
+  titleWidth: string
+  descriptionWidth: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="grid gap-1.5">
+        <Skeleton className={cn("h-4", titleWidth)} />
+        <Skeleton className={cn("h-3", descriptionWidth)} />
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function SkeletonRows({ rows, compact = false }: { rows: number; compact?: boolean }) {
+  return (
+    <div className="grid divide-y rounded-lg border">
+      {skeletonRowKeys.slice(0, rows).map((key) => (
+        <div key={key} className="grid gap-2 p-3">
+          <div className="flex items-center justify-between gap-4">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          {compact ? null : <Skeleton className="h-3 w-4/5" />}
+        </div>
+      ))}
     </div>
   )
 }

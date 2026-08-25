@@ -7,7 +7,7 @@
     "setup": "tsx src/features/local-application/setup/main.ts",
     "dev": "concurrently --kill-others --names web,worker \"pnpm dev:web\" \"pnpm dev:worker\"",
     "dev:web": "next dev --hostname 127.0.0.1 --port 4310",
-    "dev:worker": "node --watch --env-file-if-exists=.env.local --import tsx src/worker/main.ts",
+    "dev:worker": "node --watch --watch-preserve-output --env-file-if-exists=.env.local --import tsx src/worker/main.ts",
     "build": "next build",
     "app": "pnpm run setup && pnpm build && pnpm start",
     "start": "concurrently --kill-others --names web,worker \"pnpm start:web\" \"pnpm start:worker\"",

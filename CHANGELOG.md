@@ -9,6 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Worker restarts now preserve the web process's clickable loopback URL in the combined development
+  terminal.
+- Candidate detail loading now stops on bounded request failures, offers an explicit retry, and
+  previews the actual evidence, administration, and danger-zone layout while data is loading.
 - API traffic now enforces the literal loopback Host, and state-changing routes reject foreign
   browser origins.
 - Deleting a business now removes its task checkpoints, failures, and business-scoped Technical Run

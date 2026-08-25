@@ -76,3 +76,32 @@ test("keeps candidate evidence out of the queue payload", async ({ page, isMobil
   expect((await detail).ok()).toBe(true)
   await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 })
+
+test("replaces a failed detail loader with a retryable error", async ({ page }) => {
+  let attempts = 0
+  await page.route(/\/api\/review\/[0-9a-f-]{36}$/u, async (route) => {
+    attempts += 1
+    if (attempts === 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000))
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Fixture candidate detail failed." }),
+      })
+      return
+    }
+    await route.continue()
+  })
+
+  await page.goto("/review")
+  await page.getByRole("button", { name: "Open For Review" }).first().click()
+
+  const loader = page.getByRole("status", { name: "Loading Candidate Details" })
+  await expect(loader).toBeVisible()
+  expect(await loader.locator('[data-slot="skeleton"]').count()).toBeGreaterThan(20)
+  await expect(page.getByRole("alert")).toContainText("Fixture candidate detail failed.")
+  await expect(loader).toHaveCount(0)
+
+  await page.getByRole("button", { name: "Retry" }).click()
+  await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
+})
