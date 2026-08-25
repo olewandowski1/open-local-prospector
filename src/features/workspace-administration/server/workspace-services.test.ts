@@ -26,6 +26,16 @@ describe("workspace mutation origin guard", () => {
     ).not.toThrow()
   })
 
+  it("accepts localhost with a matching browser origin", () => {
+    expect(() =>
+      assertSameOrigin(
+        new Request("http://localhost:4310/api/workspace/reset", {
+          headers: { host: "localhost:4310", origin: "http://localhost:4310" },
+        }),
+      ),
+    ).not.toThrow()
+  })
+
   it("refuses a matching attacker Origin and Host", () => {
     expect(() =>
       assertSameOrigin(
@@ -36,7 +46,7 @@ describe("workspace mutation origin guard", () => {
     ).toThrow("Local API request refused.")
   })
 
-  it.each(["localhost:4310", "[::1]:4310", "127.0.0.2:4310", "127.0.0.1:65536"])(
+  it.each(["[::1]:4310", "127.0.0.2:4310", "127.0.0.1:65536"])(
     "refuses non-product Host %s",
     (host) => {
       expect(

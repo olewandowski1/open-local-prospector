@@ -13,8 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   terminal.
 - Candidate detail loading now stops on bounded request failures, offers an explicit retry, and
   previews the actual evidence, administration, and danger-zone layout while data is loading.
-- API traffic now enforces the literal loopback Host, and state-changing routes reject foreign
-  browser origins.
+- API traffic now accepts the local app through either `127.0.0.1` or `localhost`, while
+  state-changing routes reject foreign browser origins.
 - Deleting a business now removes its task checkpoints, failures, and business-scoped Technical Run
   Log entries while retaining unrelated run history.
 - Explicitly resuming with another runtime now updates unfinished discovery task input and removes

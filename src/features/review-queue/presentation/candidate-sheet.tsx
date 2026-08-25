@@ -403,7 +403,7 @@ function DetailError({ message, onRetry }: { message: string; onRetry: () => voi
         <EmptyDescription>{message}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Button type="button" size="sm" onClick={onRetry}>
+        <Button type="button" variant="destructive" size="lg" onClick={onRetry}>
           Retry
         </Button>
       </EmptyContent>

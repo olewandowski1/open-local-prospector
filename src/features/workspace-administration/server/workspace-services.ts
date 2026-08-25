@@ -43,7 +43,7 @@ export const withWorkspaceAdmission = <T>(work: () => T): T => {
 export function isLoopbackApiRequest(request: Request): boolean {
   const host = request.headers.get("host")
   if (!host) return false
-  const match = /^127\.0\.0\.1(?::([1-9]\d{0,4}))?$/.exec(host)
+  const match = /^(?:127\.0\.0\.1|localhost)(?::([1-9]\d{0,4}))?$/i.exec(host)
   if (!match) return false
   return match[1] === undefined || Number(match[1]) <= 65_535
 }
