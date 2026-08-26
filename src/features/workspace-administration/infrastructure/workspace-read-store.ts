@@ -2,6 +2,7 @@ import { existsSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 import type { LocalApplicationConfig } from "@/features/local-application"
+import { liftCandidateSuppression } from "@/features/review-queue"
 import type {
   SuppressionRecord,
   WorkspaceInventory,
@@ -71,16 +72,7 @@ export function listSuppressions(databasePath: string): readonly SuppressionReco
 }
 
 export function liftSuppression(databasePath: string, identityFingerprint: string): boolean {
-  const database = openWorkspaceDatabase(databasePath)
-  try {
-    return (
-      database
-        .prepare("delete from suppression_entries where identity_fingerprint = ?")
-        .run(identityFingerprint).changes === 1
-    )
-  } finally {
-    database.close()
-  }
+  return liftCandidateSuppression(databasePath, identityFingerprint)
 }
 
 function count(database: ReturnType<typeof openWorkspaceDatabase>, table: string): number {

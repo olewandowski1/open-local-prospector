@@ -17,6 +17,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tree instead of leaving provider descendants running.
 - Final-task settlement now gives cancellation precedence, completes taskless late pauses, and
   repairs previously stranded taskless paused runs on resume.
+- Lifting a Suppression Entry now restores evidence-backed candidate eligibility, including scores
+  cleared by earlier versions.
+- Candidate detail infrastructure failures now remain server errors instead of being misreported
+  as missing candidates.
 - Worker restarts now preserve the web process's clickable loopback URL in the combined development
   terminal.
 - Candidate detail loading now stops on bounded request failures, offers an explicit retry, and

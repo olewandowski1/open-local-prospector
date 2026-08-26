@@ -52,8 +52,12 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ scoreId: string }> }) {
-  const { scoreId } = await context.params
-  const candidate = getQueueCandidate(scoreId)
-  if (!candidate) return NextResponse.json({ error: "Candidate not found." }, { status: 404 })
-  return NextResponse.json(candidate)
+  try {
+    const { scoreId } = await context.params
+    const candidate = getQueueCandidate(scoreId)
+    if (!candidate) return NextResponse.json({ error: "Candidate not found." }, { status: 404 })
+    return NextResponse.json(candidate)
+  } catch {
+    return NextResponse.json({ error: "Candidate details could not be read." }, { status: 500 })
+  }
 }

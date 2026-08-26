@@ -116,10 +116,10 @@ export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
 }
 
 export function getQueueCandidate(scoreId: string): QueueCandidate | undefined {
-  return readQueue(scoreId)[0]
+  return readQueueCandidate(scoreId)[0]
 }
 
-function readQueue(scoreId?: string): readonly QueueCandidate[] {
+function readQueueCandidate(scoreId: string): readonly QueueCandidate[] {
   let db: Database.Database | undefined
   try {
     const database = new Database(loadLocalApplicationConfig().databasePath, {
@@ -128,10 +128,8 @@ function readQueue(scoreId?: string): readonly QueueCandidate[] {
     })
     db = database
     const rows = database
-      .prepare(
-        `${QUEUE_SELECT}${scoreId ? " and cs.id = ?" : ""} order by cs.total desc,cb.name collate nocase,cs.id`,
-      )
-      .all(...(scoreId ? [scoreId] : [])) as QueueRow[]
+      .prepare(`${QUEUE_SELECT} and cs.id = ? order by cs.total desc,cb.name collate nocase,cs.id`)
+      .all(scoreId) as QueueRow[]
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -240,8 +238,6 @@ function readQueue(scoreId?: string): readonly QueueCandidate[] {
       },
       rubricVersion: row.rubric_version,
     }))
-  } catch {
-    return []
   } finally {
     db?.close()
   }
