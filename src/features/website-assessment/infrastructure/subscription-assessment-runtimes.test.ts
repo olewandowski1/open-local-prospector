@@ -2,7 +2,10 @@ import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 import type { RuntimeProcessRequest } from "@/features/runtime-settings"
 import type { AssessmentEvidenceEnvelope } from "@/features/website-assessment/application/assessment-runtime"
-import { makeClaudeAssessmentRuntime } from "@/features/website-assessment/infrastructure/subscription-assessment-runtimes"
+import {
+  makeClaudeAssessmentRuntime,
+  makeOpencodeAssessmentRuntime,
+} from "@/features/website-assessment/infrastructure/subscription-assessment-runtimes"
 
 const output = {
   schemaVersion: "assessment-output-v1",
@@ -97,5 +100,23 @@ describe("claude assessment adapter", () => {
 
     expect(captured.request?.arguments).toContain("claude-haiku-4-5")
     expect(captured.request?.arguments).not.toContain("--effort")
+  })
+})
+
+describe("OpenCode assessment adapter", () => {
+  it("denies every tool while interpreting untrusted website evidence", async () => {
+    const captured: { request?: RuntimeProcessRequest } = {}
+    const runtime = makeOpencodeAssessmentRuntime("opencode", (request) => {
+      captured.request = request
+      return Effect.succeed({ exitCode: 0, stdout: JSON.stringify(output) })
+    })
+
+    await Effect.runPromise(runtime.assess(evidence))
+
+    const policy = JSON.parse(captured.request?.environment?.OPENCODE_CONFIG_CONTENT ?? "")
+    expect(captured.request?.arguments).toEqual(
+      expect.arrayContaining(["--pure", "--agent", "open-prospector-no-tools"]),
+    )
+    expect(policy.agent["open-prospector-no-tools"].permission).toEqual({ "*": "deny" })
   })
 })

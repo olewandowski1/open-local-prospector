@@ -7,6 +7,7 @@ import {
   EMPTY_MCP_CONFIG,
   executeRuntimeProcess,
   onlyJsonObject,
+  openCodeRuntimePolicy,
   type RuntimeProcess,
   type RuntimeProcessResult,
   supportsReasoningEffort,
@@ -70,23 +71,28 @@ export function makeOpencodeAssessmentRuntime(
     executable,
     runProcess,
     version,
-    (directory, configuration) => ({
-      // OpenCode calls the reasoning effort a model variant.
-      arguments: [
-        "run",
-        ...(configuration ? ["-m", configuration.model] : []),
-        ...(configuration && configuration.reasoningEffort !== "none"
-          ? ["--variant", configuration.reasoningEffort]
-          : []),
-        "--dir",
-        directory,
-      ],
-      cwd: directory,
-      // The hosted model drives its work one step at a time; the default two minutes cuts it off.
-      timeoutMilliseconds: 900_000,
-      // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
-      settleOnExitMilliseconds: 2_000,
-    }),
+    (directory, configuration) => {
+      const policy = openCodeRuntimePolicy("no-tools")
+      return {
+        // OpenCode calls the reasoning effort a model variant.
+        arguments: [
+          "run",
+          ...policy.arguments,
+          ...(configuration ? ["-m", configuration.model] : []),
+          ...(configuration && configuration.reasoningEffort !== "none"
+            ? ["--variant", configuration.reasoningEffort]
+            : []),
+          "--dir",
+          directory,
+        ],
+        cwd: directory,
+        environment: policy.environment,
+        // The hosted model drives its work one step at a time; the default two minutes cuts it off.
+        timeoutMilliseconds: 900_000,
+        // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
+        settleOnExitMilliseconds: 2_000,
+      }
+    },
     // OpenCode writes to a terminal and prints a banner and its tool trace before answering, so
     // the fence rule the other runtimes need is not enough on its own.
     (result) => JSON.parse(onlyJsonObject(withoutTerminalColour(result.stdout))),

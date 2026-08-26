@@ -51,7 +51,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     }
     const child = spawn(request.executable, [...request.arguments], {
       cwd: request.cwd,
-      env: safeRuntimeEnvironment(request.environment ?? process.env),
+      env: safeRuntimeEnvironment({ ...process.env, ...request.environment }),
       shell: false,
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -144,6 +144,7 @@ function safeRuntimeEnvironment(
     "XDG_CONFIG_HOME",
     "XDG_DATA_HOME",
     "CODEX_HOME",
+    "OPENCODE_CONFIG_CONTENT",
     "SystemRoot",
     "SYSTEMROOT",
     "TEMP",

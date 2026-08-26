@@ -1,4 +1,8 @@
 export {
+  type OpenCodeRuntimeAuthority,
+  openCodeRuntimePolicy,
+} from "@/features/runtime-settings/application/opencode-runtime-policy"
+export {
   defaultRuntimeExecutionConfiguration,
   isRuntimeExecutionConfiguration,
   type RuntimeExecutionConfiguration,

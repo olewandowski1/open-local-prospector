@@ -1,10 +1,16 @@
+import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 
 import {
+  makeSubscriptionDiscoveryRuntime,
   parseStructuredOutput,
   readReportText,
 } from "@/features/business-discovery/infrastructure/subscription-discovery-runtime"
-import { onlyJsonObject, withoutTerminalColour } from "@/features/runtime-settings"
+import {
+  onlyJsonObject,
+  type RuntimeProcessRequest,
+  withoutTerminalColour,
+} from "@/features/runtime-settings"
 
 const ESC = String.fromCharCode(27)
 
@@ -68,5 +74,46 @@ describe("subscription discovery runtime output", () => {
 
   it("strips cursor and colour sequences alike", () => {
     expect(withoutTerminalColour(`${ESC}[1m${ESC}[32mgreen${ESC}[0m${ESC}[2K`)).toBe("green")
+  })
+
+  it("contains OpenCode to public search for reporting and no tools for structuring", async () => {
+    const requests: RuntimeProcessRequest[] = []
+    const runtime = makeSubscriptionDiscoveryRuntime({ opencode: "opencode" }, (request) => {
+      requests.push(request)
+      return Effect.succeed({
+        exitCode: 0,
+        stdout:
+          requests.length === 1
+            ? "Fixture report"
+            : '{"schemaVersion":"discovery-structure-v1","businesses":[]}',
+      })
+    })
+    const brief = {
+      runtime: "opencode" as const,
+      query: "fixture",
+      category: "Fixture Services",
+      searchAreaName: "Fixture City",
+      countryCode: "PL",
+      searchLanguage: "Polish",
+      wanted: 5,
+    }
+
+    const report = await Effect.runPromise(runtime.report(brief))
+    await Effect.runPromise(runtime.structure(brief, report))
+
+    const reportPolicy = JSON.parse(requests[0]?.environment?.OPENCODE_CONFIG_CONTENT ?? "")
+    const structurePolicy = JSON.parse(requests[1]?.environment?.OPENCODE_CONFIG_CONTENT ?? "")
+    expect(requests[0]?.arguments).toEqual(
+      expect.arrayContaining(["--pure", "--agent", "open-prospector-public-search"]),
+    )
+    expect(reportPolicy.agent["open-prospector-public-search"].permission).toEqual({
+      "*": "deny",
+      websearch: "allow",
+      webfetch: "allow",
+    })
+    expect(requests[1]?.arguments).toEqual(
+      expect.arrayContaining(["--pure", "--agent", "open-prospector-no-tools"]),
+    )
+    expect(structurePolicy.agent["open-prospector-no-tools"].permission).toEqual({ "*": "deny" })
   })
 })

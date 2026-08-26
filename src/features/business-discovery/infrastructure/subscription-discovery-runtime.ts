@@ -21,6 +21,7 @@ import {
   EMPTY_MCP_CONFIG,
   executeRuntimeProcess,
   onlyJsonObject,
+  openCodeRuntimePolicy,
   type RuntimeProcess,
   type RuntimeProcessResult,
   supportsReasoningEffort,
@@ -104,9 +105,11 @@ export function makeSubscriptionDiscoveryRuntime(
 /** Searching needs the web-search tool and no output schema; a schema here costs report quality. */
 function reportCommand(brief: DiscoveryBrief, directory: string) {
   if (brief.runtime === "opencode") {
+    const policy = openCodeRuntimePolicy("public-web-search")
     return {
-      arguments: ["run", ...opencodeModelArguments(brief), "--dir", directory],
+      arguments: ["run", ...policy.arguments, ...opencodeModelArguments(brief), "--dir", directory],
       cwd: directory,
+      environment: policy.environment,
       // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
       settleOnExitMilliseconds: 2_000,
     }
@@ -159,11 +162,11 @@ const promptSchema = JSON.stringify(discoveryStructureJsonSchema, null, 1)
 /** Structuring reads the report it is given and nothing else, so every tool is withdrawn. */
 function structureCommand(brief: DiscoveryBrief, directory: string) {
   if (brief.runtime === "opencode") {
-    // OpenCode exposes no flag to withdraw tools, so the prompt's instruction plus the contract
-    // verifier carry the containment: anything not written down in the report is dropped.
+    const policy = openCodeRuntimePolicy("no-tools")
     return Effect.succeed({
-      arguments: ["run", ...opencodeModelArguments(brief), "--dir", directory],
+      arguments: ["run", ...policy.arguments, ...opencodeModelArguments(brief), "--dir", directory],
       cwd: directory,
+      environment: policy.environment,
       settleOnExitMilliseconds: 2_000,
     })
   }
