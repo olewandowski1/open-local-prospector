@@ -65,6 +65,41 @@ export function groupPresences(presences: QueueCandidate["presences"]): readonly
   return [...groups.entries()].map(([type, urls]) => ({ type, urls }))
 }
 
+export type MeasurementFact = Readonly<{ label: string; value: string }>
+
+const countFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 })
+
+export function measurementFacts(
+  measurement: QueueCandidate["measurements"][number]["values"],
+): readonly MeasurementFact[] {
+  return [
+    ...(measurement.navigationDurationMs === undefined
+      ? []
+      : [{ label: "Page Load", value: formatMilliseconds(measurement.navigationDurationMs) }]),
+    ...(measurement.firstContentfulPaintMs === undefined
+      ? []
+      : [
+          {
+            label: "First Contentful Paint",
+            value: formatMilliseconds(measurement.firstContentfulPaintMs),
+          },
+        ]),
+    { label: "DOM Nodes", value: countFormat.format(measurement.domNodes) },
+    { label: "Images", value: countFormat.format(measurement.images) },
+    { label: "Images Missing Alt Text", value: countFormat.format(measurement.imagesMissingAlt) },
+    { label: "Unlabelled Controls", value: countFormat.format(measurement.unlabeledControls) },
+    {
+      label: "Horizontal Overflow",
+      value: measurement.horizontalOverflow ? "Detected" : "Not Detected",
+    },
+    { label: "HTTPS", value: measurement.usesHttps ? "Yes" : "No" },
+  ]
+}
+
+function formatMilliseconds(value: number): string {
+  return `${(value / 1_000).toFixed(2)} s`
+}
+
 export type ReviewStatusVariant =
   | "success"
   | "destructive"

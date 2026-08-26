@@ -1,6 +1,7 @@
 "use client"
 
 import { LinkSquare02Icon } from "@hugeicons/core-free-icons"
+import Image from "next/image"
 import { Icon } from "@/components/icon"
 
 import { SectionHeader } from "@/components/page-layout"
@@ -12,6 +13,7 @@ import {
   formatScore,
   groupPresences,
   humanizeTerm,
+  measurementFacts,
   scoreComponents,
 } from "@/features/review-queue/presentation/review-presentation"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
@@ -110,12 +112,52 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
               ? candidate.limitations.map(humanizeTerm).join(", ")
               : "None recorded"}
           </Fact>
-          {candidate.measurements.length > 0 ? (
-            <Fact label="Measurements">
-              <span className="font-mono text-xs">{candidate.measurements.join(" · ")}</span>
-            </Fact>
-          ) : null}
         </dl>
+
+        {candidate.screenshots.length > 0 ? (
+          <div className="grid gap-2">
+            <h3 className="text-xs font-medium text-muted-foreground">Captured Pages</h3>
+            <div className="grid gap-3 @xl:grid-cols-2">
+              {candidate.screenshots.map((screenshot) => (
+                <figure key={screenshot.id} className="overflow-hidden rounded-lg border">
+                  <Image
+                    src={`/api/review/${encodeURIComponent(candidate.id)}/screenshots/${encodeURIComponent(screenshot.id)}`}
+                    alt={`${humanizeTerm(screenshot.viewport)} website capture for ${candidate.name}`}
+                    width={screenshot.viewport === "Mobile" ? 390 : 1440}
+                    height={screenshot.viewport === "Mobile" ? 844 : 900}
+                    unoptimized
+                    className="max-h-80 w-full bg-muted object-contain"
+                  />
+                  <figcaption className="p-2 text-xs text-muted-foreground">
+                    {humanizeTerm(screenshot.viewport)} Capture
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {candidate.measurements.length > 0 ? (
+          <div className="grid gap-2">
+            <h3 className="text-xs font-medium text-muted-foreground">Page Measurements</h3>
+            <div className="grid gap-3 @xl:grid-cols-2">
+              {candidate.measurements.map((measurement) => (
+                <div key={measurement.id} className="overflow-hidden rounded-lg border">
+                  <h4 className="border-b p-3 text-sm font-medium">
+                    {humanizeTerm(measurement.viewport)} Page
+                  </h4>
+                  <dl className="grid divide-y text-sm">
+                    {measurementFacts(measurement.values).map((fact) => (
+                      <Fact key={fact.label} label={fact.label}>
+                        <span className="tabular-nums">{fact.value}</span>
+                      </Fact>
+                    ))}
+                  </dl>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {candidate.contacts.length > 0 ? (
           <div className="grid gap-2">

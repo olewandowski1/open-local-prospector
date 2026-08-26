@@ -5,12 +5,14 @@ import {
   DatabaseBackupIcon,
   DatabaseRestoreIcon,
   Delete02Icon,
+  SecurityLockIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 
 import { FormFieldLabel } from "@/components/form-field-label"
+import { Icon } from "@/components/icon"
 import { SectionHeader } from "@/components/page-layout"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -138,6 +140,16 @@ export function WorkspaceActions({ inventory }: { inventory: WorkspaceInventory 
         title={<span id="workspace-actions-heading">Backup And Maintenance</span>}
         description="Backups include the database, artifacts and non-secret configuration. A snapshot taken during a run records the workspace at that moment; it does not pause the run."
       />
+
+      <Alert>
+        <Icon icon={SecurityLockIcon} />
+        <AlertTitle>Backups Contain Personal Data</AlertTitle>
+        <AlertDescription>
+          Workspace backups are not encrypted. They can include public telephone numbers and email
+          addresses, private review notes, screenshots, and source evidence. Store and share them
+          accordingly.
+        </AlertDescription>
+      </Alert>
 
       {feedback ? (
         <Alert variant={feedback.destructive ? "destructive" : "default"}>

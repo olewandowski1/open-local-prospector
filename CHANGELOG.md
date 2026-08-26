@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a lease remove the lock file it owns.
 - Route browser inspection through an authenticated loopback proxy that validates DNS and connects
   to the approved numeric address, preventing DNS rebinding between validation and connection.
+- Show captured website screenshots and readable deterministic measurements in candidate details
+  without exposing local artifact paths, and warn that workspace backups are unencrypted and can
+  contain personal data.
 - OpenCode discovery now receives only public search tools, while structuring and assessment run
   with every tool denied and external plugins disabled.
 - Tasks abandoned by repeated worker exits now exhaust their attempt budget and settle visibly

@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 
 import Database from "better-sqlite3"
 
@@ -11,14 +13,18 @@ import { migrateLocalDatabase } from "@/features/local-application"
  * Everything a spec asserts on comes from here: a settled run named for florists, a run still
  * moving, candidates in the queue, and a business whose inspection was blocked.
  */
-export function seedE2eWorkspace(databasePath: string): void {
+export function seedE2eWorkspace(
+  databasePath: string,
+  artifactsPath = join(dirname(databasePath), "artifacts"),
+): void {
+  mkdirSync(artifactsPath, { recursive: true })
   migrateLocalDatabase(databasePath)
   const database = new Database(databasePath)
   try {
     database.pragma("foreign_keys = ON")
     database.transaction(() => {
       clear(database)
-      for (const [index, run] of RUNS.entries()) writeRun(database, run, index)
+      for (const [index, run] of RUNS.entries()) writeRun(database, run, index, artifactsPath)
     })()
   } finally {
     database.close()
@@ -156,7 +162,12 @@ function clear(database: Database.Database): void {
   database.pragma("foreign_keys = ON")
 }
 
-function writeRun(database: Database.Database, run: SeedRun, runIndex: number): void {
+function writeRun(
+  database: Database.Database,
+  run: SeedRun,
+  runIndex: number,
+  artifactsPath: string,
+): void {
   // Fixed clock: a spec that asserts on "12 Minutes Ago" must not depend on when it runs.
   const base = Date.UTC(2026, 7, 20, 9, 0, 0) + runIndex * 3_600_000
   const runId = id(`run-${run.key}`)
@@ -238,7 +249,7 @@ function writeRun(database: Database.Database, run: SeedRun, runIndex: number): 
     )
 
   for (const [index, business] of run.businesses.entries()) {
-    writeBusiness(database, { runId, run, business, index, base })
+    writeBusiness(database, { runId, run, business, index, base, artifactsPath })
   }
 }
 
@@ -250,9 +261,10 @@ function writeBusiness(
     business: SeedBusiness
     index: number
     base: number
+    artifactsPath: string
   },
 ): void {
-  const { runId, run, business, index, base } = context
+  const { runId, run, business, index, base, artifactsPath } = context
   const slug = `${run.key}-${index}`
   const taskId = id(`task-${slug}`)
   const discoveredId = id(`discovered-${slug}`)
@@ -396,6 +408,60 @@ function writeBusiness(
     return
   }
   if (business.score === undefined) return
+
+  if (business.website) {
+    const pageId = id(`inspection-page-${slug}`)
+    const artifactId = id(`inspection-artifact-${slug}`)
+    const screenshot = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+Xc8WAAAAAElFTkSuQmCC",
+      "base64",
+    )
+    const screenshotPath = join(artifactsPath, `${artifactId}.png`)
+    writeFileSync(screenshotPath, screenshot)
+    database
+      .prepare(
+        `insert into inspection_pages
+         (id,inspection_id,sequence,viewport,requested_url,final_url,title,rendered_text,links,
+          forms,console_failures,network_failures,measurements,captured_at)
+         values (?,?,0,'Desktop',?,?,?,'Synthetic website evidence.','[]','[]','[]','[]',?,?)`,
+      )
+      .run(
+        pageId,
+        inspectionId,
+        business.website,
+        business.website,
+        business.name,
+        JSON.stringify({
+          navigationDurationMs: 1234.56,
+          firstContentfulPaintMs: 456.78,
+          domNodes: 1234,
+          headings: 4,
+          links: 12,
+          forms: 1,
+          images: 8,
+          imagesMissingAlt: 2,
+          unlabeledControls: 1,
+          horizontalOverflow: false,
+          usesHttps: true,
+        }),
+        at + 15_000,
+      )
+    database
+      .prepare(
+        `insert into inspection_artifacts
+         (id,inspection_id,page_id,kind,viewport,path,mime_type,byte_size,sha256,created_at)
+         values (?,?,?,'Screenshot','Desktop',?,'image/png',?,?,?)`,
+      )
+      .run(
+        artifactId,
+        inspectionId,
+        pageId,
+        screenshotPath,
+        screenshot.byteLength,
+        createHash("sha256").update(screenshot).digest("hex"),
+        at + 15_000,
+      )
+  }
 
   const assessmentId = id(`assessment-${slug}`)
   database

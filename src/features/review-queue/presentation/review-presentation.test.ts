@@ -9,6 +9,7 @@ import {
   groupPresences,
   humanizeTerm,
   isQueueFiltered,
+  measurementFacts,
   queueFilterOptions,
   reviewStatusVariant,
   scoreComponents,
@@ -86,6 +87,33 @@ describe("review presentation", () => {
     expect(groupPresences(presences)).toEqual([
       { type: "Website", urls: ["https://a.test", "https://b.test"] },
       { type: "Directory", urls: ["https://c.test"] },
+    ])
+  })
+
+  it("turns captured measurements into bounded reader-facing facts", () => {
+    expect(
+      measurementFacts({
+        navigationDurationMs: 1234.56,
+        firstContentfulPaintMs: 456.78,
+        domNodes: 1234,
+        headings: 4,
+        links: 12,
+        forms: 1,
+        images: 8,
+        imagesMissingAlt: 2,
+        unlabeledControls: 1,
+        horizontalOverflow: true,
+        usesHttps: true,
+      }),
+    ).toEqual([
+      { label: "Page Load", value: "1.23 s" },
+      { label: "First Contentful Paint", value: "0.46 s" },
+      { label: "DOM Nodes", value: "1,234" },
+      { label: "Images", value: "8" },
+      { label: "Images Missing Alt Text", value: "2" },
+      { label: "Unlabelled Controls", value: "1" },
+      { label: "Horizontal Overflow", value: "Detected" },
+      { label: "HTTPS", value: "Yes" },
     ])
   })
 

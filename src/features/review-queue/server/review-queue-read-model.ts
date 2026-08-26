@@ -1,5 +1,6 @@
 import Database from "better-sqlite3"
 import { loadLocalApplicationConfig } from "@/features/local-application"
+import type { PageMeasurements } from "@/features/website-inspection"
 
 // The evidence is deliberately absent: sending it per candidate put the whole queue's screenshots into the page.
 export type QueueCandidateSummary = Readonly<{
@@ -48,8 +49,8 @@ export type QueueCandidate = Readonly<{
   }>[]
   presences: readonly Readonly<{ type: string; url: string }>[]
   contacts: readonly Readonly<{ type: string; value: string; sourceUrl: string }>[]
-  screenshots: readonly string[]
-  measurements: readonly string[]
+  screenshots: readonly Readonly<{ id: string; viewport: string }>[]
+  measurements: readonly Readonly<{ id: string; viewport: string; values: PageMeasurements }>[]
   limitations: readonly string[]
   corrections: readonly Readonly<{
     target: string
@@ -194,17 +195,21 @@ function readQueueCandidate(scoreId: string): readonly QueueCandidate[] {
       screenshots: (
         database
           .prepare(
-            "select path from inspection_artifacts where inspection_id=? and kind='Screenshot' order by created_at,id",
+            "select id,viewport from inspection_artifacts where inspection_id=? and kind='Screenshot' order by created_at,id",
           )
-          .all(row.inspection_id) as { path: string }[]
-      ).map((item) => item.path),
+          .all(row.inspection_id) as { id: string; viewport: string }[]
+      ).map((item) => ({ id: item.id, viewport: item.viewport })),
       measurements: (
         database
           .prepare(
-            "select measurements from inspection_pages where inspection_id=? order by sequence,viewport",
+            "select id,viewport,measurements from inspection_pages where inspection_id=? order by sequence,viewport",
           )
-          .all(row.inspection_id) as { measurements: string }[]
-      ).map((item) => item.measurements),
+          .all(row.inspection_id) as { id: string; viewport: string; measurements: string }[]
+      ).map((item) => ({
+        id: item.id,
+        viewport: item.viewport,
+        values: JSON.parse(item.measurements) as PageMeasurements,
+      })),
       limitations: (
         database
           .prepare(

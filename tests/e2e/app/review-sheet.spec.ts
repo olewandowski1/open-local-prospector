@@ -77,6 +77,26 @@ test("keeps candidate evidence out of the queue payload", async ({ page, isMobil
   await expect(page.getByRole("heading", { name: "Notes And Follow-Up" })).toBeVisible()
 })
 
+test("shows captured pages and readable measurements without exposing artifact paths", async ({
+  page,
+}) => {
+  await page.goto("/review")
+  const row = page.getByRole("row", { name: /Willow And Stem/ })
+  const detailResponse = page.waitForResponse((response) =>
+    /\/api\/review\/[0-9a-f-]{36}$/u.test(response.url()),
+  )
+  await row.getByRole("button", { name: "Open For Review" }).click()
+
+  const response = await detailResponse
+  const detail = (await response.json()) as { screenshots: readonly Record<string, unknown>[] }
+  expect(detail.screenshots).toHaveLength(1)
+  expect(detail.screenshots[0]).not.toHaveProperty("path")
+  await expect(page.getByText("Captured Pages", { exact: true })).toBeVisible()
+  await expect(page.getByAltText(/Desktop website capture for Willow And Stem/)).toBeVisible()
+  await expect(page.getByText("Page Measurements", { exact: true })).toBeVisible()
+  await expect(page.getByText("1.23 s", { exact: true })).toBeVisible()
+})
+
 test("replaces a failed detail loader with a retryable error", async ({ page }) => {
   let attempts = 0
   await page.route(/\/api\/review\/[0-9a-f-]{36}$/u, async (route) => {
