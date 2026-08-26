@@ -23,6 +23,10 @@ import {
   selectRelevantPage,
 } from "@/features/website-inspection/infrastructure/inspection-page-policy"
 import {
+  type PinnedHttpProxy,
+  startPinnedHttpProxy,
+} from "@/features/website-inspection/infrastructure/pinned-http-proxy"
+import {
   applyInspectionPolicy,
   type FixtureResponses,
   networkBlock,
@@ -87,6 +91,14 @@ async function inspectWithPlaywright(
     })
   }
 
+  let proxy: PinnedHttpProxy
+  try {
+    proxy = await startPinnedHttpProxy(resolveHost)
+  } catch (error) {
+    await browser.close()
+    throw error
+  }
+
   const blocks: InspectionBlock[] = []
   const pages: InspectionPageEvidence[] = []
   try {
@@ -98,6 +110,7 @@ async function inspectWithPlaywright(
       resolveHost,
       options.fixtureResponses,
       blocks,
+      proxy,
     )
     pages.push(...desktop.pages)
     if (desktop.blocked || desktop.pages.length === 0) {
@@ -129,6 +142,7 @@ async function inspectWithPlaywright(
       resolveHost,
       options.fixtureResponses,
       blocks,
+      proxy,
     )
     pages.push(...mobile.pages)
     if (!mobile.blocked) {
@@ -148,6 +162,7 @@ async function inspectWithPlaywright(
       pages.length === 4 && blocks.length === 0 ? "Complete" : "Partial",
     )
   } finally {
+    await proxy.close()
     await browser.close()
   }
 }
@@ -170,6 +185,7 @@ async function inspectViewport(
   resolveHost: ResolveHost,
   fixtureResponses: PlaywrightInspectorOptions["fixtureResponses"],
   blocks: InspectionBlock[],
+  proxy: PinnedHttpProxy,
 ): Promise<ViewportSession> {
   const context = await browser.newContext({
     viewport: viewport === "Desktop" ? { width: 1440, height: 900 } : { width: 390, height: 844 },
@@ -177,6 +193,7 @@ async function inspectViewport(
     acceptDownloads: false,
     serviceWorkers: "block",
     storageState: { cookies: [], origins: [] },
+    proxy: proxy.playwrightProxy,
   })
   const page = await context.newPage()
   const { consoleFailures, networkFailures } = await applyInspectionPolicy({

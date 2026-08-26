@@ -26,6 +26,13 @@ export async function validatePublicHttpUrl(
   value: string,
   resolveHost: ResolveHost = resolveHostAddresses,
 ): Promise<URL> {
+  return (await resolvePublicHttpUrl(value, resolveHost)).url
+}
+
+export async function resolvePublicHttpUrl(
+  value: string,
+  resolveHost: ResolveHost = resolveHostAddresses,
+): Promise<Readonly<{ url: URL; addresses: readonly string[] }>> {
   let url: URL
   try {
     url = new URL(value)
@@ -74,7 +81,7 @@ export async function validatePublicHttpUrl(
       "Private, local, and special-use network ranges are blocked.",
     )
   }
-  return url
+  return { url, addresses }
 }
 
 export function assertApprovedNavigation(initialUrl: string, destinationUrl: string): void {

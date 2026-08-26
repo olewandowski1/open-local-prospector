@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   differ, preventing evidence and review state from being attached to the wrong business.
 - Preserve newly created workspace-operation locks while their owner initializes them, and only let
   a lease remove the lock file it owns.
+- Route browser inspection through an authenticated loopback proxy that validates DNS and connects
+  to the approved numeric address, preventing DNS rebinding between validation and connection.
 - OpenCode discovery now receives only public search tools, while structuring and assessment run
   with every tool denied and external plugins disabled.
 - Tasks abandoned by repeated worker exits now exhaust their attempt budget and settle visibly
