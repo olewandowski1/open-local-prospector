@@ -130,7 +130,7 @@ function recover(database: Database.Database, now: Date): number {
       }
     }
     for (const [runId, stage] of exhaustedRuns) {
-      updateRunAfterSettledTask(database, runId, stage, now)
+      reconcileRunAfterTaskSettlement(database, runId, stage, now)
     }
     const incorrectlySettled = database
       .prepare(
@@ -248,11 +248,16 @@ function complete(
         .pluck()
         .get(task.runId, task.id),
     )
-    if (checkpoint.completionState && (checkpoint.nextTasks?.length ?? 0) === 0 && !stillActive) {
+    if (
+      requestedControl !== "Cancel" &&
+      checkpoint.completionState &&
+      (checkpoint.nextTasks?.length ?? 0) === 0 &&
+      !stillActive
+    ) {
       database
         .prepare(
           `update prospecting_runs set state = 'Completed', completion_state = ?, current_stage = ?,
-           updated_at = ?, version = version + 1 where id = ?`,
+           requested_control = 'None', updated_at = ?, version = version + 1 where id = ?`,
         )
         .run(checkpoint.completionState, task.stage, now.getTime(), task.runId)
       transition(
@@ -267,7 +272,7 @@ function complete(
       )
       return
     }
-    updateRunAfterSettledTask(database, task.runId, task.stage, now)
+    reconcileRunAfterTaskSettlement(database, task.runId, task.stage, now)
   })()
 }
 
@@ -303,7 +308,7 @@ function fail(
       )
     if (update.changes !== 1) throw new Error("lease ownership lost")
     transition(database, task.runId, task.id, "Leased", nextStatus, "TaskFailed", failure, now)
-    updateRunAfterSettledTask(database, task.runId, task.stage, now)
+    reconcileRunAfterTaskSettlement(database, task.runId, task.stage, now)
   })()
 }
 
@@ -329,7 +334,7 @@ function insertTask(database: Database.Database, runId: string, task: NewRunTask
     )
 }
 
-function updateRunAfterSettledTask(
+export function reconcileRunAfterTaskSettlement(
   database: Database.Database,
   runId: string,
   stage: string,
@@ -359,16 +364,6 @@ function updateRunAfterSettledTask(
     .prepare("select requested_control from prospecting_runs where id = ?")
     .pluck()
     .get(runId)
-  if (requestedControl === "Pause" && counts.leased === 0) {
-    database
-      .prepare(
-        `update prospecting_runs set state = 'Paused', completion_state = 'Paused',
-         updated_at = ?, version = version + 1 where id = ?`,
-      )
-      .run(now.getTime(), runId)
-    transition(database, runId, null, null, "Paused", "RunPaused", {}, now)
-    return
-  }
   if (requestedControl === "Cancel" && counts.leased === 0) {
     database
       .prepare(
@@ -380,7 +375,18 @@ function updateRunAfterSettledTask(
     transition(database, runId, null, null, "Cancelled", "RunCancelled", {}, now)
     return
   }
-  if (counts.active > 0) return
+  if (counts.active > 0) {
+    if (requestedControl === "Pause" && counts.leased === 0) {
+      database
+        .prepare(
+          `update prospecting_runs set state = 'Paused', completion_state = 'Paused',
+           updated_at = ?, version = version + 1 where id = ?`,
+        )
+        .run(now.getTime(), runId)
+      transition(database, runId, null, null, "Paused", "RunPaused", {}, now)
+    }
+    return
+  }
 
   // Recomputed for this run when its outcome is decided, rather than swept across every run each cycle.
   database
@@ -411,7 +417,7 @@ function updateRunAfterSettledTask(
   database
     .prepare(
       `update prospecting_runs set state = ?, completion_state = ?, current_stage = ?,
-       updated_at = ?, version = version + 1 where id = ?`,
+       requested_control = 'None', updated_at = ?, version = version + 1 where id = ?`,
     )
     .run(outcome.state, outcome.completion, stage, now.getTime(), runId)
   transition(database, runId, null, null, outcome.state, "RunSettled", outcome, now)

@@ -5,5 +5,8 @@ export type {
   TaskCheckpoint,
 } from "@/features/run-execution/domain/run-task"
 export { runTasks } from "@/features/run-execution/infrastructure/schema"
-export { sqliteRunTaskRepositoryLive } from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
+export {
+  reconcileRunAfterTaskSettlement,
+  sqliteRunTaskRepositoryLive,
+} from "@/features/run-execution/infrastructure/sqlite-run-task-repository"
 export { stageExecutorLive } from "@/features/run-execution/infrastructure/stage-executor-live"

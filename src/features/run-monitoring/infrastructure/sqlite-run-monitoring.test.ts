@@ -302,6 +302,83 @@ describe("SQLite run monitoring", () => {
     ).toBe(0)
   })
 
+  it("gives cancellation precedence when the final task reports completion", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "cancel-final-run")
+    const tasks = makeSqliteRunTaskRepository(database.path)
+    const monitoring = sqliteRunMonitoringLive(database.path)
+    const now = new Date(Date.now() + 1_000)
+    const finalTask = requiredTask(await Effect.runPromise(tasks.claimNext("worker", now, 30_000)))
+
+    await Effect.runPromise(controlRun(run.id, "Cancel").pipe(Effect.provide(monitoring)))
+    await Effect.runPromise(
+      tasks.complete(
+        finalTask,
+        "worker",
+        { value: { finished: true }, completionState: "Search Exhausted" },
+        new Date(now.getTime() + 10),
+      ),
+    )
+
+    expect(await readDetail(database.path, run.id)).toMatchObject({
+      state: "Cancelled",
+      completionState: "Cancelled with Partial Results",
+    })
+  })
+
+  it("settles completed work instead of creating a taskless paused run", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "pause-final-run")
+    const tasks = makeSqliteRunTaskRepository(database.path)
+    const monitoring = sqliteRunMonitoringLive(database.path)
+    const now = new Date(Date.now() + 1_000)
+    const finalTask = requiredTask(await Effect.runPromise(tasks.claimNext("worker", now, 30_000)))
+
+    await Effect.runPromise(controlRun(run.id, "Pause").pipe(Effect.provide(monitoring)))
+    await Effect.runPromise(
+      tasks.complete(
+        finalTask,
+        "worker",
+        { value: { finished: true }, completionState: "Search Exhausted" },
+        new Date(now.getTime() + 10),
+      ),
+    )
+
+    expect(await readDetail(database.path, run.id)).toMatchObject({
+      state: "Completed",
+      completionState: "Search Exhausted",
+    })
+  })
+
+  it("repairs a legacy taskless pause when resume is requested", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "taskless-pause-run")
+    const connection = new Database(database.path)
+    try {
+      connection.prepare("update run_tasks set status = 'Completed' where run_id = ?").run(run.id)
+      connection
+        .prepare(
+          `update prospecting_runs set state = 'Paused', completion_state = 'Paused',
+           requested_control = 'Pause' where id = ?`,
+        )
+        .run(run.id)
+    } finally {
+      connection.close()
+    }
+
+    await Effect.runPromise(
+      controlRun(run.id, "Resume").pipe(Effect.provide(sqliteRunMonitoringLive(database.path))),
+    )
+
+    expect(await readDetail(database.path, run.id)).toMatchObject({
+      state: "Completed",
+      completionState: "Search Exhausted",
+    })
+  })
+
   it("settles one business infrastructure failure as warnings, not Infrastructure Failed", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)

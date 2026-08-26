@@ -2,6 +2,7 @@ import type Database from "better-sqlite3"
 import { Effect, Layer } from "effect"
 import { sharedDatabase } from "@/features/local-application"
 import type { RuntimeId, SearchBrief } from "@/features/prospecting-runs"
+import { reconcileRunAfterTaskSettlement } from "@/features/run-execution"
 
 import {
   type RunControl,
@@ -380,7 +381,28 @@ function resume(database: Database.Database, runId: string, fromState: string, n
        updated_at = ?, version = version + 1 where run_id = ? and status = 'Blocked'`,
     )
     .run(now, now, runId)
-  const nextState = taskCount(database, runId, "Leased") > 0 ? "Running" : "Pending"
+  const leased = taskCount(database, runId, "Leased")
+  const pending = taskCount(database, runId, "Pending")
+  if (leased === 0 && pending === 0) {
+    const stage = database
+      .prepare("select current_stage from prospecting_runs where id = ?")
+      .pluck()
+      .get(runId)
+    database
+      .prepare(
+        `update prospecting_runs set requested_control = 'None', updated_at = ?,
+         version = version + 1 where id = ?`,
+      )
+      .run(now, runId)
+    reconcileRunAfterTaskSettlement(
+      database,
+      runId,
+      typeof stage === "string" ? stage : "RunPlanning",
+      new Date(now),
+    )
+    return
+  }
+  const nextState = leased > 0 ? "Running" : "Pending"
   database
     .prepare(
       `update prospecting_runs set requested_control = 'None', state = ?, completion_state = null,

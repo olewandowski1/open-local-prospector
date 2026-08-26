@@ -15,6 +15,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of being reclaimed forever.
 - Runtime timeouts, output bounds, and interruptions now terminate the complete per-task process
   tree instead of leaving provider descendants running.
+- Final-task settlement now gives cancellation precedence, completes taskless late pauses, and
+  repairs previously stranded taskless paused runs on resume.
 - Worker restarts now preserve the web process's clickable loopback URL in the combined development
   terminal.
 - Candidate detail loading now stops on bounded request failures, offers an explicit retry, and
