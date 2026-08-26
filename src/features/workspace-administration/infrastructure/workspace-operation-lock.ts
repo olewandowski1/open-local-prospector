@@ -1,4 +1,12 @@
-import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  closeSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs"
 import { dirname } from "node:path"
 
 import { closeSharedDatabases, type LocalApplicationConfig } from "@/features/local-application"
@@ -8,7 +16,9 @@ const lockPathFor = (databasePath: string) => `${databasePath}.maintenance.lock`
 // The worker takes this for every cycle, so the lock existing says nothing about maintenance.
 type LockHolder = "maintenance" | "worker"
 
-type LockFile = Readonly<{ pid?: unknown; holder?: unknown }>
+type LockFile = Readonly<{ pid?: unknown; holder?: unknown; ownerId?: unknown }>
+
+const LOCK_INITIALIZATION_GRACE_MS = 30_000
 
 export function isWorkspaceMaintenanceActive(databasePath: string): boolean {
   return readLock(lockPathFor(databasePath))?.holder === "maintenance"
@@ -42,21 +52,24 @@ export function tryAcquireWorkspaceOperationLease(
     descriptor = tryAcquire(lockPath)
   }
   if (descriptor === undefined) return undefined
+  const ownerId = crypto.randomUUID()
   let released = false
   const release = () => {
     if (released) return
     released = true
     closeSync(descriptor)
-    rmSync(lockPath, { force: true })
+    if (readLock(lockPath)?.ownerId === ownerId) rmSync(lockPath, { force: true })
   }
   try {
     writeFileSync(
       descriptor,
-      JSON.stringify({ pid: process.pid, holder, createdAt: new Date().toISOString() }),
+      JSON.stringify({ pid: process.pid, holder, ownerId, createdAt: new Date().toISOString() }),
     )
     return release
   } catch (error) {
-    release()
+    released = true
+    closeSync(descriptor)
+    rmSync(lockPath, { force: true })
     throw error
   }
 }
@@ -79,11 +92,17 @@ function readLock(path: string): LockFile | undefined {
 
 function isStale(path: string): boolean {
   const lock = readLock(path)
-  if (!lock || typeof lock.pid !== "number" || !Number.isInteger(lock.pid)) return true
+  if (!lock || typeof lock.pid !== "number" || !Number.isInteger(lock.pid)) {
+    try {
+      return Date.now() - statSync(path).mtimeMs >= LOCK_INITIALIZATION_GRACE_MS
+    } catch {
+      return false
+    }
+  }
   try {
     process.kill(lock.pid, 0)
     return false
-  } catch {
-    return true
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ESRCH"
   }
 }

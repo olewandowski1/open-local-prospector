@@ -110,6 +110,17 @@ describe("workspace store", () => {
     release?.()
   })
 
+  it("does not steal a newly created lock before its owner has initialized it", () => {
+    const fixture = workspaceFixture()
+    const lockPath = `${fixture.config.databasePath}.maintenance.lock`
+    writeFileSync(lockPath, "")
+
+    const release = tryAcquireWorkspaceOperationLease(fixture.config.databasePath, "maintenance")
+
+    expect(release).toBeUndefined()
+    expect(readFileSync(lockPath, "utf8")).toBe("")
+  })
+
   it("rejects link entries in restore archives", async () => {
     const fixture = workspaceFixture()
     const directory = mkdtempSync(join(tmpdir(), "prospector-unsafe-backup-"))
