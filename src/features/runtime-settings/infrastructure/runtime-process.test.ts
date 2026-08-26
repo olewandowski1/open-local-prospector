@@ -1,4 +1,6 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
+import { join } from "node:path"
 
 import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
@@ -65,7 +67,50 @@ describe("executeRuntimeProcess", () => {
     expect(result.exitCode).toBe(0)
     expect(result.stdout.trim()).toBe("done")
   }, 20_000)
+
+  it("terminates the complete task process tree when time expires", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "prospector-process-tree-"))
+    const pidPath = join(directory, "descendant.pid")
+    const parent = [
+      'const { spawn } = require("node:child_process")',
+      'const { writeFileSync } = require("node:fs")',
+      `const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })`,
+      `writeFileSync(${JSON.stringify(pidPath)}, String(child.pid))`,
+      "setInterval(() => {}, 1000)",
+    ].join(";")
+
+    try {
+      await expect(
+        Effect.runPromise(
+          executeRuntimeProcess({
+            executable: process.execPath,
+            arguments: ["-e", parent],
+            input: "",
+            cwd: directory,
+            timeoutMilliseconds: 500,
+          }),
+        ),
+      ).rejects.toThrow("Runtime timed out.")
+      expect(existsSync(pidPath)).toBe(true)
+      const descendantPid = Number(readFileSync(pidPath, "utf8"))
+      await expectProcessToExit(descendantPid)
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  }, 20_000)
 })
+
+async function expectProcessToExit(pid: number): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      process.kill(pid, 0)
+    } catch {
+      return
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  throw new Error("Runtime descendant did not exit.")
+}
 
 describe("describeUnreadableOutput", () => {
   it("tells silence apart from prose and from a cut-off answer", () => {

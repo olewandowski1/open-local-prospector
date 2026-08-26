@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process"
+import { type ChildProcess, spawn, spawnSync } from "node:child_process"
 
 import { Data, Effect } from "effect"
 
@@ -51,19 +51,22 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     }
     const child = spawn(request.executable, [...request.arguments], {
       cwd: request.cwd,
+      // A dedicated process group lets interruption terminate task descendants on POSIX. Windows
+      // uses taskkill's tree mode instead because negative process-group signals are unavailable.
+      detached: process.platform !== "win32",
       env: safeRuntimeEnvironment({ ...process.env, ...request.environment }),
       shell: false,
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
     })
     const timer = setTimeout(() => {
-      child.kill()
+      terminateRuntimeProcessTree(child)
       finish(Effect.fail(runtimeError("Transient", "runtime-timeout", "Runtime timed out.")))
     }, timeout)
     child.stdout.on("data", (chunk: Buffer) => {
       outputBytes += chunk.byteLength
       if (outputBytes > outputLimit) {
-        child.kill()
+        terminateRuntimeProcessTree(child)
         finish(
           Effect.fail(runtimeError("Transient", "output-limit", "Runtime output is too large.")),
         )
@@ -97,9 +100,33 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     }
     child.stdin.end(request.input)
     return Effect.sync(() => {
-      if (!settled) child.kill()
+      if (!settled) terminateRuntimeProcessTree(child)
     })
   })
+}
+
+function terminateRuntimeProcessTree(child: ChildProcess): void {
+  const pid = child.pid
+  if (pid === undefined) {
+    child.kill("SIGKILL")
+    return
+  }
+  if (process.platform === "win32") {
+    const result = spawnSync("taskkill.exe", ["/pid", String(pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+      timeout: 5_000,
+    })
+    if (result.status === 0) return
+  } else {
+    try {
+      process.kill(-pid, "SIGKILL")
+      return
+    } catch {
+      // The process may have exited between the bound firing and group termination.
+    }
+  }
+  child.kill("SIGKILL")
 }
 
 export function classifyRuntimeFailure(stderr: string, exitCode: number | null) {

@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with every tool denied and external plugins disabled.
 - Tasks abandoned by repeated worker exits now exhaust their attempt budget and settle visibly
   instead of being reclaimed forever.
+- Runtime timeouts, output bounds, and interruptions now terminate the complete per-task process
+  tree instead of leaving provider descendants running.
 - Worker restarts now preserve the web process's clickable loopback URL in the combined development
   terminal.
 - Candidate detail loading now stops on bounded request failures, offers an explicit retry, and
