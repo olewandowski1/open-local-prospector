@@ -155,23 +155,9 @@ function upsertCanonical(
   const existing = database
     .prepare("select id from canonical_businesses where identity_fingerprint = ?")
     .get(fingerprint) as { id: string } | undefined
+  if (existing) return existing.id
   const locality = searchBrief.searchArea.displayName.split(",")[0]?.trim() ?? searchBrief.location
   const normalizedName = normalizeCanonicalName(evaluation.canonicalName)
-  // A rediscovered business can key on a different signal, so name and locality also match.
-  const established =
-    existing ??
-    (normalizedName.length >= 3
-      ? (database
-          .prepare(
-            `select id from canonical_businesses
-             where normalized_name = ? and country_code = ? and lower(locality) = lower(?)
-             order by created_at, id limit 1`,
-          )
-          .get(normalizedName, searchBrief.searchArea.countryCode, locality) as
-          | { id: string }
-          | undefined)
-      : undefined)
-  if (established) return established.id
   const id = crypto.randomUUID()
   // The first corroborated name is already shown against every candidate, so a later listing never renames it.
   database

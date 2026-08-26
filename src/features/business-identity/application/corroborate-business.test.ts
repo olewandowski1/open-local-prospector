@@ -48,7 +48,7 @@ describe("business identity workflow", () => {
     expect(readScalar(database.path, "select count(*) from run_businesses")).toBe(2)
   })
 
-  it("keeps one canonical business when a later run reports a different telephone", async () => {
+  it("keeps same-name businesses distinct when their identity fingerprints differ", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const execute = makeIdentityTaskExecutor(makeSqliteIdentityRepository(database.path))
@@ -60,7 +60,10 @@ describe("business identity workflow", () => {
       execute(await seedIdentityTask(database.path, "phone-two", business("+48222333444"))),
     )
 
-    expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(1)
+    expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(2)
+    expect(
+      readScalar(database.path, "select count(distinct canonical_business_id) from run_businesses"),
+    ).toBe(2)
   })
 
   it("excludes a centrally controlled outlet without scheduling inspection", async () => {
