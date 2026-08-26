@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v2" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v3" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -104,6 +104,21 @@ const localBusiness = (
   ...overrides,
 })
 
+const precisionCases = [
+  ["Żuraw Studio", "zuraw-studio"],
+  ["Pracownia Łąka", "pracownia-laka"],
+  ["Serwis Północ", "serwis-polnoc"],
+  ["Kwiat I Kamień", "kwiat-kamien"],
+  ["Warsztat Nad Rzeką", "warsztat-rzeka"],
+  ["Studio Dobry Kąt", "studio-kat"],
+  ["Atelier Słońce", "atelier-slonce"],
+  ["Zakład Zielona Brama", "zielona-brama"],
+] as const
+
+const precisionReport = precisionCases
+  .flatMap(([name, slug]) => [name, source(slug), `Generic email: ${email(slug)}`, ""])
+  .join("\n")
+
 export const discoveryReplayFixtures: readonly DiscoveryReplayFixture[] = [
   {
     id: "structured-attribution-and-verification",
@@ -177,6 +192,22 @@ export const discoveryReplayFixtures: readonly DiscoveryReplayFixture[] = [
       "prefix-not-in-numbering-plan",
       "not-in-report",
     ],
+  },
+  {
+    id: "polish-local-identity-precision",
+    entryPoint: "DiscoveryStructure",
+    report: precisionReport,
+    structuredOutput: {
+      schemaVersion: DISCOVERY_STRUCTURE_SCHEMA_VERSION,
+      businesses: precisionCases.map(([name, slug]) => localBusiness(name, slug)),
+    },
+    expectedIdentities: precisionCases.map(([name]) => ({
+      name,
+      status: "Eligible" as const,
+      associationCorrect: true,
+    })),
+    expectedDistinctCanonicalNames: precisionCases.map(([name]) => name),
+    expectedRejectionReasons: [],
   },
 ]
 

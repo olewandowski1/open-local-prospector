@@ -18,6 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Show captured website screenshots and readable deterministic measurements in candidate details
   without exposing local artifact paths, and warn that workspace backups are unencrypted and can
   contain personal data.
+- Run the verification gate on Linux and Windows in CI, include synthetic application and isolated
+  workspace browser suites on Linux, and require opt-in live runs to finish successfully rather
+  than accepting cancellation or infrastructure failure.
 - OpenCode discovery now receives only public search tools, while structuring and assessment run
   with every tool denied and external plugins disabled.
 - Tasks abandoned by repeated worker exits now exhaust their attempt budget and settle visibly

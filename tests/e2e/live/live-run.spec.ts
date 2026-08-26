@@ -61,9 +61,6 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
       "Search Exhausted",
       "Completed with Warnings",
       "Completed",
-      "Cancelled with Partial Results",
-      "Infrastructure Failed",
-      "Runtime Unavailable",
     ]).toContain(state)
   }).toPass({ timeout: 25 * 60_000, intervals: [15_000] })
 

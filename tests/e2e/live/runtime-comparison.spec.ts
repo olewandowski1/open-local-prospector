@@ -50,9 +50,6 @@ for (const runtime of runtimes) {
           "Search Exhausted",
           "Completed with Warnings",
           "Completed",
-          "Cancelled with Partial Results",
-          "Infrastructure Failed",
-          "Runtime Unavailable",
         ]).toContain(state)
       }).toPass({
         timeout: runtime === "OpenCode" ? 50 * 60_000 : 25 * 60_000,

@@ -40,6 +40,7 @@ describe(MVP_EVALUATION_VERSION, () => {
     expect(distinctFingerprints.every(Boolean)).toBe(true)
     expect(new Set(distinctFingerprints).size).toBe(distinctFingerprints.length)
     expect(evaluation.metrics.acceptedIdentityCount).toBeGreaterThan(0)
+    expect(evaluation.metrics.acceptedIdentityCount).toBeGreaterThanOrEqual(10)
     expect(evaluation.metrics.identityPrecision).toBeGreaterThanOrEqual(0.9)
   })
 
@@ -68,8 +69,8 @@ describe(MVP_EVALUATION_VERSION, () => {
     expect(first).toEqual(second)
     expect(first.versions).toEqual(qualityFixtureVersions)
     expect(first.metrics).toEqual({
-      acceptedIdentityCount: 4,
-      correctIdentityCount: 4,
+      acceptedIdentityCount: 12,
+      correctIdentityCount: 12,
       identityPrecision: 1,
       unsupportedClaimRejectionCount: 2,
       opportunityClassCoverage: opportunityClasses,

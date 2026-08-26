@@ -15,9 +15,13 @@ concurrency:
 
 jobs:
   check:
-    name: pnpm check
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v6
@@ -35,11 +39,23 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ms-playwright
+          path: |
+            ~/.cache/ms-playwright
+            ~/AppData/Local/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - run: pnpm exec playwright install --with-deps chromium
+      - if: runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - if: runner.os == 'Windows'
+        run: pnpm exec playwright install chromium
 
       - run: pnpm check
 
       - run: pnpm worker:check
+
+      - if: runner.os == 'Linux'
+        run: pnpm test:e2e
+
+      - if: runner.os == 'Linux'
+        run: pnpm test:e2e:workspace
