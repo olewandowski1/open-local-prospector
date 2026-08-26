@@ -83,17 +83,54 @@ function recover(database: Database.Database, now: Date): number {
       .run(now.getTime())
     const abandoned = database
       .prepare(
-        `select id, run_id from run_tasks
-         where status = 'Leased' and lease_expires_at is not null and lease_expires_at <= ?`,
+        `select id, run_id, stage, status, attempt_count, max_attempts from run_tasks
+         where (status = 'Leased' and lease_expires_at is not null and lease_expires_at <= ?)
+         or (status = 'Pending' and attempt_count >= max_attempts)`,
       )
-      .all(now.getTime()) as readonly { id: string; run_id: string }[]
-    const update = database.prepare(
+      .all(now.getTime()) as readonly Pick<
+      TaskRow,
+      "id" | "run_id" | "stage" | "status" | "attempt_count" | "max_attempts"
+    >[]
+    const recoverLease = database.prepare(
       `update run_tasks set status = 'Pending', lease_owner = null, lease_expires_at = null,
        available_at = ?, updated_at = ?, version = version + 1 where id = ? and status = 'Leased'`,
     )
+    const exhaustTask = database.prepare(
+      `update run_tasks set status = 'FailedPermanent', failure = ?, lease_owner = null,
+       lease_expires_at = null, updated_at = ?, version = version + 1
+       where id = ? and status = ?`,
+    )
+    const exhaustedRuns = new Map<string, string>()
     for (const task of abandoned) {
-      update.run(now.getTime(), now.getTime(), task.id)
-      transition(database, task.run_id, task.id, "Leased", "Pending", "LeaseRecovered", {}, now)
+      if (task.attempt_count >= task.max_attempts) {
+        const failure: StructuredTaskFailure = {
+          classification: "Infrastructure",
+          code: "abandoned-attempts-exhausted",
+          message: "Task stopped before completion on every allowed attempt.",
+          occurredAt: now.toISOString(),
+        }
+        const update = exhaustTask.run(JSON.stringify(failure), now.getTime(), task.id, task.status)
+        if (update.changes !== 1) continue
+        transition(
+          database,
+          task.run_id,
+          task.id,
+          task.status,
+          "FailedPermanent",
+          "TaskFailed",
+          failure,
+          now,
+        )
+        exhaustedRuns.set(task.run_id, task.stage)
+        continue
+      }
+      const update = recoverLease.run(now.getTime(), now.getTime(), task.id)
+      if (update.changes === 1) {
+        transition(database, task.run_id, task.id, "Leased", "Pending", "LeaseRecovered", {}, now)
+      }
+    }
+    for (const [runId, stage] of exhaustedRuns) {
+      updateRunAfterSettledTask(database, runId, stage, now)
     }
     const incorrectlySettled = database
       .prepare(
@@ -123,7 +160,8 @@ function claim(
     const candidate = database
       .prepare(
         `select t.* from run_tasks t join prospecting_runs r on r.id = t.run_id
-         where t.status = 'Pending' and t.available_at <= ? and r.requested_control = 'None'
+         where t.status = 'Pending' and t.attempt_count < t.max_attempts and t.available_at <= ?
+         and r.requested_control = 'None'
          and r.state not in ('Completed', 'Cancelled') order by t.created_at, t.id limit 1`,
       )
       .get(now.getTime()) as TaskRow | undefined

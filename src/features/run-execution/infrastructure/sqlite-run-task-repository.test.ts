@@ -127,6 +127,51 @@ describe("SQLite durable task repository", () => {
     expect(completedPlanning?.checkpoint).toContain('"planned":true')
   })
 
+  it("settles a task that is abandoned on every allowed attempt", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "abandoned-retry-run")
+    const repository = makeSqliteRunTaskRepository(database.path)
+    const startedAt = new Date(Date.now() + 1_000)
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const claimedAt = new Date(startedAt.getTime() + attempt * 2_000)
+      const task = requiredTask(
+        await Effect.runPromise(repository.claimNext(`worker-${attempt}`, claimedAt, 1_000)),
+      )
+      expect(task.attemptCount).toBe(attempt + 1)
+      expect(
+        await Effect.runPromise(repository.recoverAbandoned(new Date(claimedAt.getTime() + 1_001))),
+      ).toBe(1)
+    }
+
+    expect(
+      Option.isNone(
+        await Effect.runPromise(
+          repository.claimNext("worker-after-limit", new Date(startedAt.getTime() + 7_000), 1_000),
+        ),
+      ),
+    ).toBe(true)
+    expect(
+      readRow(
+        database.path,
+        "select status, attempt_count, failure from run_tasks where run_id = ?",
+        run.id,
+      ),
+    ).toMatchObject({
+      status: "FailedPermanent",
+      attempt_count: 3,
+      failure: expect.stringContaining('"code":"abandoned-attempts-exhausted"'),
+    })
+    expect(
+      readRow(
+        database.path,
+        "select state, completion_state from prospecting_runs where id = ?",
+        run.id,
+      ),
+    ).toEqual({ state: "Completed", completion_state: "Infrastructure Failed" })
+  })
+
   it("retries transient work at most twice and leaves unrelated work visible", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
