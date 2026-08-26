@@ -21,6 +21,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Run the verification gate on Linux and Windows in CI, include synthetic application and isolated
   workspace browser suites on Linux, and require opt-in live runs to finish successfully rather
   than accepting cancellation or infrastructure failure.
+- Validate exact backup metadata and non-secret configuration, bound archive entry counts and
+  metadata sizes, preserve unexpected setup error details, and replace the vulnerable development
+  esbuild transitive dependency with a patched version.
 - OpenCode discovery now receives only public search tools, while structuring and assessment run
   with every tool denied and external plugins disabled.
 - Tasks abandoned by repeated worker exits now exhaust their attempt budget and settle visibly

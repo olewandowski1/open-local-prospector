@@ -18,6 +18,7 @@ import { afterEach, describe, expect, it } from "vitest"
 import type { LocalApplicationConfig } from "@/features/local-application"
 import { WorkspaceBusyError } from "@/features/workspace-administration/domain/workspace-errors"
 import { PROSPECTING_DATA_TABLES } from "@/features/workspace-administration/domain/workspace-schema"
+import { validateBackupMetadata } from "@/features/workspace-administration/infrastructure/workspace-backup-store"
 import {
   isWorkspaceMaintenanceActive,
   tryAcquireWorkspaceOperationLease,
@@ -144,6 +145,31 @@ describe("workspace store", () => {
     await expect(restoreWorkspaceBackup(fixture.config, archive)).rejects.toThrow(
       "unsafe archive entry",
     )
+  })
+
+  it("requires complete backup metadata containing only non-secret configuration", () => {
+    const manifest = {
+      format: "open-local-prospector-workspace",
+      formatVersion: 1,
+      createdAt: "2026-08-26T10:00:00.000Z",
+      databaseFile: "database.sqlite",
+      artifactsDirectory: "artifacts",
+      configurationFile: "configuration.json",
+    }
+
+    expect(() =>
+      validateBackupMetadata(manifest, {
+        PROSPECTOR_DATABASE_PATH: "workspace.sqlite",
+        PROSPECTOR_ARTIFACTS_PATH: "artifacts",
+        PROSPECTOR_BUSINESS_CONCURRENCY: "2",
+      }),
+    ).not.toThrow()
+    expect(() =>
+      validateBackupMetadata({ ...manifest, databaseFile: "outside.sqlite" }, {}),
+    ).toThrow("manifest is incomplete or invalid")
+    expect(() =>
+      validateBackupMetadata(manifest, { PROVIDER_API_KEY: "must-not-be-restored" }),
+    ).toThrow("configuration contains an unsupported value")
   })
 
   it("cleans archived and orphaned artifacts while preserving live artifacts", () => {

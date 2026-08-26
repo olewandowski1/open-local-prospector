@@ -33,6 +33,13 @@ const BACKUP_FORMAT = "open-local-prospector-workspace"
 const BACKUP_FORMAT_VERSION = 1
 const MAX_BACKUP_BYTES = 5 * 1024 ** 3
 const MAX_EXPANDED_BACKUP_BYTES = 20 * 1024 ** 3
+const MAX_ARCHIVE_ENTRIES = 100_000
+const MAX_METADATA_BYTES = 64 * 1024
+const SAFE_CONFIGURATION_KEYS = new Set([
+  "PROSPECTOR_BUSINESS_CONCURRENCY",
+  "PROSPECTOR_DATABASE_PATH",
+  "PROSPECTOR_ARTIFACTS_PATH",
+])
 
 export type BackupArtifact = Readonly<{
   path: string
@@ -204,16 +211,11 @@ function assertArtifactTreeContainsOnlyFiles(path: string): void {
 }
 
 function readSafeConfiguration(config: LocalApplicationConfig): Readonly<Record<string, string>> {
-  const safeKeys = [
-    "PROSPECTOR_BUSINESS_CONCURRENCY",
-    "PROSPECTOR_DATABASE_PATH",
-    "PROSPECTOR_ARTIFACTS_PATH",
-  ] as const
   const values: Record<string, string> = {
     PROSPECTOR_DATABASE_PATH: config.databasePath,
     PROSPECTOR_ARTIFACTS_PATH: config.artifactsPath,
   }
-  for (const key of safeKeys) {
+  for (const key of SAFE_CONFIGURATION_KEYS) {
     const value = process.env[key]
     if (value) values[key] = value
   }
@@ -234,6 +236,7 @@ function persistBackup(source: string, destination: string): string {
 
 async function extractBackup(archive: string, destination: string): Promise<void> {
   let expandedBytes = 0
+  let entries = 0
   let unsafeEntry = false
   try {
     await tar.extract({
@@ -251,13 +254,20 @@ async function extractBackup(archive: string, destination: string): Promise<void
             "workspace/artifacts",
             "workspace/artifacts/",
           ].includes(normalized) || normalized.startsWith("workspace/artifacts/")
-        expandedBytes += "size" in entry ? entry.size : 0
+        const size = "size" in entry ? entry.size : 0
+        entries += 1
+        expandedBytes += size
+        const metadataTooLarge =
+          ["workspace/manifest.json", "workspace/configuration.json"].includes(normalized) &&
+          size > MAX_METADATA_BYTES
         const safe = !(
           !allowed ||
           normalized.includes("../") ||
           normalized.startsWith("/") ||
           ("type" in entry && !["File", "Directory"].includes(entry.type)) ||
-          expandedBytes > MAX_EXPANDED_BACKUP_BYTES
+          expandedBytes > MAX_EXPANDED_BACKUP_BYTES ||
+          entries > MAX_ARCHIVE_ENTRIES ||
+          metadataTooLarge
         )
         if (!safe) unsafeEntry = true
         return safe
@@ -273,23 +283,51 @@ async function extractBackup(archive: string, destination: string): Promise<void
 }
 
 function validateManifest(workspace: string): void {
-  let manifest: Partial<BackupManifest>
+  let manifest: unknown
+  let configuration: unknown
   try {
-    manifest = JSON.parse(
-      readFileSync(join(workspace, "manifest.json"), "utf8"),
-    ) as Partial<BackupManifest>
+    manifest = JSON.parse(readFileSync(join(workspace, "manifest.json"), "utf8"))
+    configuration = JSON.parse(readFileSync(join(workspace, "configuration.json"), "utf8"))
   } catch {
-    throw new BackupValidationError("The backup manifest is missing or invalid.")
+    throw new BackupValidationError("The backup metadata is missing or invalid.")
   }
-  if (manifest.format !== BACKUP_FORMAT || manifest.formatVersion !== BACKUP_FORMAT_VERSION) {
-    throw new BackupValidationError("This backup format is not supported by this version.")
-  }
+  validateBackupMetadata(manifest, configuration)
   if (
     !existsSync(join(workspace, "database.sqlite")) ||
     !existsSync(join(workspace, "artifacts"))
   ) {
     throw new BackupValidationError("The backup does not contain the database and artifacts.")
   }
+}
+
+export function validateBackupMetadata(manifest: unknown, configuration: unknown): void {
+  if (!isRecord(manifest)) {
+    throw new BackupValidationError("The backup manifest is invalid.")
+  }
+  if (manifest.format !== BACKUP_FORMAT || manifest.formatVersion !== BACKUP_FORMAT_VERSION) {
+    throw new BackupValidationError("This backup format is not supported by this version.")
+  }
+  if (
+    manifest.databaseFile !== "database.sqlite" ||
+    manifest.artifactsDirectory !== "artifacts" ||
+    manifest.configurationFile !== "configuration.json" ||
+    typeof manifest.createdAt !== "string" ||
+    !Number.isFinite(Date.parse(manifest.createdAt))
+  ) {
+    throw new BackupValidationError("The backup manifest is incomplete or invalid.")
+  }
+  if (!isRecord(configuration)) {
+    throw new BackupValidationError("The backup configuration is invalid.")
+  }
+  for (const [key, value] of Object.entries(configuration)) {
+    if (!SAFE_CONFIGURATION_KEYS.has(key) || typeof value !== "string" || value.length > 10_000) {
+      throw new BackupValidationError("The backup configuration contains an unsupported value.")
+    }
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function validateAndMigrateDatabase(restoredPath: string, livePath: string): void {

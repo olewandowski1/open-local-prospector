@@ -1,8 +1,5 @@
 import { loadLocalApplicationConfig } from "@/features/local-application/configuration"
-import {
-  LocalSetupError,
-  prepareLocalApplication,
-} from "@/features/local-application/setup/prepare-local-application"
+import { prepareLocalApplication } from "@/features/local-application/setup/prepare-local-application"
 
 try {
   const result = prepareLocalApplication(loadLocalApplicationConfig())
@@ -17,8 +14,7 @@ try {
     ].join("\n")}\n`,
   )
 } catch (error) {
-  const message =
-    error instanceof LocalSetupError ? error.message : "Local setup failed unexpectedly."
+  const message = error instanceof Error ? error.message : String(error)
   process.stderr.write(`${message}\n`)
   process.exitCode = 1
 }
