@@ -28,6 +28,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Capture website evidence instead of blocking every HTTPS inspection: name Basic in the proxy
+  tunnel challenge that Chromium requires, stop a tunnel reset from crashing the worker, and
+  define the transpiler name helper inside the inspected page. Inspection Blocks now carry the
+  underlying navigation failure rather than one fixed sentence.
 - Invoke each provider's actual fixed update command and terminate the complete updater process
   tree when a readiness or update command exceeds its bounds.
 - Enforce the loopback Host boundary before dynamic pages, React Server Component requests, Server

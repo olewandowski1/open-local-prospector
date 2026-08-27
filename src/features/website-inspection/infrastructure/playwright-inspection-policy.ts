@@ -28,6 +28,10 @@ export async function applyInspectionPolicy({
   fixtureResponses?: FixtureResponses
   blocks: InspectionBlock[]
 }): Promise<{ consoleFailures: string[]; networkFailures: string[] }> {
+  // The transpiler wraps evaluated functions in a __name helper that does not exist in the page.
+  await context.addInitScript({
+    content: "globalThis.__name = globalThis.__name || ((value) => value)",
+  })
   const consoleFailures: string[] = []
   const networkFailures: string[] = []
   await context.routeWebSocket(/.*/u, async (socket) => {

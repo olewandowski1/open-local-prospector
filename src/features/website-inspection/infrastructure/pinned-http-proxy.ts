@@ -13,6 +13,10 @@ const CONNECTION_TIMEOUT_MS = 20_000
 const MAX_REQUESTS = 500
 const MAX_RESPONSE_BYTES = 25 * 1024 * 1024
 
+// Chromium rejects a tunnel challenge that names no scheme as ERR_PROXY_AUTH_UNSUPPORTED.
+const CONNECT_AUTHENTICATION_CHALLENGE =
+  'HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm="Open Prospector"\r\n\r\n'
+
 export type PinnedHttpProxy = Readonly<{
   playwrightProxy: Readonly<{ server: string; username: string; password: string }>
   close: () => Promise<void>
@@ -63,7 +67,7 @@ export async function startPinnedHttpProxy(resolveHost: ResolveHost): Promise<Pi
 
   server.on("connect", async (request, browserSocket, head) => {
     if (!authorized(request.headers["proxy-authorization"], authorization)) {
-      browserSocket.end("HTTP/1.1 407 Proxy Authentication Required\r\n\r\n")
+      browserSocket.end(CONNECT_AUTHENTICATION_CHALLENGE)
       return
     }
     if (++requests > MAX_REQUESTS) {
@@ -82,6 +86,7 @@ export async function startPinnedHttpProxy(resolveHost: ResolveHost): Promise<Pi
         browserSocket.pipe(upstreamSocket).pipe(browserSocket)
       })
       upstreamSocket.once("error", () => browserSocket.destroy())
+      browserSocket.once("error", () => upstreamSocket.destroy())
       upstreamSocket.once("close", () => sockets.delete(upstreamSocket))
       browserSocket.once("close", () => sockets.delete(browserSocket))
     } catch {

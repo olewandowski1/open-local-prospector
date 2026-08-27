@@ -56,7 +56,7 @@ export function makePlaywrightWebsiteInspector(
                 classification: "Infrastructure",
                 code: "browser-inspection-failed",
                 // Say what actually went wrong; a reader cannot act on "could not be completed".
-                message: `The isolated browser inspection failed: ${launchFailureDetail(error)}`,
+                message: `The isolated browser inspection failed: ${failureDetail(error)}`,
               }),
       }),
   }
@@ -84,7 +84,7 @@ async function inspectWithPlaywright(
       classification: installed ? "Transient" : "Infrastructure",
       code: installed ? "chromium-launch-failed" : "chromium-unavailable",
       message: installed
-        ? `Chromium did not start: ${launchFailureDetail(error)}`
+        ? `Chromium did not start: ${failureDetail(error)}`
         : 'The dedicated Playwright Chromium executable is unavailable. Run "pnpm run setup".',
     })
   }
@@ -333,7 +333,7 @@ async function capturePage(
           ? "network-policy-block"
           : "navigation-failed",
       url: safeLogUrl(requestedUrl),
-      message: "The page could not be rendered within the bounded inspection policy.",
+      message: `The page could not be rendered within the bounded inspection policy: ${failureDetail(error)}`,
       recordedAt: new Date(),
     })
     return undefined
@@ -361,7 +361,7 @@ function blockedResult(startedAt: Date, block: InspectionBlock): WebsiteInspecti
 }
 
 // Bounded to one line so a stack trace cannot fill the Technical Run Log.
-function launchFailureDetail(error: unknown): string {
+function failureDetail(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
   return message.split(/\r?\n/u)[0]?.trim().slice(0, 200) || "no detail reported"
 }
