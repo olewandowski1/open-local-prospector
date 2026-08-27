@@ -13,7 +13,6 @@ import {
   getAllRuntimeReadiness,
   getRuntimeReadiness,
   isRuntimeId,
-  type RuntimeId,
 } from "@/features/runtime-settings/application/runtime-readiness"
 import { runtimePreferenceLive } from "@/features/runtime-settings/infrastructure/runtime-preference-live"
 import { RuntimeProbeLive } from "@/features/runtime-settings/infrastructure/runtime-probe-live"
@@ -42,10 +41,7 @@ async function RuntimeReadinessCards() {
   const [runtimes, selected] = await Promise.all([
     Effect.runPromise(getAllRuntimeReadiness.pipe(Effect.provide(RuntimeProbeLive))),
     Effect.runPromise(
-      getSelectedRuntime.pipe(
-        Effect.catchAll(() => Effect.succeed(Option.none<RuntimeId>())),
-        Effect.provide(runtimePreferenceLive(config.databasePath)),
-      ),
+      getSelectedRuntime.pipe(Effect.provide(runtimePreferenceLive(config.databasePath))),
     ),
   ])
 

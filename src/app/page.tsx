@@ -15,7 +15,6 @@ import { listPersistedRuns } from "@/features/run-monitoring/server/run-services
 import { isRuntimeExecutionConfiguration } from "@/features/runtime-settings/application/runtime-execution-configuration"
 import {
   getSelectedRuntimePreference,
-  type SelectedRuntimePreference,
   setSelectedRuntimePreference,
 } from "@/features/runtime-settings/application/runtime-preference"
 import {
@@ -47,10 +46,7 @@ async function SteeringPanel() {
   const [runtimes, preference] = await Promise.all([
     Effect.runPromise(getAllRuntimeReadiness.pipe(Effect.provide(RuntimeProbeLive))),
     Effect.runPromise(
-      getSelectedRuntimePreference.pipe(
-        Effect.catchAll(() => Effect.succeed(Option.none<SelectedRuntimePreference>())),
-        Effect.provide(runtimePreferenceLive(config.databasePath)),
-      ),
+      getSelectedRuntimePreference.pipe(Effect.provide(runtimePreferenceLive(config.databasePath))),
     ),
   ])
   const selected = Option.getOrUndefined(preference)

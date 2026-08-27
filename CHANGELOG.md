@@ -9,10 +9,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Key eligible businesses without a telephone or dedicated website on a verified contact route,
+  preventing same-name neighbours from sharing candidate and suppression state.
 - Disclose when the run list, review queue, or recent-candidate overview holds back rows instead of
   presenting bounded results as complete, and keep overview metrics complete beyond those bounds.
 - Surface candidate overview database failures instead of replacing them with misleading empty
-  metrics and lists.
+  metrics and lists, and preserve that behavior for saved Search Brief and runtime preferences.
 - Keep same-name businesses in one locality separate when their corroborated identity fingerprints
   differ, preventing evidence and review state from being attached to the wrong business.
 - Preserve newly created workspace-operation locks while their owner initializes them, and only let

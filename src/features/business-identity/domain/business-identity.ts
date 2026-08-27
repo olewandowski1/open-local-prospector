@@ -130,7 +130,7 @@ export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluati
   return { ...base, status: "Eligible", decisionScope: "Local", canonicalFingerprint }
 }
 
-// Telephone, then website, then name: each directory titles the same business differently.
+// Stable public routes outrank names: same-name neighbours must never share candidate state.
 function fingerprint(
   canonicalName: string,
   locality: string,
@@ -143,7 +143,28 @@ function fingerprint(
   if (telephone) return `tel:${normalizeWords(telephone)}|${country}`
   const host = websiteUrl ? websiteHost(websiteUrl) : undefined
   if (host) return `web:${host}|${country}`
+  const contact = contacts
+    .filter((route) => route.type !== "BusinessTelephone")
+    .map((route) => ({ type: route.type, value: normalizeContactValue(route) }))
+    .filter((route) => route.value.length > 0)
+    .sort((left, right) =>
+      `${left.type}:${left.value}`.localeCompare(`${right.type}:${right.value}`, "en"),
+    )[0]
+  if (contact) return `contact:${contact.type}:${contact.value}|${country}`
   return `name:${normalizeWords(canonicalName)}|${locality}|${country}`
+}
+
+function normalizeContactValue(contact: ContactRoute): string {
+  if (contact.type === "GenericEmail") return contact.value.trim().toLocaleLowerCase("en")
+  try {
+    const url = new URL(contact.value)
+    url.hash = ""
+    url.hostname = url.hostname.toLowerCase().replace(/^www\./u, "")
+    if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/u, "")
+    return url.toString()
+  } catch {
+    return contact.value.trim().toLocaleLowerCase("en")
+  }
 }
 
 // `www.` is routing, not identity, so both spellings key the same business.

@@ -91,6 +91,34 @@ describe("canonical fingerprint", () => {
     const byName = evaluate(business({ contacts: [] }))
     expect(byName.canonicalFingerprint).toBe("name:gabinet usmiech|krakow|PL")
   })
+
+  it("keeps same-name businesses separate when their non-telephone contacts differ", () => {
+    const first = evaluate(
+      business({
+        contacts: [
+          {
+            type: "GenericEmail",
+            value: "first@example.test",
+            sourceUrl: "https://directory.example/first",
+          },
+        ],
+      }),
+    )
+    const second = evaluate(
+      business({
+        contacts: [
+          {
+            type: "GenericEmail",
+            value: "second@example.test",
+            sourceUrl: "https://directory.example/second",
+          },
+        ],
+      }),
+    )
+
+    expect(first.canonicalFingerprint).not.toBe(second.canonicalFingerprint)
+    expect(first.canonicalFingerprint).toBe("contact:GenericEmail:first@example.test|PL")
+  })
 })
 
 function evaluate(value: StructuredBusiness) {
