@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Add `pnpm inspect:check`, which captures a fixture site through the real inspection pipeline
+  under the worker loader so a transpiler helper leaking into the page fails the build.
+
 ### Changed
 
 - Limit fully blocked website inspections to severity 4 of 5 and confidence 0.6, retain them as
@@ -28,6 +33,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Inspect a one-page website as one page rather than recording a navigation failure: a contact
+  fragment addresses the page already captured, so it is no longer followed as a second page.
 - Capture website evidence instead of blocking every HTTPS inspection: name Basic in the proxy
   tunnel challenge that Chromium requires, stop a tunnel reset from crashing the worker, and
   define the transpiler name helper inside the inspected page. Inspection Blocks now carry the

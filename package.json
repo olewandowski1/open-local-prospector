@@ -26,6 +26,7 @@
     "test:e2e:workspace": "playwright test --config tests/e2e/config/workspace.config.ts",
     "docs:screenshots": "playwright test --config tests/e2e/config/docs.config.ts",
     "worker:check": "node --env-file-if-exists=.env.local --import tsx src/worker/main.ts --check",
+    "inspect:check": "node --env-file-if-exists=.env.local --import tsx src/worker/inspection-check.ts",
     "db:generate": "drizzle-kit generate",
     "check": "pnpm check:biome && pnpm check:architecture && pnpm check:comments && pnpm typecheck && pnpm test && pnpm build"
   },

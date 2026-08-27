@@ -71,6 +71,7 @@ Open <http://127.0.0.1:4310>. Run commands from the repository root.
 | `pnpm dev` | Run the development server and watching worker |
 | `pnpm check` | Run the repository verification gate |
 | `pnpm worker:check` | Verify the worker composition without processing tasks |
+| `pnpm inspect:check` | Verify website inspection captures pages under the worker loader |
 | `pnpm test:e2e` | Run synthetic desktop and mobile browser flows |
 | `pnpm test:e2e:workspace` | Run destructive workspace tests in isolation |
 | `pnpm docs:screenshots` | Rebuild the dark README screenshots |
@@ -93,6 +94,7 @@ workspace. Start with the [Documentation Index](docs/README.md), [Product](docs/
 ```powershell
 pnpm check
 pnpm worker:check
+pnpm inspect:check
 pnpm test:e2e
 pnpm test:e2e:workspace
 ```

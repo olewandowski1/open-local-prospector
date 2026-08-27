@@ -23,7 +23,7 @@ export function selectRelevantPage(
     .filter((link) => {
       try {
         assertApprovedNavigation(initialUrl, link.url)
-        return true
+        return !sameDocument(initialUrl, link.url)
       } catch {
         return false
       }
@@ -40,6 +40,19 @@ export function selectRelevantPage(
     }))
     .filter((candidate) => candidate.score > 0)
     .sort((left, right) => right.score - left.score)[0]?.url
+}
+
+// A fragment link addresses the page already captured, and navigating to it reports no response.
+function sameDocument(initialUrl: string, candidateUrl: string): boolean {
+  try {
+    const initial = new URL(initialUrl)
+    const candidate = new URL(candidateUrl)
+    initial.hash = ""
+    candidate.hash = ""
+    return initial.href === candidate.href
+  } catch {
+    return false
+  }
 }
 
 export function detectInterstitial(text: string): string | undefined {

@@ -58,6 +58,26 @@ describe("Playwright website inspector", () => {
     expect(result.blocks).toEqual([])
   }, 30_000)
 
+  it("treats a one-page site with a contact fragment as complete rather than blocked", async () => {
+    const inspector = makePlaywrightWebsiteInspector({
+      resolveHost: publicResolver,
+      fixtureResponses: {
+        "https://public.test/": {
+          body: '<!doctype html><html lang="pl"><head><title>Serwis</title></head><body><h1>Serwis</h1><a href="#kontakt">Kontakt</a><section id="kontakt"><h2>Kontakt</h2></section></body></html>',
+        },
+      },
+    })
+
+    const result = await Effect.runPromise(
+      inspector.inspect({ url: "https://public.test/", artifactDirectory: temporaryArtifacts() }),
+    )
+
+    expect(result.blocks.map((block) => block.code)).not.toContain("navigation-failed")
+    expect(result.blocks.map((block) => block.code)).toContain("relevant-page-not-found")
+    expect(result.pages).not.toHaveLength(0)
+    expect(result.pages[0]).toMatchObject({ viewport: "Desktop", title: "Serwis" })
+  }, 30_000)
+
   it("records private subresources and popups without following them", async () => {
     const artifacts = temporaryArtifacts()
     const inspector = makePlaywrightWebsiteInspector({

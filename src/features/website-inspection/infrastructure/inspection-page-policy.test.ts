@@ -19,6 +19,30 @@ describe("inspection page policy", () => {
     ).toBe("https://business.example/kontakt")
   })
 
+  it("ignores a fragment that addresses the captured page instead of a second page", () => {
+    expect(
+      selectRelevantPage(
+        [
+          { text: "Kontakt", url: "https://business.example/#kontakt" },
+          { text: "Kontakt", url: "https://business.example/" },
+        ],
+        "https://business.example/",
+      ),
+    ).toBeUndefined()
+  })
+
+  it("still prefers a real second page when a fragment also matches", () => {
+    expect(
+      selectRelevantPage(
+        [
+          { text: "Kontakt", url: "https://business.example/#kontakt" },
+          { text: "Kontakt", url: "https://business.example/kontakt" },
+        ],
+        "https://business.example/",
+      ),
+    ).toBe("https://business.example/kontakt")
+  })
+
   it("returns no page when no approved link describes a relevant journey", () => {
     expect(
       selectRelevantPage(

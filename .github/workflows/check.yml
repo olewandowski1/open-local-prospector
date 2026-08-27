@@ -54,6 +54,8 @@ jobs:
 
       - run: pnpm worker:check
 
+      - run: pnpm inspect:check
+
       - if: runner.os == 'Linux'
         run: pnpm test:e2e
 
