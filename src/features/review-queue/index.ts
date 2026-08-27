@@ -23,9 +23,9 @@ export {
   suppressCandidate,
 } from "@/features/review-queue/infrastructure/suppress-candidate"
 export { CandidateStatusBadge } from "@/features/review-queue/presentation/candidate-status-badge"
+export { formatScore } from "@/features/review-queue/presentation/review-presentation"
 export { ReviewQueuePage } from "@/features/review-queue/presentation/review-queue-page"
 export {
-  type BoundedRecentCandidates,
   type CandidateSummary,
   getCandidateSummary,
   getRecentCandidates,

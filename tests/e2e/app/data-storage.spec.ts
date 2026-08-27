@@ -30,7 +30,7 @@ test("downloads an application backup from Maintenance", async ({ page, isMobile
   await page.getByRole("button", { name: "Download Backup" }).first().click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toMatch(
-    /^open-local-prospector-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.olp-backup\.tgz$/u,
+    /^open-prospector-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.olp-backup\.tgz$/u,
   )
 })
 

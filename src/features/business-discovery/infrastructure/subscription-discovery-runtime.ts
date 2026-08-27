@@ -288,7 +288,7 @@ function inTemporaryDirectory<A>(
 ): Effect.Effect<A, DiscoveryRuntimeError> {
   return Effect.acquireUseRelease(
     Effect.tryPromise({
-      try: () => mkdtemp(join(tmpdir(), "open-local-prospector-discovery-")),
+      try: () => mkdtemp(join(tmpdir(), "open-prospector-discovery-")),
       catch: () => blocked("temporary-directory", "A private workspace could not be created."),
     }),
     use,

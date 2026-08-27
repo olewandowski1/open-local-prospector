@@ -58,12 +58,12 @@ export function exportCandidates(
     return input.format === "json"
       ? {
           contentType: "application/json; charset=utf-8",
-          filename: "open-local-prospector-candidates.json",
+          filename: "open-prospector-candidates.json",
           body: JSON.stringify(data, null, 2),
         }
       : {
           contentType: "text/csv; charset=utf-8",
-          filename: "open-local-prospector-candidates.csv",
+          filename: "open-prospector-candidates.csv",
           body: toCsv(data),
         }
   } finally {

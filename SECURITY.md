@@ -7,7 +7,7 @@ single-user application and is not designed for remote hosting or untrusted user
 
 ## Reporting A Vulnerability
 
-Use [GitHub private vulnerability reporting](https://github.com/olewandowski1/open-local-prospector/security/advisories/new)
+Use [GitHub private vulnerability reporting](https://github.com/olewandowski1/open-prospector/security/advisories/new)
 for vulnerabilities involving private-network access, untrusted source content, local file access,
 provider credentials, or another trust boundary.
 

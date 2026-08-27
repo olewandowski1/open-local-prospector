@@ -16,6 +16,6 @@ export default defineConfig({
   ],
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.PROSPECTOR_DATABASE_PATH ?? ".local/open-local-prospector.sqlite",
+    url: process.env.PROSPECTOR_DATABASE_PATH ?? ".local/open-prospector.sqlite",
   },
 })

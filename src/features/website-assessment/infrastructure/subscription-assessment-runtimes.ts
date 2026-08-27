@@ -118,7 +118,7 @@ function makeRuntime(
     assess: (evidence, configuration) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
-          try: () => mkdtemp(join(tmpdir(), `open-local-prospector-${id}-`)),
+          try: () => mkdtemp(join(tmpdir(), `open-prospector-${id}-`)),
           catch: () =>
             blocked("temporary-directory", "A private assessment workspace could not be created."),
         }),

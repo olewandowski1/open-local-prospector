@@ -16,7 +16,7 @@ export function loadLocalApplicationConfig(
   return {
     databasePath: resolve(
       workingDirectory,
-      environment.PROSPECTOR_DATABASE_PATH ?? ".local/open-local-prospector.sqlite",
+      environment.PROSPECTOR_DATABASE_PATH ?? ".local/open-prospector.sqlite",
     ),
     artifactsPath: resolve(
       workingDirectory,

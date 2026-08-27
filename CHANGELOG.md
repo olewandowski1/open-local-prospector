@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Rename repository, package, workspace, backup, and export identifiers to Open Prospector.
+- Present Overview as a fixed list of the 10 most recent Candidate Businesses with a direct link to
+  the complete Review Workspace.
 - Load filtered candidate exports, evidence, and contacts in three bounded database queries instead
   of querying related records once per candidate.
 - Split the New Run sheet into focused bootstrap, form, field, runtime, and preflight components.
@@ -101,5 +104,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Claude, Codex, and OpenCode runtime support through clients installed and authenticated locally.
 - Candidate review, correction, suppression, and export workflows.
 
-[Unreleased]: https://github.com/olewandowski1/open-local-prospector/compare/961156c...HEAD
-[0.0.1]: https://github.com/olewandowski1/open-local-prospector/tree/961156c
+[Unreleased]: https://github.com/olewandowski1/open-prospector/compare/961156c...HEAD
+[0.0.1]: https://github.com/olewandowski1/open-prospector/tree/961156c

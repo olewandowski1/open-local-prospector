@@ -149,7 +149,7 @@ describe("workspace store", () => {
 
   it("requires complete backup metadata containing only non-secret configuration", () => {
     const manifest = {
-      format: "open-local-prospector-workspace",
+      format: "open-prospector-workspace",
       formatVersion: 1,
       createdAt: "2026-08-26T10:00:00.000Z",
       databaseFile: "database.sqlite",

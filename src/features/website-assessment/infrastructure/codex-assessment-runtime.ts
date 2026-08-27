@@ -27,7 +27,7 @@ export function makeCodexAssessmentRuntime(
     assess: (evidence, configuration) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
-          try: () => mkdtemp(join(tmpdir(), "open-local-prospector-assessment-")),
+          try: () => mkdtemp(join(tmpdir(), "open-prospector-assessment-")),
           catch: () =>
             blocked("temporary-directory", "A private assessment workspace could not be created."),
         }),

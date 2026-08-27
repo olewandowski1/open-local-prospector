@@ -2,16 +2,18 @@ import {
   ActivityIcon,
   ChartDownIcon,
   ChartUpIcon,
+  CheckListIcon,
   CircleGaugeIcon,
   ClipboardCheckIcon,
   MinusSignIcon,
 } from "@hugeicons/core-free-icons"
+import Link from "next/link"
 import type { ReactNode } from "react"
 import { Icon, type IconSvg } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -28,7 +30,7 @@ import {
 } from "@/features/overview/domain/overview-metrics"
 import { RecentCandidatesGrid } from "@/features/overview/presentation/recent-candidates-grid"
 import { NewRunButton } from "@/features/prospecting-runs/client"
-import type { BoundedRecentCandidates } from "@/features/review-queue"
+import type { RecentCandidate } from "@/features/review-queue"
 
 // An arrow means a measured week-over-week change; standing facts get a subject icon instead.
 const trendIcons: Partial<Record<OverviewTrend, IconSvg>> = {
@@ -50,7 +52,7 @@ export function OverviewPage({
 }: {
   runs: OverviewRunSnapshot
   candidateSummary: OverviewCandidateSummary
-  recentCandidates: BoundedRecentCandidates
+  recentCandidates: readonly RecentCandidate[]
   steeringPanel: ReactNode
 }) {
   const metrics = calculateOverviewMetrics(runs, candidateSummary)
@@ -90,19 +92,16 @@ export function OverviewPage({
         <section aria-label="Recent Candidates" className="flex flex-col gap-3">
           <SectionHeader
             title="Recent Candidates"
-            description={`Up to ${recentCandidates.limit} of the most recently scored qualified businesses. Suppressed businesses never appear.`}
+            description="The 10 most recently scored qualified businesses. Suppressed businesses never appear."
+            actions={
+              <Link href="/review" className={buttonVariants({ size: "sm" })}>
+                <Icon icon={CheckListIcon} />
+                See More
+              </Link>
+            }
           />
-          {recentCandidates.truncated ? (
-            <Alert>
-              <AlertTitle>Recent Candidate List Limited</AlertTitle>
-              <AlertDescription>
-                Showing the {recentCandidates.limit} most recently scored candidates. Older
-                candidates are held back from this overview.
-              </AlertDescription>
-            </Alert>
-          ) : null}
           <div>
-            {recentCandidates.candidates.length === 0 ? (
+            {recentCandidates.length === 0 ? (
               <Empty>
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -120,7 +119,7 @@ export function OverviewPage({
                 </EmptyContent>
               </Empty>
             ) : (
-              <RecentCandidatesGrid candidates={recentCandidates.candidates} />
+              <RecentCandidatesGrid candidates={recentCandidates} />
             )}
           </div>
         </section>

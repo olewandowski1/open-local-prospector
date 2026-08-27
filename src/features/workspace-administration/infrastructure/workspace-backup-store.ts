@@ -29,7 +29,7 @@ import {
 } from "@/features/workspace-administration/infrastructure/workspace-database"
 import { withWorkspaceOperationLock } from "@/features/workspace-administration/infrastructure/workspace-operation-lock"
 
-const BACKUP_FORMAT = "open-local-prospector-workspace"
+const BACKUP_FORMAT = "open-prospector-workspace"
 const BACKUP_FORMAT_VERSION = 1
 const MAX_BACKUP_BYTES = 5 * 1024 ** 3
 const MAX_EXPANDED_BACKUP_BYTES = 20 * 1024 ** 3
@@ -225,7 +225,7 @@ function readSafeConfiguration(config: LocalApplicationConfig): Readonly<Record<
 function backupFileName(now: Date, qualifier?: string): string {
   const date = now.toISOString().slice(0, 10)
   const time = now.toISOString().slice(11, 19).replaceAll(":", "-")
-  return `open-local-prospector-${date}-${time}${qualifier ? `-${qualifier}` : ""}.olp-backup.tgz`
+  return `open-prospector-${date}-${time}${qualifier ? `-${qualifier}` : ""}.olp-backup.tgz`
 }
 
 function persistBackup(source: string, destination: string): string {

@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/olewandowski1/open-local-prospector/actions/workflows/check.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/olewandowski1/open-local-prospector/check.yml?branch=main&label=CI&style=flat-square"></a>
+  <a href="https://github.com/olewandowski1/open-prospector/actions/workflows/check.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/olewandowski1/open-prospector/check.yml?branch=main&label=CI&style=flat-square"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue?style=flat-square"></a>
   <img alt="Node 22 Or Newer" src="https://img.shields.io/badge/Node-%E2%89%A522-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
   <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white">

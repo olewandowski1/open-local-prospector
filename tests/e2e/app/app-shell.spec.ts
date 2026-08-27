@@ -20,7 +20,15 @@ test("renders the persisted overview without sample data", async ({ page, isMobi
     "Businesses Discovered",
   )
   await expect(page.getByRole("region", { name: "Run Steering" })).toContainText("Run Steering")
-  await expect(page.getByRole("region", { name: "Recent Candidates" })).toBeVisible()
+  const recentCandidates = page.getByRole("region", { name: "Recent Candidates" })
+  await expect(recentCandidates).toBeVisible()
+  await expect(recentCandidates.getByRole("link", { name: "See More" })).toHaveAttribute(
+    "href",
+    "/review",
+  )
+  await expect(recentCandidates.getByText("Recent Candidate List Limited")).toHaveCount(0)
+  expect(await recentCandidates.getByRole("row").count()).toBeLessThanOrEqual(11)
+  await expect(recentCandidates.getByRole("navigation")).toHaveCount(0)
   await expect(page.getByText("sample data")).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

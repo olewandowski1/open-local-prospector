@@ -13,7 +13,7 @@ import {
 const temporaryDirectories: string[] = []
 
 function createTemporaryDirectory(): string {
-  const directory = mkdtempSync(join(tmpdir(), "open-local-prospector-"))
+  const directory = mkdtempSync(join(tmpdir(), "open-prospector-"))
   temporaryDirectories.push(directory)
   return directory
 }

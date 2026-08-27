@@ -34,9 +34,7 @@ describe("local application configuration", () => {
   it("falls back to the ignored .local workspace", () => {
     const config = loadLocalApplicationConfig({}, workingDirectory)
 
-    expect(config.databasePath).toBe(
-      join(workingDirectory, ".local", "open-local-prospector.sqlite"),
-    )
+    expect(config.databasePath).toBe(join(workingDirectory, ".local", "open-prospector.sqlite"))
     expect(config.artifactsPath).toBe(join(workingDirectory, ".local", "artifacts"))
     expect(config.environmentPath).toBe(join(workingDirectory, ".env.local"))
     expect(config.environmentTemplatePath).toBe(join(workingDirectory, ".env.local.example"))
