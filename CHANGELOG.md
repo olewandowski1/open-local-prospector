@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Keep the Overview candidate table within its content pane when all desktop columns are visible.
 - Verify the isolated destructive browser-test workspace with platform-native path semantics on
   Windows and Linux.
+- Run dependency setup and browser caching with Node 24 based GitHub Actions.
 - Disclose when the run list, review queue, or recent-candidate overview holds back rows instead of
   presenting bounded results as complete, and keep overview metrics complete beyond those bounds.
 - Surface candidate overview database failures instead of replacing them with misleading empty
