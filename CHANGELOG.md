@@ -19,6 +19,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Require a Website Assessment to account for every deterministic measurement it was given: a
+  measured accessibility, overflow or HTTPS defect is now classified or explicitly dismissed in the
+  summary rather than silently ignored. Five unlabelled controls were previously left unmentioned on
+  one business while nine scored severity 3 on another, which decided whether a Candidate Business
+  qualified. The technology a page is built with no longer counts as an opportunity, so a theme or
+  framework credit cannot be raised against a business.
 - Limit fully blocked website inspections to severity 4 of 5 and confidence 0.6, retain them as
   reviewable Candidate Businesses, and present their opportunity as Limited Website Evidence.
 - Rename repository, package, workspace, backup, and export identifiers to Open Prospector.

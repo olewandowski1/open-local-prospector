@@ -61,6 +61,14 @@ describe("assessment prompt boundary", () => {
     expect(prompt).toContain("claim nothing about page content that was never captured")
   })
 
+  it("requires every measured defect to be accounted for and bars technology credits", () => {
+    const prompt = buildAssessmentPrompt(evidence("Captured page"), "fixed-nonce")
+    expect(prompt).toContain("Account for every measurement that shows a defect")
+    expect(prompt).toContain("unlabeledControls above zero")
+    expect(prompt).toContain("Judge the same measured defect the same way on every business")
+    expect(prompt).toContain("The technology a page is built with is not an opportunity")
+  })
+
   it("limits certainty when a fully blocked inspection captured no pages", () => {
     const fixture = evidence("Unavailable")
     const constrained = applyAssessmentEvidenceLimits(

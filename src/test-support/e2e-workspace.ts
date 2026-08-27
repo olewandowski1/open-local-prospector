@@ -464,7 +464,7 @@ function writeBusiness(
        (id, run_id, task_id, run_business_id, canonical_business_id, inspection_id, runtime_id,
         runtime_version, prompt_version, output_schema_version, inspection_configuration_version,
         assessment_state, summary, apparent_commercial_value, assessed_at)
-       values (?, ?, ?, ?, ?, ?, 'claude', 'fixture', 'website-assessment-v3',
+       values (?, ?, ?, ?, ?, ?, 'claude', 'fixture', 'website-assessment-v4',
                'assessment-output-v1', 'quick-v1', 'Completed', ?, 0.5, ?)`,
     )
     .run(
