@@ -12,6 +12,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Key eligible businesses without a telephone or dedicated website on a verified contact route,
   preventing same-name neighbours from sharing candidate and suppression state.
 - Keep the Overview candidate table within its content pane when all desktop columns are visible.
+- Verify the isolated destructive browser-test workspace with platform-native path semantics on
+  Windows and Linux.
 - Disclose when the run list, review queue, or recent-candidate overview holds back rows instead of
   presenting bounded results as complete, and keep overview metrics complete beyond those bounds.
 - Surface candidate overview database failures instead of replacing them with misleading empty

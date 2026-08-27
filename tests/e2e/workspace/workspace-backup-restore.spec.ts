@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { resolve } from "node:path"
+import { isAbsolute, relative, resolve, sep } from "node:path"
 
 import { expect, test } from "@playwright/test"
 import Database from "better-sqlite3"
@@ -19,8 +19,16 @@ test.skip(
 
 test.beforeAll(() => {
   const workspaceRoot = resolve(root)
-  const scratchRoot = `${resolve(".scratch")}\\`
-  if (!`${workspaceRoot}\\`.startsWith(scratchRoot)) throw new Error("Unsafe E2E workspace path.")
+  const scratchRoot = resolve(".scratch")
+  const relativeWorkspace = relative(scratchRoot, workspaceRoot)
+  if (
+    relativeWorkspace === "" ||
+    relativeWorkspace === ".." ||
+    relativeWorkspace.startsWith(`..${sep}`) ||
+    isAbsolute(relativeWorkspace)
+  ) {
+    throw new Error("Unsafe E2E workspace path.")
+  }
   rmSync(workspaceRoot, { recursive: true, force: true })
   mkdirSync(artifactsPath, { recursive: true })
   migrateLocalDatabase(databasePath)
