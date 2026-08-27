@@ -33,6 +33,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Show one Candidate Business per row in Candidates, Overview and exports, reading its current
+  score instead of one row for every score it has ever had. The workspace listed 183 rows for 120
+  businesses, one of them five times. A re-scored business now replaces its earlier entry, and its
+  written notes and follow-up date carry onto the new score while the decision resets so the
+  reader judges it again.
 - Inspect a one-page website as one page rather than recording a navigation failure: a contact
   fragment addresses the page already captured, so it is no longer followed as a second page.
 - Capture website evidence instead of blocking every HTTPS inspection: name Basic in the proxy

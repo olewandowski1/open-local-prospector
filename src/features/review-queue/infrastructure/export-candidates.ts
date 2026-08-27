@@ -1,4 +1,5 @@
 import Database from "better-sqlite3"
+import { CURRENT_SCORE_PER_BUSINESS } from "@/features/review-queue/infrastructure/current-candidate-score"
 
 export type ExportFormat = "csv" | "json"
 export type CandidateExport = Readonly<{
@@ -36,7 +37,7 @@ export function exportCandidates(
     }
     const rows = db
       .prepare(
-        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null ${filters.join(" ")} order by cs.total desc,cb.name collate nocase,cs.id`,
+        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null and ${CURRENT_SCORE_PER_BUSINESS} ${filters.join(" ")} order by cs.total desc,cb.name collate nocase,cs.id`,
       )
       .all(...bindings) as ExportRow[]
     const evidenceByScore = readEvidenceByScore(

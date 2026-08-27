@@ -102,6 +102,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         qualified ? 1 : 0,
         now,
       )
+      carryReviewNotes(db, row.canonical_business_id, id, now)
       db.prepare("update run_businesses set status=?,updated_at=? where id=?").run(
         qualified ? "Candidate" : "BelowThreshold",
         now,
@@ -133,4 +134,25 @@ function required(input: Readonly<Record<string, unknown>>, key: string) {
   const value = input[key]
   if (typeof value !== "string" || !value) throw new Error(`missing ${key}`)
   return value
+}
+
+// A newer score asks the reader to decide again, so only the written notes travel with it.
+function carryReviewNotes(
+  db: Database.Database,
+  canonicalBusinessId: string,
+  scoreId: string,
+  now: number,
+): void {
+  const previous = db
+    .prepare(
+      `select cr.private_notes,cr.follow_up_at from candidate_reviews cr join candidate_scores cs on cs.id=cr.score_id where cs.canonical_business_id=? and cs.id<>? order by cs.scored_at desc,cs.id desc limit 1`,
+    )
+    .get(canonicalBusinessId, scoreId) as
+    | { private_notes: string; follow_up_at: number | null }
+    | undefined
+  if (!previous) return
+  if (previous.private_notes.length === 0 && previous.follow_up_at === null) return
+  db.prepare(
+    `insert into candidate_reviews (id,score_id,status,private_notes,follow_up_at,updated_at) values (?,?,'Unreviewed',?,?,?)`,
+  ).run(crypto.randomUUID(), scoreId, previous.private_notes, previous.follow_up_at, now)
 }
