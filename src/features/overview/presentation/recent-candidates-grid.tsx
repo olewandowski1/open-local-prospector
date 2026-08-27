@@ -63,7 +63,7 @@ const columns = helper.columns([
     sortFn: sortFn_text,
     cell: (context) => (
       // An explicit width, not a maximum, which automatic table layout is free to overrule.
-      <div className="w-[152px] @xl:w-[224px] @2xl:w-[184px] @4xl:w-[224px]">
+      <div className="w-[152px] @xl:w-[224px] @2xl:w-[184px]">
         <span className="block truncate font-medium" title={context.getValue()}>
           {context.getValue()}
         </span>
@@ -125,9 +125,9 @@ const columns = helper.columns([
 // Columns drop away in ascending order of usefulness, so the grid never scrolls sideways.
 const columnClassNames: Readonly<Record<string, string>> = {
   // The content box is 16px narrower, matching the cell padding either side.
-  name: "w-[168px] @xl:w-[240px] @2xl:w-[200px] @4xl:w-[240px]",
+  name: "w-[168px] @xl:w-[240px] @2xl:w-[200px]",
   reviewStatus: "hidden @md:table-cell",
-  primaryOpportunity: "hidden w-[160px] @2xl:table-cell @4xl:w-[200px]",
+  primaryOpportunity: "hidden w-[160px] @2xl:table-cell",
   scoredAt: "hidden @4xl:table-cell",
   contactAvailable: "hidden @4xl:table-cell",
   actions: "text-right",
