@@ -15,6 +15,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Verify the isolated destructive browser-test workspace with platform-native path semantics on
   Windows and Linux.
 - Run dependency setup and browser caching with Node 24 based GitHub Actions.
+- Wait for runtime readiness to settle before the browser suite decides whether steering is
+  available, preventing a loading skeleton from being mistaken for an authenticated runtime.
 - Disclose when the run list, review queue, or recent-candidate overview holds back rows instead of
   presenting bounded results as complete, and keep overview metrics complete beyond those bounds.
 - Surface candidate overview database failures instead of replacing them with misleading empty

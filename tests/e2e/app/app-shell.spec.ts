@@ -84,10 +84,9 @@ test.describe
       const effortOf = (region: ReturnType<typeof page.getByRole>) =>
         region.getByRole("combobox", { name: "Reasoning Effort" })
       const steering = () => page.getByRole("region", { name: "Run Steering" })
-      test.skip(
-        await steering().getByText("No Authenticated Runtime").isVisible(),
-        "No authenticated local runtime is available",
-      )
+      const unavailable = steering().getByText("No Authenticated Runtime")
+      await expect(effortOf(steering()).or(unavailable).first()).toBeVisible()
+      test.skip(await unavailable.isVisible(), "No authenticated local runtime is available")
 
       const original = (await effortOf(steering()).textContent())?.trim() ?? ""
       const replacement = original === "Low" ? "Medium" : "Low"
