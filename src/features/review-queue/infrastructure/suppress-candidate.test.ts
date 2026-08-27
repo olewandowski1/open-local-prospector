@@ -4,7 +4,7 @@ import { join } from "node:path"
 
 import Database from "better-sqlite3"
 import { afterEach, describe, expect, it } from "vitest"
-
+import { MAX_SUPPRESSION_REASON_LENGTH } from "@/features/review-queue/domain/review-policy"
 import {
   liftCandidateSuppression,
   suppressCandidate,
@@ -38,6 +38,27 @@ describe("candidate suppression", () => {
       suppressions: 0,
     })
     expect(liftCandidateSuppression(databasePath, candidate.identityFingerprint)).toBe(false)
+  })
+
+  it("rejects an over-limit reason without changing candidate state", () => {
+    const directory = mkdtempSync(join(tmpdir(), "prospector-suppression-"))
+    directories.push(directory)
+    const databasePath = join(directory, "workspace.sqlite")
+    seedE2eWorkspace(databasePath)
+    const candidate = readCandidate(databasePath)
+
+    expect(() =>
+      suppressCandidate(
+        databasePath,
+        candidate.scoreId,
+        "x".repeat(MAX_SUPPRESSION_REASON_LENGTH + 1),
+      ),
+    ).toThrow("Suppression reason is too long.")
+    expect(readCandidateState(databasePath, candidate.scoreId)).toEqual({
+      qualified: 1,
+      status: "Candidate",
+      suppressions: 0,
+    })
   })
 })
 

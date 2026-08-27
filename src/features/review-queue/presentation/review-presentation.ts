@@ -12,10 +12,7 @@ export function humanizeTerm(value: string): string {
   )
 }
 
-/**
- * Scores are stored as floats, and `24.666666666666668` reads as noise rather than evidence.
- * Always one decimal: a column reading 88 beside 89.8 does not scan as one scale.
- */
+// Keep one decimal so every Opportunity Score reads on the same scale.
 export function formatScore(value: number): string {
   return value.toFixed(1)
 }
@@ -130,7 +127,7 @@ export function isQueueFiltered(filter: QueueFilter): boolean {
   return filter.status !== ALL || filter.locality !== ALL || filter.opportunity !== ALL
 }
 
-/** The distinct values actually present, so a filter never offers a choice that matches nothing. */
+// Offer only filter values present in the queue.
 export function queueFilterOptions(
   candidates: readonly Readonly<{ locality: string; primaryOpportunity: string }>[],
 ): Readonly<{ localities: readonly string[]; opportunities: readonly string[] }> {

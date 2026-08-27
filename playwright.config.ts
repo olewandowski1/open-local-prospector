@@ -9,23 +9,17 @@ export default defineConfig({
   outputDir: resolve(".scratch/e2e-results"),
   fullyParallel: true,
   retries: 0,
-  // One server serves every worker, and several pages spawn provider CLIs to probe readiness.
-  // Above this, workers starve each other and assertions time out on a healthy application.
+  // Limit contention because one server serves all workers and probes provider CLIs.
   workers: 3,
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     trace: "on-first-retry",
   },
   webServer: {
-    // The seed runs here, not in `globalSetup`, because Playwright starts the server first and
-    // the server opens the database as soon as it boots. A production build, not `next dev`:
-    // Turbopack compiles a route on its first request, and a click landing during that compile is
-    // a genuine no-op, so parallel workers raced hydration and failed on a healthy application.
+    // Seed before boot and serve a production build to avoid first-request compilation races.
     command: `node --import tsx tests/e2e/support/seed-workspace.ts && pnpm exec next build && pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,
-    // The suite owns this port and this workspace. It used to attach to the developer's server on
-    // 4310, which meant the specs could only pass on a machine that already held the right runs,
-    // and a destructive test would have reached real data.
+    // Never attach tests to the developer's server or workspace.
     reuseExistingServer: false,
     timeout: 300_000,
     env: {
@@ -38,10 +32,7 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     {
       name: "mobile-chromium",
-      // `devices["iPhone 12"]` carries `defaultBrowserType: "webkit"`, so without this override the
-      // project silently launched WebKit. `pnpm run setup` does not install it, so every mobile
-      // test failed on a fresh machine asking for browsers. What is under test is the responsive
-      // layout at a phone viewport, not Safari.
+      // Test the phone viewport in the Chromium browser installed by setup.
       use: { ...devices["iPhone 12"], browserName: "chromium" },
     },
   ],

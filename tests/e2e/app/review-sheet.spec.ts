@@ -62,13 +62,11 @@ test("keeps candidate evidence out of the queue payload", async ({ page, isMobil
   const response = await page.goto("/review")
   const html = (await response?.text()) ?? ""
 
-  // The grid needs six fields per candidate. Evidence belongs to the one candidate on screen, so it
-  // must not be serialised for the whole queue because that payload grows with every run.
+  // Candidate evidence must load on demand instead of growing the queue payload.
   for (const field of ["observations", "screenshots", "measurements", "limitations"]) {
     expect(html, `${field} should not be in the queue payload`).not.toContain(field)
   }
 
-  // It arrives on demand instead.
   const detail = page.waitForResponse((res) => /\/api\/review\/[0-9a-f-]{36}$/u.test(res.url()))
   const open = page.getByRole("button", { name: "Open For Review" }).first()
   test.skip((await open.count()) === 0, "No candidates to review")

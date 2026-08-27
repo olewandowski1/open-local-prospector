@@ -9,6 +9,7 @@ Open Prospector keeps one living document for each kind of project truth.
 | [Architecture](Architecture.md) | Current system shape, boundaries, and trust model |
 | [Architecture Decision Records](adr/) | Historical decisions and the reasoning behind them |
 | [Contributing](../CONTRIBUTING.md) | Setup, verification, and contribution workflow |
+| [Security](../SECURITY.md) | Supported version and private vulnerability reporting |
 | [Agent Instructions](../AGENTS.md) | Repository-specific engineering and design rules |
 
 ## Documentation Rules

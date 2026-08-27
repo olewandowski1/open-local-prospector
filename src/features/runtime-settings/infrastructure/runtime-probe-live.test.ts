@@ -70,6 +70,18 @@ describe("runtime probe infrastructure", () => {
     expect(result.stdout).toBe("absent")
   })
 
+  it("uses the same provider configuration home as runtime execution", async () => {
+    const result = await Effect.runPromise(
+      executeRuntimeCommand(
+        process.execPath,
+        ["-e", "process.stdout.write(process.env.CODEX_HOME ?? 'absent')"],
+        { ...process.env, CODEX_HOME: "provider-owned-config" },
+      ),
+    )
+
+    expect(result.stdout).toBe("provider-owned-config")
+  })
+
   it("accepts an absolute application configuration override", async () => {
     const executable = await resolveRuntimeExecutable("codex", {
       PROSPECTOR_CODEX_EXECUTABLE: process.execPath,

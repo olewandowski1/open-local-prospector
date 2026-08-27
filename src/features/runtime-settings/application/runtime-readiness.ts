@@ -83,8 +83,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     label: "OpenCode",
     versionArguments: ["--version"],
     authenticationArguments: ["providers", "list"],
-    // The hosted catalog answers without a provider login, so the credential listing is a
-    // functional probe rather than a subscription gate; any exit 0 output counts as ready.
+    // Treat the hosted catalog as a functional probe because it works without provider login.
     minimumVersion: [1, 18, 0],
     parseAuthentication: ({ exitCode }) => (exitCode === 0 ? "ready" : "unsupported"),
     installInstruction: "Run: npm install -g opencode-ai",

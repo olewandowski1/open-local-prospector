@@ -56,8 +56,7 @@ export type StructuredPresence = typeof StructuredPresenceSchema.Type
 export type StructuredBusiness = typeof StructuredBusinessSchema.Type
 export type DiscoveryStructure = typeof DiscoveryStructureSchema.Type
 
-// Codex requires every output-schema property to be required. A missing website is therefore null
-// at the runtime boundary and is normalized back to the domain's optional property before decode.
+// Codex requires every schema property, so null websites normalize to an omitted domain value.
 const RuntimeDiscoveryStructureSchema = Schema.Struct({
   schemaVersion: Schema.Literal(DISCOVERY_STRUCTURE_SCHEMA_VERSION),
   businesses: Schema.Array(
@@ -130,10 +129,7 @@ function withoutNullWebsiteUrls(value: unknown): unknown {
   }
 }
 
-/**
- * Keeps only what the report actually supports. A model may summarise, but it may not introduce a
- * source, a website, or a contact that nobody wrote down.
- */
+// Keep only sources, websites, and contacts supported by the runtime report.
 export function verifyAgainstReport(
   structure: DiscoveryStructure,
   report: string,
@@ -168,8 +164,7 @@ export function verifyAgainstReport(
     const presences = business.presences.filter((presence) => cited(presence.url, "presence"))
     const websiteUrl =
       business.websiteUrl && cited(business.websiteUrl, "website") ? business.websiteUrl : undefined
-    // The business's own part of the report where the report names it, and the paragraph rule
-    // where it does not. Either way the contact must sit beside a source that part cites.
+    // A contact must appear beside its source within the business's attributable report section.
     const section = sections.get(business.name)
     const scope = section ? [section] : blocks
     const contacts = business.contacts.filter((contact) => {
@@ -196,11 +191,7 @@ export function verifyAgainstReport(
 
 type ReportBlock = Readonly<{ text: string; lowercased: string; digits: ReadonlySet<string> }>
 
-/**
- * The report is written one business per block, so a contact is only supported where it is written
- * down beside the source it is claimed from. Checking the whole report instead would accept a
- * neighbour's telephone, which is the mistake this whole step exists to stop.
- */
+// Scope contacts to one business block so a neighbour's telephone cannot be attributed.
 function reportBlocks(report: string): readonly ReportBlock[] {
   return report
     .split(/\n\s*\n/u)
@@ -217,12 +208,7 @@ function asBlock(text: string): ReportBlock {
   }
 }
 
-/**
- * A business's own part of the report: from where the report first names it to where it names the
- * next one. Splitting on blank lines alone made the check depend on how the runtime happened to lay
- * the report out, such as one that listed a business's pages under "Pages read about it" and its telephone
- * under "Contacts seen" put them in different paragraphs, and lost every contact it had found.
- */
+// Bound a business section by business names rather than runtime-dependent paragraph layout.
 function businessSections(
   report: string,
   names: readonly string[],
@@ -239,11 +225,7 @@ function businessSections(
   return new Map([...chunks].map(([name, parts]) => [name, asBlock(parts.join("\n\n"))]))
 }
 
-/**
- * Every place the report names a business, in the order it names them. Every occurrence counts: a
- * report that covers one business twice would otherwise hand its second entry to whichever business
- * happened to precede it, and that is a neighbour's telephone by another route.
- */
+// Count every named occurrence so repeated sections remain attached to the correct business.
 function nameBoundaries(
   report: string,
   names: readonly string[],
@@ -280,10 +262,7 @@ function blocksCiting(blocks: readonly ReportBlock[], sourceUrl: string): readon
   )
 }
 
-/**
- * Numbers a block actually writes down, with the spacing people use inside one number removed.
- * Whole runs only: "265013667" sitting inside a Facebook page id is not a telephone number.
- */
+// Match complete written numbers so digits inside identifiers cannot become telephone numbers.
 function digitRuns(text: string): ReadonlySet<string> {
   const runs = new Set<string>()
   for (const match of text.matchAll(/\d[\d\s.\-()]*\d/gu)) {

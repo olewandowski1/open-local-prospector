@@ -73,8 +73,7 @@ test("scrolls Settings as one page instead of an inner content pane", async ({ p
   expect(nestedOwners).toBe(0)
 })
 
-// These write the single stored runtime preference. `serial` orders them within a project, and
-// skipping mobile keeps the desktop and mobile projects from racing over the same database.
+// Run preference writes serially on desktop to avoid database races.
 test.describe
   .serial("stored runtime preference", () => {
     test("persists the run steering choice for new runs", async ({ page, isMobile }) => {
@@ -161,9 +160,7 @@ test("opens mobile navigation", async ({ page, isMobile }) => {
   await page.goto("/runs")
 
   const sidebar = page.getByRole("dialog", { name: /Sidebar/ })
-  // Under a loaded dev server the document can be interactive before the client bundle attaches, so
-  // the first click is sometimes a no-op. Retry opening, but only while it is still closed, so a
-  // click that did land is never toggled back shut.
+  // Retry only while closed because the document can precede client hydration.
   await expect(async () => {
     if (!(await sidebar.isVisible())) {
       await page.getByRole("button", { name: "Toggle Sidebar" }).click()
@@ -225,8 +222,7 @@ test("persists the appearance choice on this device", async ({ page }) => {
   test.slow()
   await page.goto("/settings/appearance")
 
-  // Choosing a theme is a client action, so it retries until the bundle has attached. Selecting the
-  // same theme twice means the same thing, so repeating the click is safe.
+  // Repeating the same theme selection is safe while hydration settles.
   await expect(async () => {
     await page.getByRole("button", { name: "Dark", exact: true }).click()
     // Applied optimistically, then persisted to a cookie the server reads on the next render.
@@ -272,9 +268,7 @@ test("names every chrome icon button on hover", async ({ page, isMobile }) => {
   test.slow()
   await page.goto("/runs")
 
-  // Icons alone carry no reliable meaning, so each icon-only control has to say what it does.
-  // Settings navigates, so it is a link; the rest act on this page and are buttons.
-  // The runtime control renames itself when a new release is published, so it is matched by pattern.
+  // Match the runtime control by pattern because update availability changes its label.
   const controls = [
     { label: "Toggle Sidebar", role: "button" as const },
     { label: "Search Workspace", role: "button" as const },
@@ -282,14 +276,11 @@ test("names every chrome icon button on hover", async ({ page, isMobile }) => {
     { label: /Update (Runtimes|Available)/, role: "button" as const },
   ]
 
-  // Base UI does not put role=tooltip on the popup, so these assert on the slot the primitive owns,
-  // filtered by text because a closing tooltip briefly overlaps the one being opened.
+  // Match Base UI's tooltip slot and text because closing popups can briefly overlap.
   const tooltipFor = (label: string | RegExp) =>
     page.locator('[data-slot="tooltip-content"]').filter({ hasText: label })
 
-  // Establish once that the client bundle has attached, retrying only here. The pointer is parked away
-  // from the control first, because hovering an element the mouse already sits on fires no new events,
-  // so a retry could otherwise never recover from an attempt made too early.
+  // Move the pointer away before retrying the hover that proves hydration completed.
   const [first, ...rest] = controls
   await expect(async () => {
     await page.mouse.move(0, 0)

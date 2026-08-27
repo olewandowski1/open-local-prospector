@@ -7,6 +7,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Load filtered candidate exports, evidence, and contacts in three bounded database queries instead
+  of querying related records once per candidate.
+- Split the New Run sheet into focused bootstrap, form, field, runtime, and preflight components.
+- Enforce the repository rule that source comments remain concise, single-line rationale.
+
+### Security
+
+- Apply one runtime environment allowlist to probes and task execution, preserving custom Codex
+  homes while excluding inherited provider credentials.
+- Reject over-limit Suppression Entry reasons consistently at the route and persistence boundaries.
+- Document private vulnerability reporting and enable it for the repository.
+
 ### Fixed
 
 - Invoke each provider's actual fixed update command and terminate the complete updater process

@@ -48,8 +48,7 @@ describe("runtime process diagnostics", () => {
 })
 
 describe("executeRuntimeProcess", () => {
-  // A descendant inheriting stdout outlives its parent, so stdio never closes even though the
-  // answer is complete; this is how OpenCode behaves after every call.
+  // Model OpenCode leaving a descendant with inherited stdout after exit.
   const holdsThePipe = `console.log("done"); require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => {}, 5000)"], { stdio: ["ignore", "inherit", "inherit"] }).unref()`
 
   it("settles shortly after exit when a descendant keeps the output pipes open", async () => {

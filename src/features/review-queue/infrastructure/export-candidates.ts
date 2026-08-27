@@ -24,19 +24,37 @@ export function exportCandidates(
 ): { contentType: string; filename: string; body: string } {
   const db = new Database(databasePath, { readonly: true, fileMustExist: true })
   try {
+    const filters: string[] = []
+    const bindings: string[] = []
+    if (input.statuses) {
+      filters.push("and coalesce(cr.status,'Unreviewed') in (select value from json_each(?))")
+      bindings.push(JSON.stringify([...new Set(input.statuses)]))
+    }
+    if (input.selectedIds) {
+      filters.push("and cs.id in (select value from json_each(?))")
+      bindings.push(JSON.stringify([...new Set(input.selectedIds)]))
+    }
     const rows = db
       .prepare(
-        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null order by cs.total desc,cb.name collate nocase,cs.id`,
+        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null ${filters.join(" ")} order by cs.total desc,cb.name collate nocase,cs.id`,
       )
-      .all() as ExportRow[]
-    const selected = input.selectedIds ? new Set(input.selectedIds) : undefined
-    const statuses = input.statuses ? new Set(input.statuses) : undefined
-    const data = rows
-      .filter(
-        (row) =>
-          (!selected || selected.has(row.id)) && (!statuses || statuses.has(row.review_status)),
-      )
-      .map((row) => mapExport(db, row, input.includeNamedProfessionalContacts ?? false))
+      .all(...bindings) as ExportRow[]
+    const evidenceByScore = readEvidenceByScore(
+      db,
+      rows.map((row) => row.id),
+    )
+    const contactsByBusiness = readContactsByBusiness(
+      db,
+      rows.map((row) => row.run_business_id),
+    )
+    const data = rows.map((row) =>
+      mapExport(
+        row,
+        evidenceByScore.get(row.id) ?? [],
+        contactsByBusiness.get(row.run_business_id) ?? [],
+        input.includeNamedProfessionalContacts ?? false,
+      ),
+    )
     return input.format === "json"
       ? {
           contentType: "application/json; charset=utf-8",
@@ -68,17 +86,68 @@ type ExportRow = {
   review_status: string
   run_business_id: string
 }
-function mapExport(db: Database.Database, row: ExportRow, includeNamed: boolean): CandidateExport {
-  const links = db
+type ContactRow = Readonly<{
+  run_business_id: string
+  type: string
+  value: string
+  source_url: string
+}>
+
+function readEvidenceByScore(
+  db: Database.Database,
+  scoreIds: readonly string[],
+): ReadonlyMap<string, readonly string[]> {
+  if (scoreIds.length === 0) return new Map()
+  const rows = db
     .prepare(
-      `select distinct so.source_url from supporting_observations so join website_opportunities wo on wo.id=so.opportunity_id join candidate_scores cs on cs.assessment_id=wo.assessment_id where cs.id=? order by so.source_url`,
+      `select distinct cs.id score_id,so.source_url from supporting_observations so join website_opportunities wo on wo.id=so.opportunity_id join candidate_scores cs on cs.assessment_id=wo.assessment_id where cs.id in (select value from json_each(?)) order by cs.id,so.source_url`,
     )
-    .all(row.id) as { source_url: string }[]
-  const contacts = db
+    .all(JSON.stringify(scoreIds)) as { score_id: string; source_url: string }[]
+  return groupRows(
+    rows,
+    (row) => row.score_id,
+    (row) => row.source_url,
+  )
+}
+
+function readContactsByBusiness(
+  db: Database.Database,
+  runBusinessIds: readonly string[],
+): ReadonlyMap<string, readonly ContactRow[]> {
+  if (runBusinessIds.length === 0) return new Map()
+  const rows = db
     .prepare(
-      "select type,value,source_url from contact_routes where run_business_id=? order by type,value,source_url",
+      `select run_business_id,type,value,source_url from contact_routes where run_business_id in (select value from json_each(?)) order by run_business_id,type,value,source_url`,
     )
-    .all(row.run_business_id) as { type: string; value: string; source_url: string }[]
+    .all(JSON.stringify(runBusinessIds)) as ContactRow[]
+  return groupRows(
+    rows,
+    (row) => row.run_business_id,
+    (row) => row,
+  )
+}
+
+function groupRows<Row, Value>(
+  rows: readonly Row[],
+  keyOf: (row: Row) => string,
+  mapValue: (row: Row) => Value,
+): ReadonlyMap<string, readonly Value[]> {
+  const grouped = new Map<string, Value[]>()
+  for (const row of rows) {
+    const key = keyOf(row)
+    const values = grouped.get(key) ?? []
+    values.push(mapValue(row))
+    grouped.set(key, values)
+  }
+  return grouped
+}
+
+function mapExport(
+  row: ExportRow,
+  evidenceLinks: readonly string[],
+  contacts: readonly ContactRow[],
+  includeNamed: boolean,
+): CandidateExport {
   return {
     business: row.name,
     locality: row.locality,
@@ -93,7 +162,7 @@ function mapExport(db: Database.Database, row: ExportRow, includeNamed: boolean)
       localDecisionLikelihood: row.local_decision_component,
       apparentCommercialValue: row.commercial_value_component,
     },
-    evidenceLinks: links.map((link) => link.source_url),
+    evidenceLinks,
     contactRoutes: contacts
       .filter((contact) => includeNamed || contact.type !== "NamedProfessional")
       .map((contact) => ({
@@ -105,8 +174,7 @@ function mapExport(db: Database.Database, row: ExportRow, includeNamed: boolean)
 }
 function csv(value: unknown): string {
   const raw = typeof value === "string" ? value : JSON.stringify(value)
-  // Quoting is not enough for spreadsheet programs: source-derived text beginning with a
-  // formula operator can still be evaluated when a reader opens the CSV.
+  // Prefix formula-like source text because spreadsheet programs evaluate quoted cells.
   const text = /^\s*[=+\-@]/u.test(raw) ? `'${raw}` : raw
   return `"${text.replaceAll('"', '""')}"`
 }

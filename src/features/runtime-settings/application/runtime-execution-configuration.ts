@@ -22,10 +22,7 @@ export type RuntimeModelOption = Readonly<{
   reasoningEfforts: readonly RuntimeReasoningEffort[]
 }>
 
-// Codex CLI passes the effort through as `model_reasoning_effort`. The ladders below mirror the
-// per-model `supported_reasoning_levels` of the Codex models manifest (checked 2026-08): every
-// current model starts at "low"; "ultra" is offered by Terra alone. "none" and "minimal" remain in
-// the union for values already stored, but no current Codex model accepts them.
+// Mirror the 2026-08 Codex model manifest while retaining retired stored effort values.
 const solEfforts: readonly RuntimeReasoningEffort[] = ["low", "medium", "high", "xhigh", "max"]
 const terraEfforts: readonly RuntimeReasoningEffort[] = [
   "low",

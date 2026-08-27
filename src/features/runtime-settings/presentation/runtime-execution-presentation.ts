@@ -13,26 +13,17 @@ const labels: Record<RuntimeReasoningEffort, string> = {
   ultra: "Ultra",
 }
 
-/**
- * The stored value is the CLI identifier (`xhigh`); the label is what a reader reads. Capitalising
- * the raw value would announce "Xhigh", which is not a word.
- */
+/** Present stored CLI effort identifiers as reader-facing labels. */
 export function reasoningEffortLabel(effort: RuntimeReasoningEffort): string {
   return labels[effort]
 }
 
-/**
- * The stored value is the CLI slug (`gpt-5.6-sol`); the label is what the run form offered
- * ("GPT-5.6 Sol"). An unrecorded or retired model keeps its slug rather than lying about a name.
- */
+/** Preserve unknown or retired model slugs instead of inventing a label. */
 export function runtimeModelLabel(runtimeId: RuntimeId, model: string): string {
   return runtimeModelOptions(runtimeId).find((option) => option.value === model)?.label ?? model
 }
 
-/**
- * A model that takes no reasoning effort stores `none`, and printing that reads as a missing
- * value rather than as the fact that there is nothing to choose. Say the model and stop.
- */
+/** Omit the stored `none` effort because it is not a reader-facing value. */
 export function runtimeExecutionLabel(
   runtimeId: RuntimeId,
   configuration: Readonly<{ model: string; reasoningEffort: RuntimeReasoningEffort }>,

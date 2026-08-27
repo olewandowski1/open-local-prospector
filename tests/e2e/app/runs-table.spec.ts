@@ -11,8 +11,7 @@ test("pages, sorts and navigates the runs table", async ({ page }) => {
   await expect(pager.getByLabel("Page 1")).toHaveAttribute("aria-current", "page")
   await expect(page.getByLabel("Rows Per Page")).toContainText("25")
 
-  // The action column navigates without the row's own click handler firing as well. It hides on
-  // narrow viewports, where the row click is the way in instead.
+  // The action link navigates independently of the clickable row.
   const open = page.getByRole("link", { name: "Open Run" }).first()
   if ((await open.count()) > 0) await open.click()
   else await page.getByRole("cell").first().click()

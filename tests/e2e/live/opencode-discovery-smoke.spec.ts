@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-// Drives real discovery jobs through the UI on the developer's workspace, so it never runs as
-// part of an ordinary suite. Enable deliberately:
-//   PROSPECTOR_OPENCODE_SMOKE_TEST=1 pnpm playwright test -g "OpenCode discovery smoke"
+// Opt in with PROSPECTOR_OPENCODE_SMOKE_TEST=1 because this uses the developer workspace.
 const enabled = process.env.PROSPECTOR_OPENCODE_SMOKE_TEST === "1"
 
 type SmokeCase = Readonly<{ city: string; category: string; customCategory?: string }>
@@ -46,8 +44,7 @@ test.describe("OpenCode discovery smoke", () => {
         await page.getByRole("option", { name: category }).click()
       }
 
-      // The styled item carries both aria-label and aria-labelledby (the whole field label), so
-      // its accessible name is the long text and role+name matching is unreliable here.
+      // Match the styled item directly because Base UI combines its accessible labels.
       await page.locator('[data-slot="radio-group-item"][aria-label="Quick"]').click()
 
       await page.getByRole("combobox", { name: "Subscription Runtime" }).click(act)
@@ -57,8 +54,7 @@ test.describe("OpenCode discovery smoke", () => {
 
       await page.getByRole("button", { name: "Check preflight" }).click()
 
-      // The displayName text is a sibling of the control, not its child, so text filtering on
-      // the radio itself always comes up empty; every listed option is a variant of the city.
+      // The display name is a sibling of the radio, so select the city option by position.
       const areaRadios = page.locator(
         '[role="radiogroup"][aria-label="Search Area"] [role="radio"]',
       )

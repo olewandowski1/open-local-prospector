@@ -6,13 +6,7 @@ import Database from "better-sqlite3"
 
 import { migrateLocalDatabase } from "@/features/local-application"
 
-/**
- * A workspace the browser suite can rely on. The businesses are invented: this repository is public,
- * and a snapshot of a real run would publish the telephone numbers of real shops.
- *
- * Everything a spec asserts on comes from here: a settled run named for florists, a run still
- * moving, candidates in the queue, and a business whose inspection was blocked.
- */
+/** Seed invented businesses so browser tests never expose real contact data. */
 export function seedE2eWorkspace(
   databasePath: string,
   artifactsPath = join(dirname(databasePath), "artifacts"),

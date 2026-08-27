@@ -24,8 +24,7 @@ export function planDiscoveryQueries(searchBrief: SearchBrief): DiscoveryPlan {
       ? locality
       : `w promieniu ${searchBrief.radiusKm} km od ${locality}`
   const category = searchBrief.category
-  // The runtime searches several ways within one report, so these are angles rather than a
-  // substitute for a search engine's paging.
+  // Each report searches several angles because runtime search has no stable pagination.
   const variations = [
     `${category} ${location}`,
     `${category} kontakt ${location}`,

@@ -59,11 +59,7 @@ export function buildReportPrompt(brief: DiscoveryBrief): string {
   ].join("\n")
 }
 
-/**
- * A runtime whose CLI can enforce an output schema is given one; a runtime without that flag is
- * given the same schema in the prompt, because otherwise it invents its own field names and every
- * structuring attempt is rejected as malformed.
- */
+// Enforce the schema through the CLI when supported and through the prompt otherwise.
 export function buildStructurePrompt(
   brief: DiscoveryBrief,
   report: string,

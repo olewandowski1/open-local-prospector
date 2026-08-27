@@ -112,8 +112,7 @@ describe("run detail presentation", () => {
     ])
   })
 
-  // A run of eleven businesses carries a hundred task transitions, so ordering by count alone put
-  // every event that says what the run found behind the scheduler's bookkeeping.
+  // Reader-facing outcomes stay ahead of scheduler bookkeeping regardless of event counts.
   it("offers the kinds a reader came for before the scheduler's bookkeeping", () => {
     const events = [
       ...Array.from({ length: 34 }, (_, index) =>

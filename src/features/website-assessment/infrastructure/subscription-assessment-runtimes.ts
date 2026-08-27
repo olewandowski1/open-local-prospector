@@ -93,8 +93,7 @@ export function makeOpencodeAssessmentRuntime(
         settleOnExitMilliseconds: 2_000,
       }
     },
-    // OpenCode writes to a terminal and prints a banner and its tool trace before answering, so
-    // the fence rule the other runtimes need is not enough on its own.
+    // OpenCode wraps answers in terminal banners and tool traces.
     (result) => JSON.parse(onlyJsonObject(withoutTerminalColour(result.stdout))),
   )
 }
@@ -143,8 +142,7 @@ function makeRuntime(
               Effect.mapError((error) => transient(error.code, error.message)),
             )
           }),
-        // A runtime that leaves a helper behind still holds this directory open, and Windows
-        // answers EBUSY. Losing a scratch directory is not worth failing an assessment for.
+        // Ignore Windows EBUSY when a runtime helper retains the disposable directory.
         (directory) =>
           Effect.promise(() =>
             rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }).catch(

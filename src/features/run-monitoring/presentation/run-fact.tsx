@@ -1,9 +1,5 @@
 import { cn } from "@/lib/utils"
 
-/**
- * The run detail states a fact as a labelled row, so Run Overview and Run Progress read the same
- * way: name on the left, value on the right, one rule between each.
- */
 export function RunFactList({
   className,
   children,

@@ -1,8 +1,11 @@
 import Database from "better-sqlite3"
 import { REVIEW_QUEUE_THRESHOLD } from "@/features/review-queue/domain/opportunity-score"
+import { MAX_SUPPRESSION_REASON_LENGTH } from "@/features/review-queue/domain/review-policy"
 
 export function suppressCandidate(databasePath: string, scoreId: string, reason: string): void {
   if (!reason.trim()) throw new Error("Suppression reason is required.")
+  if (reason.length > MAX_SUPPRESSION_REASON_LENGTH)
+    throw new Error("Suppression reason is too long.")
   const db = new Database(databasePath, { fileMustExist: true })
   db.pragma("foreign_keys = ON")
   try {
@@ -31,7 +34,7 @@ export function suppressCandidate(databasePath: string, scoreId: string, reason:
         row.identity_fingerprint,
         row.canonical_business_id,
         row.name,
-        reason.trim().slice(0, 500),
+        reason.trim(),
         Date.now(),
       )
       db.prepare("update candidate_scores set qualified=0 where canonical_business_id=?").run(
@@ -63,8 +66,7 @@ export function liftCandidateSuppression(
       const canonicalBusinessId = suppression.canonical_business_id
       if (!canonicalBusinessId) return true
 
-      // Older suppression writes cleared this durable eligibility bit. Rebuild it from the same
-      // evidence requirements used when the score was first recorded.
+      // Rebuild eligibility for rows written before suppression stopped clearing the score.
       db.prepare(
         `update candidate_scores set qualified = case when total >= ?
          and exists(select 1 from website_opportunities wo

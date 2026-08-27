@@ -12,7 +12,10 @@ import {
   type RuntimeId,
   RuntimeProbe,
 } from "@/features/runtime-settings/application/runtime-readiness"
-import { terminateRuntimeProcessTree } from "@/features/runtime-settings/infrastructure/runtime-process"
+import {
+  buildSafeRuntimeEnvironment,
+  terminateRuntimeProcessTree,
+} from "@/features/runtime-settings/infrastructure/runtime-process"
 
 const COMMAND_TIMEOUT_MILLISECONDS = 5_000
 const COMMAND_OUTPUT_LIMIT_BYTES = 64 * 1024
@@ -33,7 +36,7 @@ export function executeRuntimeCommand(
         shell: false,
         windowsHide: true,
         stdio: ["ignore", "pipe", "pipe"],
-        env: safeRuntimeEnvironment(environment),
+        env: buildSafeRuntimeEnvironment(environment),
       })
     } catch {
       resume(Effect.fail(new RuntimeCommandError({ reason: "spawn" })))
@@ -150,28 +153,6 @@ function executableCandidates(
   }
 
   return [...new Set(candidates)]
-}
-
-function safeRuntimeEnvironment(environment: RuntimeEnvironment): NodeJS.ProcessEnv {
-  const allowedKeys = [
-    "PATH",
-    "HOME",
-    "USERPROFILE",
-    "APPDATA",
-    "LOCALAPPDATA",
-    "XDG_CONFIG_HOME",
-    "XDG_DATA_HOME",
-    "SystemRoot",
-    "SYSTEMROOT",
-    "TEMP",
-    "TMP",
-    "LANG",
-  ] as const
-  const safe: NodeJS.ProcessEnv = { NODE_ENV: process.env.NODE_ENV }
-  for (const key of allowedKeys) {
-    if (environment[key] !== undefined) safe[key] = environment[key]
-  }
-  return safe
 }
 
 export const RuntimeProbeLive = Layer.succeed(RuntimeProbe, {

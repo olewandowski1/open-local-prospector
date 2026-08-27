@@ -3,8 +3,7 @@ import type {
   RuntimeId,
 } from "@/features/runtime-settings/application/runtime-readiness"
 
-// Each provider owns its updater. Keep the arguments fixed per runtime so a command name can never
-// be mistaken for a prompt or project path by another provider's CLI.
+// Keep provider-owned update arguments fixed so external input never reaches the command line.
 const runtimeUpdateArguments = {
   codex: ["update"],
   claude: ["install", "stable"],

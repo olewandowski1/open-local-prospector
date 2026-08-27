@@ -1,7 +1,6 @@
 import type { SVGProps } from "react"
 
-// OpenCode's mark (svgl.app), reduced to its block outline so it inherits the text colour
-// the way the OpenAI mark does; the filled background squares belong to their app icon only.
+// The outline inherits text colour; filled background squares belong only to the app icon.
 const Opencode = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} preserveAspectRatio="xMidYMid" viewBox="0 0 512 512">
     <title>OpenCode</title>

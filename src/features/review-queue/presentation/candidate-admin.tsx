@@ -33,10 +33,6 @@ import type { QueueCandidate } from "@/features/review-queue/server/review-queue
 
 const fieldSpacing = "gap-1"
 
-/**
- * Everything a reader reaches for after deciding rather than before. Collapsed by default so the
- * evidence is what the panel shows; each trigger says what is inside so nothing is hidden by it.
- */
 export function CandidateAdmin({
   candidate,
   busy,

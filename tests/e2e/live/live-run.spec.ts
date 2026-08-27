@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-/**
- * A real run: real subscription-runtime web searches, real page inspections, real subscription usage,
- * and several minutes of wall clock. It never runs as part of the suite; set PROSPECTOR_LIVE_RUN=1 to
- * exercise the pipeline end to end.
- */
+/** Opt-in test that spends subscription usage on a complete live run. */
 test("creates and completes a real prospecting run", async ({ page, isMobile }) => {
   test.skip(process.env.PROSPECTOR_LIVE_RUN !== "1", "Set PROSPECTOR_LIVE_RUN=1 to run for real")
   test.skip(isMobile, "Driven once, on desktop")
@@ -27,8 +23,7 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
   await page.getByLabel("Target Businesses").fill(process.env.PROSPECTOR_LIVE_TARGET ?? "5")
   await preflight.click()
 
-  // Base UI does not forward the group aria-label, but each area radio is named for its display name,
-  // and only the Search Area radios carry a country in that name.
+  // Search Area radios are the only options whose names include a country.
   const area = page.getByRole("radio", { name: /Polska$/ }).first()
   await expect(area).toBeVisible({ timeout: 180_000 })
   await area.click()
@@ -44,9 +39,7 @@ test("creates and completes a real prospecting run", async ({ page, isMobile }) 
   const runId = page.url().split("/").pop()
   console.log(`LIVE_RUN_ID=${runId}`)
 
-  // The page polls itself; wait for the run to settle rather than for a fixed time. Status is a
-  // labelled row of semantic text, not a badge. A detail page states its condition rather than
-  // tagging it, and the row's title holds the recorded wording the shortened label stands for.
+  // Wait on the polled semantic status instead of using a fixed delay.
   await expect(async () => {
     const state = await page.evaluate(() => {
       const label = [...document.querySelectorAll("dl")].find(

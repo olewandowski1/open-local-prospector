@@ -7,8 +7,7 @@ import { sqliteProspectingRunRepositoryLive } from "@/features/prospecting-runs/
 import { getSelectedRuntime } from "@/features/runtime-settings/application/runtime-preference"
 import { runtimePreferenceLive } from "@/features/runtime-settings/infrastructure/runtime-preference-live"
 
-// Fast persisted defaults for the New Run sheet. Runtime probing is deliberately separate so slow
-// CLI status commands never hold back the editable Search Brief.
+// Load persisted defaults separately so slow CLI probes do not block the editable form.
 export async function GET() {
   const config = loadLocalApplicationConfig()
   const [defaults, selectedRuntime] = await Promise.all([

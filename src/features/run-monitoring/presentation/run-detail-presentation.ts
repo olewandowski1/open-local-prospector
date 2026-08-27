@@ -10,11 +10,7 @@ export type RunCountItem = Readonly<{
   value: number
 }>
 
-/**
- * Every step here is work the run carried out, so each fall is explained by an adjustment beside it.
- * Websites is not a step: most local businesses have none, which is the opportunity being looked
- * for, so counting them between Discoveries and Assessments read as a pipeline that had collapsed.
- */
+// Include only executed stages so missing websites do not read as a collapsed pipeline.
 export function runFunnel(progress: RunProgressCounts): readonly RunCountItem[] {
   return [
     { key: "queries", label: "Queries", value: progress.queries },
@@ -67,10 +63,7 @@ function kindRank(kind: string): number {
   return LIFECYCLE_KINDS.has(kind) ? 2 : 1
 }
 
-/**
- * Ordered by what a reader came for, not by how many there are. A run of eleven businesses carries a
- * hundred task transitions, so counting first buried every event that says what the run found.
- */
+// Order events by reader value before count so scheduler bookkeeping cannot bury outcomes.
 export function eventKindCounts(events: readonly TechnicalRunEvent[]): readonly EventKindCount[] {
   const counts = new Map<string, number>()
   for (const event of events) {

@@ -67,10 +67,7 @@ export function defaultPoland(location: string): string {
   return location.includes(",") ? location : `${location}, Poland`
 }
 
-/**
- * Quick asks two angles of the runtime and Thorough four, matching `planDiscoveryQueries`. A count
- * that disagrees with the plan is worse than no count: it is a promise the run will not keep.
- */
+// Keep the estimate aligned with the discovery angles planned for each Run Mode.
 export function estimateWorkload(draft: SearchBriefDraft): WorkloadEstimate {
   const thorough = draft.mode === "Thorough"
   const discoveryQueries = thorough ? 4 : 2
@@ -86,11 +83,7 @@ export function estimateWorkload(draft: SearchBriefDraft): WorkloadEstimate {
   }
 }
 
-/**
- * Relative pace measured with the same Quick brief. Claude completed in 6.8–9.3 minutes, OpenCode
- * in 5.6–7.6 minutes, and Codex did not finish discovery within its 15-minute attempt. Quoting one
- * number for every runtime would promise a reader something the run cannot keep.
- */
+// Provider-specific duration estimates come from comparable measured Quick runs.
 function runtimePace(runtime: SearchBriefDraft["runtime"]): number {
   if (runtime === "codex") return 4
   return 2

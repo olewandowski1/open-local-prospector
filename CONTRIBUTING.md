@@ -24,13 +24,15 @@ pnpm dev
 
 You need Node.js 22 or newer and pnpm 10.32.1. `pnpm run setup` is safe to re-run. To exercise a
 real prospecting run you also need a ready Claude, Codex, or OpenCode runtime. See the
-[README](README.md#requirements).
+[README](README.md#quick-start).
 
 ## Before You Open A Pull Request
 
 ```powershell
-pnpm check          # Biome, feature boundaries, TypeScript, unit tests, production build
-pnpm test:e2e       # Chromium desktop and mobile flows
+pnpm check              # Biome, architecture, comments, TypeScript, tests, production build
+pnpm worker:check       # Worker composition without processing tasks
+pnpm test:e2e           # Chromium desktop and mobile flows
+pnpm test:e2e:workspace # Destructive workspace flows in an isolated workspace
 ```
 
 `pnpm check` is the gate; CI runs the same command. Lefthook already runs Biome on staged files
@@ -45,7 +47,8 @@ A few things that reliably come up in review:
 - **A client component imports from `@/features/x/client`**, never `@/features/x`. The feature index
   exports server work and will drag `better-sqlite3` into the browser bundle.
 - **Icons come from `@/components/icon`**, backed by Hugeicons. There is one icon set.
-- **Do not start, stop, or take port 4310.** Playwright attaches to whatever is already there.
+- **Browser tests own their workspaces.** Normal flows use port 4312, and destructive workspace
+  flows use port 4311. Neither suite reads the developer workspace on port 4310.
 
 ## Commits And Pull Requests
 
@@ -63,6 +66,5 @@ Open an issue with what you expected, what happened, your OS, Node version, and 
 had selected. If it involves a run, the Technical Run Log on the run detail page is the right place
 to copy from. It is factual, and it contains no model reasoning.
 
-For anything with a security dimension, such as a way to make the inspector reach a private network, a path
-where source content becomes an instruction, or a place where provider credentials could leak, please
-use GitHub's private vulnerability reporting on this repository instead of a public issue.
+For security concerns, follow the private reporting process in [`SECURITY.md`](SECURITY.md) instead
+of opening a public issue.

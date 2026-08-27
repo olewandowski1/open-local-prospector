@@ -78,9 +78,7 @@ async function inspectWithPlaywright(
   try {
     browser = await chromium.launch({ headless: true })
   } catch (error) {
-    // A browser that is installed but would not start is a transient condition. It is usually
-    // contention with the inspections running beside it, so the business is retried rather than
-    // dropped from the run. Playwright's own words are kept: this is our tool, not source content.
+    // Treat browser launch contention as transient and preserve Playwright's diagnostic.
     const installed = existsSync(chromium.executablePath())
     throw new WebsiteInspectorError({
       classification: installed ? "Transient" : "Infrastructure",

@@ -17,11 +17,7 @@ export type RuntimeProcessRequest = Readonly<{
   timeoutMilliseconds?: number
   inputLimitBytes?: number
   outputLimitBytes?: number
-  /**
-   * Settle this long after the process exits rather than when its output pipes close. A CLI that
-   * leaves a helper process holding inherited stdio never produces "close", even though its
-   * answer is complete and its exit code final; waiting for close only burns the timeout.
-   */
+  /** Settle after exit when a helper process keeps inherited output pipes open. */
   settleOnExitMilliseconds?: number
 }>
 
@@ -51,10 +47,9 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
     }
     const child = spawn(request.executable, [...request.arguments], {
       cwd: request.cwd,
-      // A dedicated process group lets interruption terminate task descendants on POSIX. Windows
-      // uses taskkill's tree mode instead because negative process-group signals are unavailable.
+      // A process group lets interruption terminate descendants; Windows uses taskkill tree mode.
       detached: process.platform !== "win32",
-      env: safeRuntimeEnvironment({ ...process.env, ...request.environment }),
+      env: buildSafeRuntimeEnvironment({ ...process.env, ...request.environment }),
       shell: false,
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -159,7 +154,7 @@ export function classifyRuntimeFailure(stderr: string, exitCode: number | null) 
   )
 }
 
-function safeRuntimeEnvironment(
+export function buildSafeRuntimeEnvironment(
   environment: Readonly<Record<string, string | undefined>>,
 ): NodeJS.ProcessEnv {
   const allowed = [
@@ -196,10 +191,7 @@ export function withoutTerminalColour(text: string): string {
   return text.replace(/[[0-9;]*[a-zA-Z]/gu, "")
 }
 
-/**
- * A runtime with no output-schema flag prints its banner and its tool trace before answering, and
- * may fence the answer. The object between the outermost braces is the answer in every case.
- */
+/** Extract JSON from runtimes that wrap the answer in banners, traces, or fences. */
 export function onlyJsonObject(text: string): string {
   const start = text.indexOf("{")
   const end = text.lastIndexOf("}")
@@ -207,11 +199,7 @@ export function onlyJsonObject(text: string): string {
   return text.slice(start, end + 1)
 }
 
-/**
- * Why a runtime's answer could not be read, in terms of its shape rather than its content. The
- * output is untrusted and is never persisted, so a failure that says only "malformed" leaves
- * nothing to tell truncation apart from prose the next time it happens.
- */
+/** Describe untrusted output by shape without persisting its content. */
 export function describeUnreadableOutput(stdout: string): string {
   const bytes = Buffer.byteLength(stdout, "utf8")
   if (bytes === 0) return "the runtime wrote nothing"

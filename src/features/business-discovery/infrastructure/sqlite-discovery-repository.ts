@@ -95,8 +95,7 @@ function recordReport(
     for (const business of input.businesses) {
       const resultUrl = primaryUrl(business)
       if (!resultUrl) continue
-      // Keyed on the business rather than on a page, because one business is reached through
-      // several addresses and the structuring step has already told them apart.
+      // Key by business because one structured business can be reached through several pages.
       const discoveryKey = `${input.source}:${normalizeBusinessName(business.name)}|${normalizeBusinessName(business.locality)}`
       const existingBusiness = database
         .prepare("select id from discovered_businesses where run_id = ? and discovery_key = ?")
@@ -236,8 +235,7 @@ function recordReport(
       timestamp,
     )
 
-    // Every rejection is a claim the report did not support. Saying so is the only way a reader can
-    // tell a quiet model from a quiet run.
+    // Rejection counts distinguish unsupported runtime claims from an empty search.
     for (const rejection of input.rejections.slice(0, MAX_RECORDED_REJECTIONS)) {
       insertEvent.run(
         crypto.randomUUID(),

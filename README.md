@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <strong>Use Claude, Codex, Or OpenCode Already Installed And Authenticated On Your Computer.</strong>
+  <strong>Uses Claude, Codex, or OpenCode already installed and authenticated on your computer.</strong>
 </p>
 
 <p align="center">
@@ -25,8 +25,8 @@
 ## What It Does
 
 Open Prospector searches a place and business category, verifies each business, inspects its public
-website, and ranks genuine opportunities. Every material claim keeps its source and observation
-time.
+website, and ranks evidence-backed opportunities. Every material claim keeps its source and
+observation time.
 
 Open Prospector runs the Claude, Codex, or OpenCode client already installed and authenticated on
 your computer. It does not perform login, handle provider credentials, require usage-based API keys,
@@ -58,7 +58,6 @@ required.
 
 ```powershell
 pnpm install
-pnpm run setup
 pnpm run app
 ```
 
@@ -71,6 +70,7 @@ Open <http://127.0.0.1:4310>. Run commands from the repository root.
 | `pnpm run app` | Set up, build, and run the web process and worker |
 | `pnpm dev` | Run the development server and watching worker |
 | `pnpm check` | Run the repository verification gate |
+| `pnpm worker:check` | Verify the worker composition without processing tasks |
 | `pnpm test:e2e` | Run synthetic desktop and mobile browser flows |
 | `pnpm test:e2e:workspace` | Run destructive workspace tests in isolation |
 | `pnpm docs:screenshots` | Rebuild the dark README screenshots |
@@ -85,19 +85,23 @@ workspace paths, concurrency, geocoding, or runtime executables.
 Next.js serves the local interface, a separate worker executes durable jobs, and SQLite stores the
 workspace. Start with the [Documentation Index](docs/README.md), [Product](docs/Product.md),
 [Domain Language](docs/Domain-Language.md), [Architecture](docs/Architecture.md), and
-[Changelog](CHANGELOG.md).
+[Changelog](CHANGELOG.md). See [Contributing](CONTRIBUTING.md) for the engineering workflow and
+[Security](SECURITY.md) for private vulnerability reporting.
 
 ## Verification
 
 ```powershell
 pnpm check
+pnpm worker:check
 pnpm test:e2e
+pnpm test:e2e:workspace
 ```
 
 ## Responsible Use
 
-Open Prospector reads public pages and contacts nobody. You remain responsible for provider terms,
-source terms, privacy law, and any outreach outside the application.
+Open Prospector reads public pages and contacts nobody. Workspace files and backups can contain
+publicly listed personal data and are not encrypted by the application. You remain responsible for
+provider terms, source terms, privacy law, secure storage, and any outreach outside the application.
 
 ## License
 

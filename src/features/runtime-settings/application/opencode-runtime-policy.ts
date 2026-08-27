@@ -5,11 +5,7 @@ const AGENT_NAMES: Readonly<Record<OpenCodeRuntimeAuthority, string>> = {
   "no-tools": "open-prospector-no-tools",
 }
 
-/**
- * OpenCode merges user configuration into every invocation. An application-owned agent with an
- * inline, highest-precedence permission policy keeps that configuration from granting authority
- * to untrusted source content. `--pure` separately prevents external plugins from adding tools.
- */
+/** Prevent user configuration and plugins from granting tools to untrusted source content. */
 export function openCodeRuntimePolicy(authority: OpenCodeRuntimeAuthority) {
   const agentName = AGENT_NAMES[authority]
   const permission =

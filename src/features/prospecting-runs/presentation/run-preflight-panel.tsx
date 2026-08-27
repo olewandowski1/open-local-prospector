@@ -18,11 +18,7 @@ import type { SearchBriefPreflight } from "@/features/prospecting-runs/applicati
 import { runtimeExecutionLabel } from "@/features/runtime-settings/client"
 import { cn } from "@/lib/utils"
 
-/**
- * The preflight outcome as a document section: interpreted area, dependency readiness, workload
- * estimate, and the confirm action. The New Run sheet renders it directly; nothing wraps it in
- * the sticky aside the deleted standalone page used.
- */
+// Render the complete preflight outcome as one document section inside the New Run sheet.
 export function RunPreflightSection({
   preflight,
   selectedAreaId,
@@ -131,7 +127,7 @@ function SearchAreaChoice({
         </p>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground">
-        Geocoding ┬ę OpenStreetMap contributors. Public Nominatim is used only on your explicit
+        Geocoding &copy; OpenStreetMap contributors. Public Nominatim is used only on your explicit
         request, cached locally, and limited to one request per second. Read the{" "}
         <a
           className="underline underline-offset-4"
@@ -195,7 +191,7 @@ function WorkloadEstimate({ preflight }: { preflight: SearchBriefPreflight }) {
       <p className="mt-1 text-xs text-muted-foreground">{preflight.estimate.note}</p>
       {preflight.draft.runtimeConfiguration ? (
         <p className="mt-2 text-xs font-medium">
-          {preflight.runtime.label} ┬Ě{" "}
+          {preflight.runtime.label}:{" "}
           {runtimeExecutionLabel(preflight.draft.runtime, preflight.draft.runtimeConfiguration)}
         </p>
       ) : null}

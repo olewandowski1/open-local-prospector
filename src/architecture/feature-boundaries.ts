@@ -70,8 +70,7 @@ const forbiddenLayerDependencies: Readonly<Record<string, readonly string[]>> = 
   application: ["infrastructure", "server", "presentation"],
   infrastructure: ["server", "presentation"],
   server: ["presentation"],
-  // A presentation module may be a Next.js Server Component that composes its feature's server
-  // read model. It must not reach through that boundary to persistence adapters.
+  // Server Components may compose server read models but cannot reach persistence adapters.
   presentation: ["infrastructure"],
 }
 const isRuntimeAdapterImport = (specifier: string) =>

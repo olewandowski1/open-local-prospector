@@ -28,13 +28,7 @@ import {
   withoutTerminalColour,
 } from "@/features/runtime-settings"
 
-/**
- * A report searches the public web and reads the pages it finds, so minutes are normal. OpenCode's
- * hosted model drives its fetches one at a time and is far slower than the others. It was measured at
- * ninety-seven seconds for three businesses, so it is given room rather than cut off. One number
- * for every runtime would mean either failing OpenCode or letting a hung Claude hold a worker slot
- * for three quarters of an hour.
- */
+// Provider-specific report timeouts reflect measured search behavior while keeping worker slots bounded.
 const REPORT_TIMEOUT_MILLISECONDS: Readonly<Record<RuntimeId, number>> = {
   claude: 900_000,
   codex: 900_000,
@@ -298,8 +292,7 @@ function inTemporaryDirectory<A>(
       catch: () => blocked("temporary-directory", "A private workspace could not be created."),
     }),
     use,
-    // A runtime that leaves a helper behind still holds this directory open, and Windows answers
-    // EBUSY. Losing a scratch directory in the system temp folder is not worth failing a run for.
+    // A lingering provider helper may keep the disposable directory locked on Windows.
     (directory) =>
       Effect.promise(() =>
         rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 }).catch(

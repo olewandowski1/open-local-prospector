@@ -18,12 +18,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { MAX_SUPPRESSION_REASON_LENGTH } from "@/features/review-queue/domain/review-policy"
 import type { QueueCandidate } from "@/features/review-queue/server/review-queue-read-model"
 
-/**
- * The two actions that cannot be taken back, kept together at the foot of the panel so neither is
- * ever the thing a reader's hand lands on while scanning evidence.
- */
 export function CandidateDangerZone({
   candidate,
   busy,
@@ -60,7 +57,12 @@ export function CandidateDangerZone({
         <form onSubmit={onSuppress} className="grid gap-2">
           <Field className="gap-1">
             <FieldLabel htmlFor="suppressionReason">Suppression Reason</FieldLabel>
-            <Input id="suppressionReason" name="reason" required />
+            <Input
+              id="suppressionReason"
+              name="reason"
+              maxLength={MAX_SUPPRESSION_REASON_LENGTH}
+              required
+            />
           </Field>
           <div className="flex justify-end">
             <Button type="submit" variant="destructive" size="sm" disabled={busy}>

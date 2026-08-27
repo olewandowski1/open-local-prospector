@@ -476,7 +476,7 @@ function discoveryInput(runtime: "codex" | "claude" | "opencode", configured: bo
   return JSON.stringify({
     marker: "preserved",
     searchBrief: {
-      location: "KrakĂłw",
+      location: "Krakow",
       category: "Dental clinics",
       targetCount: 5,
       mode: "Quick",
@@ -486,7 +486,7 @@ function discoveryInput(runtime: "codex" | "claude" | "opencode", configured: bo
         : {}),
       searchArea: {
         id: "relation:276892",
-        displayName: "KrakĂłw, Polska",
+        displayName: "Krakow, Polska",
         latitude: 50.0614,
         longitude: 19.9366,
         countryCode: "PL",

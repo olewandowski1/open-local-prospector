@@ -18,12 +18,7 @@ export type PinnedHttpProxy = Readonly<{
   close: () => Promise<void>
 }>
 
-/**
- * Chromium delegates every outbound connection to this loopback proxy. The proxy resolves and
- * validates the destination, then connects to the selected numeric address instead of asking the
- * operating system to resolve the hostname again. The original hostname remains visible to HTTP
- * and TLS, so ordinary virtual hosting and certificate verification continue to work.
- */
+/** Pin validated numeric addresses while preserving the hostname for HTTP and TLS. */
 export async function startPinnedHttpProxy(resolveHost: ResolveHost): Promise<PinnedHttpProxy> {
   const username = "prospector"
   const password = randomBytes(24).toString("base64url")

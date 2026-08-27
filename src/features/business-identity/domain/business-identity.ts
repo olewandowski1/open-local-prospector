@@ -46,11 +46,7 @@ export type IdentityEvaluation = Readonly<{
   exclusionReason?: string
 }>
 
-/**
- * The deterministic half of identity. Telling one business from another already happened in the
- * structuring step, against a report the application verified; what is left is the eligibility
- * decision and the canonical key, which must not vary between runs over the same input.
- */
+// Keep eligibility and canonical identity deterministic after runtime-assisted structuring.
 export function evaluateBusinessIdentity(input: IdentityInput): IdentityEvaluation {
   const { business } = input
   const canonicalName = business.name.trim().slice(0, 300)

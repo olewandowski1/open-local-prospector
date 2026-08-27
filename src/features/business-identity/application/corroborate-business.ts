@@ -18,8 +18,7 @@ export function makeIdentityTaskExecutor(repository: IdentityRepository) {
         .loadContext(task.runId, discoveredBusinessId)
         .pipe(Effect.mapError(persistenceError))
       if (!context.structured) {
-        // Discovery writes this for every business it records, so its absence means the row predates
-        // the structured pipeline rather than that the business is unusable.
+        // A missing report section identifies a row from before structured discovery.
         return yield* permanent(
           "missing-structured-business",
           "This business was discovered before structured attribution and cannot be corroborated.",

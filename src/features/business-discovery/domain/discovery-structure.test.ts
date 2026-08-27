@@ -154,8 +154,7 @@ describe("discovery structure verification", () => {
     )
   })
 
-  // A runtime that lists a business's pages under one heading and its telephone under the next
-  // lost every contact it found, because "beside its source" meant "in the same paragraph".
+  // Contacts remain attributable when a business report spans several headings.
   it("keeps a contact written further down the business's own section", () => {
     const report = [
       "1) Kwiaciarnia Emi",

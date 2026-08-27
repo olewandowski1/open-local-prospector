@@ -128,8 +128,7 @@ test("downloads, resets and restores the complete workspace through the UI", asy
 
   await page.goto("/settings/maintenance")
   const downloadPromise = page.waitForEvent("download")
-  // A button, not a link: the archive is fetched so a failure can be reported on the page rather
-  // than replacing it with the raw JSON error.
+  // Fetch the archive so a failure remains visible on the page.
   await page.getByRole("button", { name: "Download Backup" }).first().click()
   const download = await downloadPromise
   const backupPath = resolve(root, "round-trip.olp-backup.tgz")
@@ -191,8 +190,7 @@ test("downloads, resets and restores the complete workspace through the UI", asy
         .get(),
     ).toBe(0)
     expect(database.prepare("select count(*) from candidate_reviews").pluck().get()).toBe(0)
-    // Deleting removes stored data; it is not a Do Not Contact instruction, so it leaves no
-    // Suppression Entry and the business stays discoverable.
+    // Deletion removes stored data without creating a Suppression Entry.
     expect(
       database
         .prepare(

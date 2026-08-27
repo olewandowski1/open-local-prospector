@@ -11,7 +11,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Protect dynamic pages, route handlers, RSC requests, and Server Actions. Framework-owned static
-  // image assets carry no workspace data and do not need the request admission check.
+  // Protect workspace requests while allowing framework-owned static assets.
   matcher: "/((?!_next/static|_next/image).*)",
 }

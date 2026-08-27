@@ -81,8 +81,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
     retry: false,
   })
 
-  // Only the review status is remembered: a saved town would quietly hide a run made later
-  // somewhere else, and the reader would have no idea the queue was holding anything back.
+  // Persist only status so a saved locality cannot hide candidates from later runs.
   const selectFilter = (next: Partial<QueueFilter>) => {
     setFilter((current) => {
       const merged = { ...current, ...next }
