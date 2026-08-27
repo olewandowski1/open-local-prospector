@@ -295,15 +295,14 @@ function carryForwardBusinesses(
   database: Database.Database,
   input: Readonly<{
     runId: string
-    canonicalBusinessIds: readonly string[]
+    discoveredBusinessIds: readonly string[]
     carriedAt: Date
   }>,
 ): readonly CarriedForwardBusiness[] {
-  const latest = database.prepare(
-    `select d.name, d.normalized_name, d.result_url, d.description, d.raw_attributes, d.structured
-     from discovered_businesses d join run_businesses rb on rb.discovered_business_id = d.id
-     where rb.canonical_business_id = ? and d.structured is not null
-     order by d.discovered_at desc, d.id desc limit 1`,
+  // The record behind the score is the one repeated: a later listing of the same business can be thinner.
+  const source = database.prepare(
+    `select name, normalized_name, result_url, description, raw_attributes, structured
+     from discovered_businesses where id = ? and structured is not null`,
   )
   const insert = database.prepare(
     `insert into discovered_businesses
@@ -315,8 +314,8 @@ function carryForwardBusinesses(
   return database.transaction(() => {
     const carried: CarriedForwardBusiness[] = []
     let rank = 0
-    for (const canonicalBusinessId of input.canonicalBusinessIds) {
-      const previous = latest.get(canonicalBusinessId) as
+    for (const discoveredBusinessId of input.discoveredBusinessIds) {
+      const previous = source.get(discoveredBusinessId) as
         | {
             name: string
             normalized_name: string
@@ -327,13 +326,13 @@ function carryForwardBusinesses(
           }
         | undefined
       if (!previous) continue
-      const discoveredBusinessId = crypto.randomUUID()
+      const carriedId = crypto.randomUUID()
       insert.run(
-        discoveredBusinessId,
+        carriedId,
         input.runId,
         REASSESSMENT_SOURCE,
-        canonicalBusinessId,
-        `${REASSESSMENT_SOURCE}:${canonicalBusinessId}`,
+        discoveredBusinessId,
+        `${REASSESSMENT_SOURCE}:${discoveredBusinessId}`,
         previous.name,
         previous.normalized_name,
         previous.result_url,
@@ -343,7 +342,7 @@ function carryForwardBusinesses(
         rank,
         timestamp,
       )
-      carried.push({ discoveredBusinessId, name: previous.name })
+      carried.push({ discoveredBusinessId: carriedId, name: previous.name })
       rank += 1
     }
     return carried

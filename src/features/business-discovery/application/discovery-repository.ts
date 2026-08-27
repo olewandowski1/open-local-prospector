@@ -59,7 +59,7 @@ export interface DiscoveryRepository {
   readonly carryForwardBusinesses: (
     input: Readonly<{
       runId: string
-      canonicalBusinessIds: readonly string[]
+      discoveredBusinessIds: readonly string[]
       carriedAt: Date
     }>,
   ) => Effect.Effect<readonly CarriedForwardBusiness[], DiscoveryPersistenceError>

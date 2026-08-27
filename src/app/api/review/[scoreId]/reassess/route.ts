@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import {
   createReassessmentRun,
+  ReassessmentAlreadyRunning,
   RuntimeNotReadyForReassessment,
 } from "@/features/prospecting-runs/server/reassessment-services"
 import { getReassessmentTarget } from "@/features/review-queue/server/review-queue-read-model"
@@ -17,14 +18,18 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
     }
     const run = await withWorkspaceAdmission(() =>
       createReassessmentRun({
-        canonicalBusinessId: target.canonicalBusinessId,
+        discoveredBusinessId: target.discoveredBusinessId,
         sourceSearchBrief: target.sourceSearchBrief,
-        // Repeating the request reuses the run this score already asked for.
-        requestId: `reassess:${scoreId}`,
       }),
     )
     return NextResponse.json({ id: run.id, state: run.state }, { status: 201 })
   } catch (error) {
+    if (error instanceof ReassessmentAlreadyRunning) {
+      return NextResponse.json(
+        { error: "This business is already being reassessed. Open the run to follow it." },
+        { status: 409 },
+      )
+    }
     if (error instanceof RuntimeNotReadyForReassessment) {
       return NextResponse.json({ error: error.message }, { status: 409 })
     }

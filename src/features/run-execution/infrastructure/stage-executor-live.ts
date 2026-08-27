@@ -51,7 +51,7 @@ function namesReassessedBusinesses(input: Readonly<Record<string, unknown>>): bo
   if (typeof searchBrief !== "object" || searchBrief === null) return false
   const reassessment = (searchBrief as Readonly<Record<string, unknown>>).reassessment
   if (typeof reassessment !== "object" || reassessment === null) return false
-  const ids = (reassessment as Readonly<Record<string, unknown>>).canonicalBusinessIds
+  const ids = (reassessment as Readonly<Record<string, unknown>>).discoveredBusinessIds
   return Array.isArray(ids) && ids.length > 0
 }
 

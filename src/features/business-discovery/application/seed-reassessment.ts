@@ -8,8 +8,8 @@ export function makeReassessmentSeedTaskExecutor(repository: DiscoveryRepository
   return (task: RunTask): Effect.Effect<TaskCheckpoint, TaskExecutionError> =>
     Effect.gen(function* () {
       const searchBrief = readSearchBrief(task.input)
-      const canonicalBusinessIds = searchBrief?.reassessment?.canonicalBusinessIds
-      if (!canonicalBusinessIds || canonicalBusinessIds.length === 0) {
+      const discoveredBusinessIds = searchBrief?.reassessment?.discoveredBusinessIds
+      if (!discoveredBusinessIds || discoveredBusinessIds.length === 0) {
         return yield* Effect.fail(
           new TaskExecutionError({
             classification: "Permanent",
@@ -22,7 +22,7 @@ export function makeReassessmentSeedTaskExecutor(repository: DiscoveryRepository
       const carried = yield* repository
         .carryForwardBusinesses({
           runId: task.runId,
-          canonicalBusinessIds,
+          discoveredBusinessIds,
           carriedAt: new Date(),
         })
         .pipe(
@@ -51,7 +51,7 @@ export function makeReassessmentSeedTaskExecutor(repository: DiscoveryRepository
       return {
         value: {
           carriedBusinesses: carried.length,
-          requestedBusinesses: canonicalBusinessIds.length,
+          requestedBusinesses: discoveredBusinessIds.length,
           schemaVersion: 1,
         },
         nextTasks: carried.map((business) => ({

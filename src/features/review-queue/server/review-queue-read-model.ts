@@ -357,7 +357,7 @@ const emptyCandidateSummary: CandidateSummary = {
 }
 
 export type ReassessmentTarget = Readonly<{
-  canonicalBusinessId: string
+  discoveredBusinessId: string
   businessName: string
   sourceSearchBrief: unknown
 }>
@@ -367,15 +367,15 @@ export function getReassessmentTarget(scoreId: string): ReassessmentTarget | und
   return readCandidates((database) => {
     const row = database
       .prepare(
-        `select cs.canonical_business_id,cb.name,pr.search_brief from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join prospecting_runs pr on pr.id=cs.run_id where cs.id=?`,
+        `select rb.discovered_business_id,cb.name,pr.search_brief from candidate_scores cs join run_businesses rb on rb.id=cs.run_business_id join canonical_businesses cb on cb.id=cs.canonical_business_id join prospecting_runs pr on pr.id=cs.run_id where cs.id=?`,
       )
       .get(scoreId) as
-      | { canonical_business_id: string; name: string; search_brief: string }
+      | { discovered_business_id: string; name: string; search_brief: string }
       | undefined
     if (!row) return undefined
     try {
       return {
-        canonicalBusinessId: row.canonical_business_id,
+        discoveredBusinessId: row.discovered_business_id,
         businessName: row.name,
         sourceSearchBrief: JSON.parse(row.search_brief) as unknown,
       }

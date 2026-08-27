@@ -35,7 +35,7 @@ export const SearchBriefDraftSchema = Schema.Struct({
   ),
   reassessment: Schema.optional(
     Schema.Struct({
-      canonicalBusinessIds: Schema.Array(TrimmedNonEmptyString).pipe(Schema.minItems(1)),
+      discoveredBusinessIds: Schema.Array(TrimmedNonEmptyString).pipe(Schema.minItems(1)),
     }),
   ),
 }).pipe(

@@ -1,3 +1,4 @@
+import Database from "better-sqlite3"
 import { Effect } from "effect"
 
 import { loadLocalApplicationConfig } from "@/features/local-application"
@@ -6,19 +7,19 @@ import { sqliteProspectingRunRepositoryLive } from "@/features/prospecting-runs/
 import { getRuntimeReadiness, isRuntimeId, RuntimeProbeLive } from "@/features/runtime-settings"
 
 export class InvalidReassessmentRequest extends Error {}
+export class ReassessmentAlreadyRunning extends Error {}
 export class RuntimeNotReadyForReassessment extends Error {}
 
 export async function createReassessmentRun(
   input: Readonly<{
-    canonicalBusinessId: string
+    discoveredBusinessId: string
     sourceSearchBrief: unknown
-    requestId: string
   }>,
 ) {
   const source = reassessableBrief(input.sourceSearchBrief)
-  if (!source || !input.canonicalBusinessId.trim() || !input.requestId.trim()) {
-    throw new InvalidReassessmentRequest()
-  }
+  if (!source || !input.discoveredBusinessId.trim()) throw new InvalidReassessmentRequest()
+  // Repeat reassessment is allowed, but not two runs at once for the same business.
+  if (hasActiveReassessment(input.discoveredBusinessId)) throw new ReassessmentAlreadyRunning()
   const readiness = await Effect.runPromise(
     getRuntimeReadiness(source.runtime).pipe(Effect.provide(RuntimeProbeLive)),
   )
@@ -34,12 +35,12 @@ export async function createReassessmentRun(
     runtime: source.runtime,
     ...(source.runtimeConfiguration ? { runtimeConfiguration: source.runtimeConfiguration } : {}),
     recentBusinessPolicy: "Reassess" as const,
-    reassessment: { canonicalBusinessIds: [input.canonicalBusinessId] },
+    reassessment: { discoveredBusinessIds: [input.discoveredBusinessId] },
     searchArea: source.searchArea,
   }
 
   return Effect.runPromise(
-    startProspectingRun(searchBrief, input.requestId).pipe(
+    startProspectingRun(searchBrief, crypto.randomUUID()).pipe(
       Effect.provide(sqliteProspectingRunRepositoryLive(loadLocalApplicationConfig().databasePath)),
     ),
   )
@@ -71,5 +72,26 @@ function reassessableBrief(value: unknown): ReassessableBrief | undefined {
     runtime,
     ...(brief.runtimeConfiguration ? { runtimeConfiguration: brief.runtimeConfiguration } : {}),
     searchArea,
+  }
+}
+
+function hasActiveReassessment(discoveredBusinessId: string): boolean {
+  const database = new Database(loadLocalApplicationConfig().databasePath, {
+    readonly: true,
+    fileMustExist: true,
+  })
+  try {
+    return Boolean(
+      database
+        .prepare(
+          `select 1 from prospecting_runs where state in ('Pending','Running')
+           and exists (select 1 from json_each(json_extract(search_brief,'$.reassessment.discoveredBusinessIds'))
+                       where value = ?) limit 1`,
+        )
+        .pluck()
+        .get(discoveredBusinessId),
+    )
+  } finally {
+    database.close()
   }
 }

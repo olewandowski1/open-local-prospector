@@ -9,6 +9,7 @@ vi.mock("@/features/review-queue/server/review-queue-read-model", () => ({
 }))
 vi.mock("@/features/prospecting-runs/server/reassessment-services", () => ({
   createReassessmentRun,
+  ReassessmentAlreadyRunning: class ReassessmentAlreadyRunning extends Error {},
   RuntimeNotReadyForReassessment: class RuntimeNotReadyForReassessment extends Error {},
 }))
 
@@ -22,7 +23,7 @@ const request = () =>
 const params = { params: Promise.resolve({ scoreId: "score-1" }) }
 
 const target = {
-  canonicalBusinessId: "business-1",
+  discoveredBusinessId: "discovered-1",
   businessName: "Gabinet Uśmiech",
   sourceSearchBrief: { runtime: "codex" },
 }
@@ -41,9 +42,8 @@ describe("candidate reassessment route", () => {
 
     expect(response.status).toBe(201)
     await expect(response.json()).resolves.toEqual({ id: "run-1", state: "Pending" })
-    // Repeating the request must reuse the run this score already asked for.
     expect(createReassessmentRun).toHaveBeenCalledWith(
-      expect.objectContaining({ canonicalBusinessId: "business-1", requestId: "reassess:score-1" }),
+      expect.objectContaining({ discoveredBusinessId: "discovered-1" }),
     )
   })
 

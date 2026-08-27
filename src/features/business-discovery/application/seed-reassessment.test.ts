@@ -25,7 +25,7 @@ function workspace() {
   return databasePath
 }
 
-function task(databasePath: string, canonicalBusinessIds: readonly string[]) {
+function task(databasePath: string, discoveredBusinessIds: readonly string[]) {
   const database = new Database(databasePath)
   const runId = database
     .prepare("select id from prospecting_runs order by created_at limit 1")
@@ -48,7 +48,7 @@ function task(databasePath: string, canonicalBusinessIds: readonly string[]) {
     attemptCount: 1,
     maxAttempts: 3,
     input: {
-      searchBrief: { reassessment: { canonicalBusinessIds } },
+      searchBrief: { reassessment: { discoveredBusinessIds } },
     },
     schemaVersion: 1,
     version: 1,
@@ -59,19 +59,15 @@ describe("reassessment seeding", () => {
   it("carries a known business into this run and opens corroboration for it", async () => {
     const databasePath = workspace()
     const database = new Database(databasePath, { readonly: true })
-    const canonicalBusinessId = database
-      .prepare(
-        `select rb.canonical_business_id from run_businesses rb
-         join discovered_businesses d on d.id = rb.discovered_business_id
-         where d.structured is not null limit 1`,
-      )
+    const discoveredBusinessId = database
+      .prepare("select id from discovered_businesses where structured is not null limit 1")
       .pluck()
       .get() as string
     database.close()
 
     const checkpoint = await Effect.runPromise(
       makeReassessmentSeedTaskExecutor(makeSqliteDiscoveryRepository(databasePath))(
-        task(databasePath, [canonicalBusinessId]),
+        task(databasePath, [discoveredBusinessId]),
       ),
     )
 
@@ -89,6 +85,70 @@ describe("reassessment seeding", () => {
     // Identity is recomputed from the carried report, so it must travel with the row.
     expect(seeded.structured.length).toBeGreaterThan(0)
     expect(seeded.source).toBe("workspace-reassessment")
+  })
+
+  it("repeats the named record even when the business was listed again more thinly", async () => {
+    const databasePath = workspace()
+    const database = new Database(databasePath)
+    const original = database
+      .prepare(
+        `select d.id, d.run_id, d.name, rb.canonical_business_id from discovered_businesses d
+         join run_businesses rb on rb.discovered_business_id = d.id
+         where d.structured is not null and rb.canonical_business_id is not null limit 1`,
+      )
+      .get() as { id: string; run_id: string; name: string; canonical_business_id: string }
+    // A later, thinner listing of the same business must not be the one repeated.
+    const thinner = crypto.randomUUID()
+    database
+      .prepare(
+        `insert into discovered_businesses
+         (id, run_id, source, source_identifier, discovery_key, name, normalized_name,
+          result_url, description, raw_attributes, structured, discovery_rank, discovered_at)
+         values (?, ?, 'subscription-runtime-search-then-structure', 'later', 'later-key', ?, ?,
+          'https://later.test/', null, '{}', ?, 99, ?)`,
+      )
+      .run(
+        thinner,
+        original.run_id,
+        original.name,
+        original.name.toLowerCase(),
+        JSON.stringify({ name: original.name, locality: "Nowhere" }),
+        Date.now() + 60_000,
+      )
+    database
+      .prepare(
+        `insert into run_businesses
+         (id, run_id, discovered_business_id, canonical_business_id, status, identity_confidence,
+          signals, created_at, updated_at)
+         values (?, ?, ?, ?, 'Eligible', 'Corroborated', '{}', ?, ?)`,
+      )
+      .run(
+        crypto.randomUUID(),
+        original.run_id,
+        thinner,
+        original.canonical_business_id,
+        Date.now(),
+        Date.now(),
+      )
+    database.close()
+
+    const checkpoint = await Effect.runPromise(
+      makeReassessmentSeedTaskExecutor(makeSqliteDiscoveryRepository(databasePath))(
+        task(databasePath, [original.id]),
+      ),
+    )
+
+    const checked = new Database(databasePath, { readonly: true })
+    const carried = checked
+      .prepare("select source_identifier, structured from discovered_businesses where id = ?")
+      .get(checkpoint.nextTasks?.[0]?.businessId) as {
+      source_identifier: string
+      structured: string
+    }
+    checked.close()
+
+    expect(carried.source_identifier).toBe(original.id)
+    expect(carried.structured).not.toContain("Nowhere")
   })
 
   it("refuses a business with no structured discovery to recompute identity from", async () => {
