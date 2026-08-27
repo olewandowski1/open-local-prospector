@@ -117,6 +117,27 @@ test("explains the deterministic score limits for blocked website evidence", asy
   await expect(limitation).toContainText("caps severity at 4 of 5 and confidence at 0.6")
 })
 
+test("starts a reassessment from the candidate and names the run it created", async ({ page }) => {
+  await page.route(/\/api\/review\/[0-9a-f-]{36}\/reassess$/u, async (route) => {
+    await route.fulfill({
+      status: 201,
+      json: { id: "11111111-2222-3333-4444-555555555555", state: "Pending" },
+    })
+  })
+
+  await page.goto("/review")
+  await page.getByRole("button", { name: "Open For Review" }).first().click()
+
+  const sheet = page.getByRole("dialog")
+  await sheet.getByRole("button", { name: "Reassess Business" }).click()
+
+  await expect(sheet.getByText("Run #11111111 started.")).toBeVisible()
+  await expect(sheet.getByRole("link", { name: "View Progress" })).toHaveAttribute(
+    "href",
+    "/runs/11111111-2222-3333-4444-555555555555",
+  )
+})
+
 test("replaces a failed detail loader with a retryable error", async ({ page }) => {
   let attempts = 0
   await page.route(/\/api\/review\/[0-9a-f-]{36}$/u, async (route) => {

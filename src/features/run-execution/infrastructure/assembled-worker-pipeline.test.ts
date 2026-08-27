@@ -8,6 +8,7 @@ import {
   type DiscoveryRuntime,
   DiscoveryRuntimeError,
   makeDiscoveryTaskExecutor,
+  makeReassessmentSeedTaskExecutor,
   makeSqliteDiscoveryRepository,
 } from "@/features/business-discovery"
 import {
@@ -220,9 +221,10 @@ function assembledWorkerLayer(
   options: Readonly<{ blockDiscovery?: boolean; failInspectionFor?: string }> = {},
 ) {
   const artifactsPath = join(dirname(databasePath), "artifacts")
+  const discoveryRepository = makeSqliteDiscoveryRepository(databasePath)
   const executeDiscovery = makeDiscoveryTaskExecutor(
     discoveryRuntime(Boolean(options.blockDiscovery)),
-    makeSqliteDiscoveryRepository(databasePath),
+    discoveryRepository,
   )
   const executeIdentity = makeIdentityTaskExecutor(makeSqliteIdentityRepository(databasePath))
   const executeInspection = makeInspectionTaskExecutor(
@@ -237,6 +239,7 @@ function assembledWorkerLayer(
   return Layer.merge(
     sqliteRunTaskRepositoryLive(databasePath),
     stageExecutorLive({
+      SeedReassessment: makeReassessmentSeedTaskExecutor(discoveryRepository),
       DiscoverBusinesses: executeDiscovery,
       CorroborateBusiness: executeIdentity,
       InspectWebsite: executeInspection,

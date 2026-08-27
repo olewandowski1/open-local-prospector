@@ -8,6 +8,7 @@ export type {
   DiscoveryRuntime,
 } from "@/features/business-discovery/application/discovery-runtime"
 export { DiscoveryRuntimeError } from "@/features/business-discovery/application/discovery-runtime"
+export { makeReassessmentSeedTaskExecutor } from "@/features/business-discovery/application/seed-reassessment"
 export type {
   DiscoveryPage,
   DiscoveryResult,

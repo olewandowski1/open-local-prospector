@@ -356,6 +356,35 @@ const emptyCandidateSummary: CandidateSummary = {
   qualifiedLastWeek: 0,
 }
 
+export type ReassessmentTarget = Readonly<{
+  canonicalBusinessId: string
+  businessName: string
+  sourceSearchBrief: unknown
+}>
+
+// Reassessment repeats the brief that found the business, so the run keeps the same market and runtime.
+export function getReassessmentTarget(scoreId: string): ReassessmentTarget | undefined {
+  return readCandidates((database) => {
+    const row = database
+      .prepare(
+        `select cs.canonical_business_id,cb.name,pr.search_brief from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join prospecting_runs pr on pr.id=cs.run_id where cs.id=?`,
+      )
+      .get(scoreId) as
+      | { canonical_business_id: string; name: string; search_brief: string }
+      | undefined
+    if (!row) return undefined
+    try {
+      return {
+        canonicalBusinessId: row.canonical_business_id,
+        businessName: row.name,
+        sourceSearchBrief: JSON.parse(row.search_brief) as unknown,
+      }
+    } catch {
+      return undefined
+    }
+  })
+}
+
 function readCandidates<T>(read: (database: Database.Database) => T): T {
   let db: Database.Database | undefined
   try {

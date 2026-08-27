@@ -96,6 +96,10 @@ and the business may still qualify, but severity is capped at 4 of 5 and confide
 partial inspection with captured page evidence is not subject to those limits.
 _Avoid_: AI score, lead score
 
+**Reassessment**:
+Observing a Candidate Business again on request: its Contact Routes are verified, its website is inspected, and a new Website Assessment and Opportunity Score are recorded. Earlier assessments and scores are retained, and Candidates shows the current score for a business. A Reassessment carries the business forward from the workspace rather than discovering it again, so it repeats the market and runtime of the run that found it.
+_Avoid_: rescan, refresh, re-crawl
+
 **Review Example**:
 A reviewed Candidate Business paired with Oliver's Review Status and reason. Review Examples form an evaluation set for explicitly proposed rubric improvements; they never alter prompts or weights automatically.
 _Avoid_: Training data, feedback signal

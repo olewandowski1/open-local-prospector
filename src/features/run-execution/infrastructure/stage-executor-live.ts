@@ -9,6 +9,7 @@ import type { RunTask, TaskCheckpoint } from "@/features/run-execution/domain/ru
 export type StageTaskExecutor = (task: RunTask) => Effect.Effect<TaskCheckpoint, TaskExecutionError>
 
 export type StageExecutors = Readonly<{
+  SeedReassessment: StageTaskExecutor
   DiscoverBusinesses: StageTaskExecutor
   CorroborateBusiness: StageTaskExecutor
   InspectWebsite: StageTaskExecutor
@@ -37,10 +38,21 @@ export const stageExecutorLive = (executors: StageExecutors) =>
   })
 
 function planRun(task: RunTask): Effect.Effect<TaskCheckpoint, TaskExecutionError> {
+  // A reassessment already names its businesses, so it carries them forward instead of searching.
+  const stage = namesReassessedBusinesses(task.input) ? "SeedReassessment" : "DiscoverBusinesses"
   return Effect.succeed({
     value: { planned: true, schemaVersion: 1, targetCount: searchBriefTarget(task.input) },
-    nextTasks: [{ stage: "DiscoverBusinesses", input: task.input, schemaVersion: 1 }],
+    nextTasks: [{ stage, input: task.input, schemaVersion: 1 }],
   })
+}
+
+function namesReassessedBusinesses(input: Readonly<Record<string, unknown>>): boolean {
+  const searchBrief = input.searchBrief
+  if (typeof searchBrief !== "object" || searchBrief === null) return false
+  const reassessment = (searchBrief as Readonly<Record<string, unknown>>).reassessment
+  if (typeof reassessment !== "object" || reassessment === null) return false
+  const ids = (reassessment as Readonly<Record<string, unknown>>).canonicalBusinessIds
+  return Array.isArray(ids) && ids.length > 0
 }
 
 function searchBriefTarget(input: Readonly<Record<string, unknown>>): number | undefined {

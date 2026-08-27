@@ -102,6 +102,23 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
 
   const refresh = () => router.refresh()
 
+  const reassess = async (scoreId: string): Promise<string | undefined> => {
+    setBusy(true)
+    setError(undefined)
+    try {
+      const response = await fetch(`/api/review/${scoreId}/reassess`, { method: "POST" })
+      const result = (await response.json().catch(() => ({}))) as { id?: string; error?: string }
+      if (!response.ok || !result.id) {
+        setError(result.error ?? "The reassessment was not started.")
+        return undefined
+      }
+      refresh()
+      return result.id
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const post = async (path: string, body: Record<string, unknown>): Promise<boolean> => {
     setBusy(true)
     setError(undefined)
@@ -277,6 +294,7 @@ export function ReviewWorkspace({ candidates }: { candidates: readonly QueueCand
         }}
         onPrevious={() => step(-1)}
         onNext={() => step(1)}
+        onReassess={reassess}
         onRetryDetail={() => void detail.refetch()}
         onQuickDecision={(decision) => void quickDecision(decision)}
         onSaveReview={submitForm}

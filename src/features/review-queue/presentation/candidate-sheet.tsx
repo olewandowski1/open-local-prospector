@@ -47,6 +47,7 @@ import {
 import { CandidateAdmin } from "@/features/review-queue/presentation/candidate-admin"
 import { CandidateDangerZone } from "@/features/review-queue/presentation/candidate-danger-zone"
 import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
+import { CandidateReassessment } from "@/features/review-queue/presentation/candidate-reassessment"
 import { formatScore, humanizeTerm } from "@/features/review-queue/presentation/review-presentation"
 import type {
   QueueCandidate,
@@ -76,6 +77,7 @@ export function CandidateSheet({
   onOpenChange,
   onPrevious,
   onNext,
+  onReassess,
   onRetryDetail,
   onQuickDecision,
   onSaveReview,
@@ -94,6 +96,7 @@ export function CandidateSheet({
   onOpenChange: (open: boolean) => void
   onPrevious: () => void
   onNext: () => void
+  onReassess: (scoreId: string) => Promise<string | undefined>
   onRetryDetail: () => void
   onQuickDecision: (decision: QuickDecision) => void
   onSaveReview: (event: React.FormEvent<HTMLFormElement>) => void
@@ -153,6 +156,12 @@ export function CandidateSheet({
                 ) : (
                   <>
                     <CandidateEvidence candidate={detail} />
+                    <CandidateReassessment
+                      key={detail.id}
+                      candidate={detail}
+                      busy={busy}
+                      onReassess={() => onReassess(detail.id)}
+                    />
                     <CandidateAdmin
                       candidate={detail}
                       busy={busy}

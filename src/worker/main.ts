@@ -2,6 +2,7 @@ import { Console, Effect, Layer, Option } from "effect"
 
 import {
   makeDiscoveryTaskExecutor,
+  makeReassessmentSeedTaskExecutor,
   makeSqliteDiscoveryRepository,
   makeSubscriptionDiscoveryRuntime,
 } from "@/features/business-discovery/worker"
@@ -53,10 +54,9 @@ const program = Effect.gen(function* () {
     ...(Option.isSome(opencodeExecutable) ? { opencode: opencodeExecutable.value } : {}),
   }
   const discoveryRuntime = makeSubscriptionDiscoveryRuntime(runtimeExecutables)
-  const executeDiscovery = makeDiscoveryTaskExecutor(
-    discoveryRuntime,
-    makeSqliteDiscoveryRepository(localConfig.databasePath),
-  )
+  const discoveryRepository = makeSqliteDiscoveryRepository(localConfig.databasePath)
+  const executeDiscovery = makeDiscoveryTaskExecutor(discoveryRuntime, discoveryRepository)
+  const executeReassessmentSeed = makeReassessmentSeedTaskExecutor(discoveryRepository)
   const executeIdentity = makeIdentityTaskExecutor(
     makeSqliteIdentityRepository(localConfig.databasePath),
   )
@@ -107,6 +107,7 @@ const program = Effect.gen(function* () {
         Layer.merge(
           sqliteRunTaskRepositoryLive(localConfig.databasePath),
           stageExecutorLive({
+            SeedReassessment: executeReassessmentSeed,
             DiscoverBusinesses: executeDiscovery,
             CorroborateBusiness: executeIdentity,
             InspectWebsite: executeInspection,

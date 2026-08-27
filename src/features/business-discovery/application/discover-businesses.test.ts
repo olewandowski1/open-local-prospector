@@ -106,6 +106,7 @@ describe("business discovery workflow", () => {
     const workerLayer = Layer.merge(
       sqliteRunTaskRepositoryLive(database.path),
       stageExecutorLive({
+        SeedReassessment: unreachableStage,
         DiscoverBusinesses: execute,
         CorroborateBusiness: unreachableStage,
         InspectWebsite: unreachableStage,

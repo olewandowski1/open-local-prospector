@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3"
 import { Effect } from "effect"
 import {
+  type CarriedForwardBusiness,
   type CompletedDiscoveryPage,
   DiscoveryPersistenceError,
   type DiscoveryProgress,
@@ -41,6 +42,10 @@ export function makeSqliteDiscoveryRepository(databasePath: string): DiscoveryRe
       }),
     recordReport: (input) =>
       databaseEffect(databasePath, "record-page", (database) => recordReport(database, input)),
+    carryForwardBusinesses: (input) =>
+      databaseEffect(databasePath, "carry-forward", (database) =>
+        carryForwardBusinesses(database, input),
+      ),
   }
 }
 
@@ -281,4 +286,66 @@ function readProgress(database: Database.Database, runId: string): DiscoveryProg
     )
     .all(runId) as readonly { id: string }[]
   return { uniqueBusinesses: businessIds.length, businessIds: businessIds.map((row) => row.id) }
+}
+
+// A reassessment observes a business already in the workspace, so its entry is carried, not searched for.
+export const REASSESSMENT_SOURCE = "workspace-reassessment"
+
+function carryForwardBusinesses(
+  database: Database.Database,
+  input: Readonly<{
+    runId: string
+    canonicalBusinessIds: readonly string[]
+    carriedAt: Date
+  }>,
+): readonly CarriedForwardBusiness[] {
+  const latest = database.prepare(
+    `select d.name, d.normalized_name, d.result_url, d.description, d.raw_attributes, d.structured
+     from discovered_businesses d join run_businesses rb on rb.discovered_business_id = d.id
+     where rb.canonical_business_id = ? and d.structured is not null
+     order by d.discovered_at desc, d.id desc limit 1`,
+  )
+  const insert = database.prepare(
+    `insert into discovered_businesses
+     (id, run_id, source, source_identifier, discovery_key, name, normalized_name,
+      result_url, description, raw_attributes, structured, discovery_rank, discovered_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  )
+  const timestamp = input.carriedAt.getTime()
+  return database.transaction(() => {
+    const carried: CarriedForwardBusiness[] = []
+    let rank = 0
+    for (const canonicalBusinessId of input.canonicalBusinessIds) {
+      const previous = latest.get(canonicalBusinessId) as
+        | {
+            name: string
+            normalized_name: string
+            result_url: string
+            description: string | null
+            raw_attributes: string
+            structured: string
+          }
+        | undefined
+      if (!previous) continue
+      const discoveredBusinessId = crypto.randomUUID()
+      insert.run(
+        discoveredBusinessId,
+        input.runId,
+        REASSESSMENT_SOURCE,
+        canonicalBusinessId,
+        `${REASSESSMENT_SOURCE}:${canonicalBusinessId}`,
+        previous.name,
+        previous.normalized_name,
+        previous.result_url,
+        previous.description,
+        previous.raw_attributes,
+        previous.structured,
+        rank,
+        timestamp,
+      )
+      carried.push({ discoveredBusinessId, name: previous.name })
+      rank += 1
+    }
+    return carried
+  })()
 }

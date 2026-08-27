@@ -2,6 +2,8 @@ import { Schema } from "effect"
 
 const TrimmedNonEmptyString = Schema.Trim.pipe(Schema.minLength(1))
 
+export const MINIMUM_SEARCH_TARGET = 5
+
 export const RuntimeIdSchema = Schema.Literal("codex", "claude", "opencode")
 
 export type RuntimeId = typeof RuntimeIdSchema.Type
@@ -10,7 +12,7 @@ export const SearchBriefDraftSchema = Schema.Struct({
   location: TrimmedNonEmptyString,
   radiusKm: Schema.optional(Schema.Number.pipe(Schema.nonNegative())),
   category: TrimmedNonEmptyString,
-  targetCount: Schema.Number.pipe(Schema.int(), Schema.between(5, 50)),
+  targetCount: Schema.Number.pipe(Schema.int(), Schema.between(1, 50)),
   mode: Schema.Literal("Quick", "Thorough"),
   runtime: RuntimeIdSchema,
   runtimeConfiguration: Schema.optional(
@@ -31,7 +33,18 @@ export const SearchBriefDraftSchema = Schema.Struct({
   recentBusinessPolicy: Schema.optional(
     Schema.Literal("Skip", "IncludeWithoutReassessment", "Reassess"),
   ),
-})
+  reassessment: Schema.optional(
+    Schema.Struct({
+      canonicalBusinessIds: Schema.Array(TrimmedNonEmptyString).pipe(Schema.minItems(1)),
+    }),
+  ),
+}).pipe(
+  // Only a reassessment names its businesses up front, so only it may ask for fewer than five.
+  Schema.filter(
+    (draft) => draft.reassessment !== undefined || draft.targetCount >= MINIMUM_SEARCH_TARGET,
+    { message: () => `A search brief targets at least ${MINIMUM_SEARCH_TARGET} businesses.` },
+  ),
+)
 
 export type SearchBriefDraft = typeof SearchBriefDraftSchema.Type
 

@@ -9,6 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Reassess a Candidate Business from its review panel. The run verifies contact routes, inspects
+  the website again, then assesses and scores it, writing new records and keeping the earlier
+  findings. It repeats the market and runtime of the run that found the business instead of
+  searching again, so no discovery call is spent.
 - Add `pnpm inspect:check`, which captures a fixture site through the real inspection pipeline
   under the worker loader so a transpiler helper leaking into the page fails the build.
 

@@ -36,8 +36,13 @@ export type RecordReportInput = Readonly<{
 }>
 
 export class DiscoveryPersistenceError extends Data.TaggedError("DiscoveryPersistenceError")<{
-  readonly operation: "progress" | "lookup-page" | "record-page"
+  readonly operation: "progress" | "lookup-page" | "record-page" | "carry-forward"
 }> {}
+
+export type CarriedForwardBusiness = Readonly<{
+  discoveredBusinessId: string
+  name: string
+}>
 
 export interface DiscoveryRepository {
   readonly getProgress: (
@@ -51,4 +56,11 @@ export interface DiscoveryRepository {
   readonly recordReport: (
     input: RecordReportInput,
   ) => Effect.Effect<RecordedDiscoveryPage, DiscoveryPersistenceError>
+  readonly carryForwardBusinesses: (
+    input: Readonly<{
+      runId: string
+      canonicalBusinessIds: readonly string[]
+      carriedAt: Date
+    }>,
+  ) => Effect.Effect<readonly CarriedForwardBusiness[], DiscoveryPersistenceError>
 }
