@@ -3,8 +3,16 @@ import type {
   RuntimeId,
 } from "@/features/runtime-settings/application/runtime-readiness"
 
-// Neither CLI exposes a check-without-install mode, so the application reports only what the CLI did.
-export const RUNTIME_UPDATE_ARGUMENTS = ["update"] as const
+// Each provider owns its updater. Keep the arguments fixed per runtime so a command name can never
+// be mistaken for a prompt or project path by another provider's CLI.
+const runtimeUpdateArguments = {
+  codex: ["update"],
+  claude: ["install", "stable"],
+  opencode: ["upgrade"],
+} as const satisfies Readonly<Record<RuntimeId, readonly string[]>>
+
+export const getRuntimeUpdateArguments = (runtimeId: RuntimeId): readonly string[] =>
+  runtimeUpdateArguments[runtimeId]
 
 export const RUNTIME_UPDATE_TIMEOUT_MILLISECONDS = 180_000
 

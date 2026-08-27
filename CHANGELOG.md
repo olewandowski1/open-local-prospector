@@ -9,6 +9,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Invoke each provider's actual fixed update command and terminate the complete updater process
+  tree when a readiness or update command exceeds its bounds.
+- Enforce the loopback Host boundary before dynamic pages, React Server Component requests, Server
+  Actions, and API routes instead of protecting API routes alone.
+- Neutralize source-derived spreadsheet formulas in CSV exports, restore unfiltered exports of
+  every candidate, prevent export responses from being cached or content-sniffed, and exercise
+  review, correction, and export round trips in the isolated workspace suite.
+- Reject unknown review reasons and over-limit notes or corrections instead of persisting invalid
+  categorical state or silently truncating reader-authored text.
 - Key eligible businesses without a telephone or dedicated website on a verified contact route,
   preventing same-name neighbours from sharing candidate and suppression state.
 - Keep the Overview candidate table within its content pane when all desktop columns are visible.

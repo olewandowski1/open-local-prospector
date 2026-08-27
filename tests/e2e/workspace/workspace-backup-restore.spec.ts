@@ -77,6 +77,51 @@ test.afterAll(() => {
 
 test("downloads, resets and restores the complete workspace through the UI", async ({ page }) => {
   test.setTimeout(120_000)
+  await page.goto("/review")
+  await page.getByRole("button", { name: "Open For Review" }).click()
+  const shortlistResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/review/delete-score") && response.request().method() === "POST",
+  )
+  await page.getByRole("button", { name: /Shortlist/ }).click()
+  expect((await shortlistResponse).ok()).toBe(true)
+  await expect.poll(() => readReviewStatus()).toBe("Shortlisted")
+
+  await page.getByRole("button", { name: /Notes And Follow-Up/ }).click()
+  await page.getByLabel("Private Review Notes").fill("Review round trip note")
+  const notesResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/review/delete-score") && response.request().method() === "POST",
+  )
+  await page.getByRole("button", { name: "Save Notes" }).click()
+  expect((await notesResponse).ok()).toBe(true)
+  await expect.poll(() => readPrivateNotes()).toBe("Review round trip note")
+
+  await page.getByRole("button", { name: /Add Correction/ }).click()
+  await page.getByLabel("Corrected Value").fill("The booking link is visible on the contact page.")
+  await page
+    .getByRole("textbox", { name: "Reason", exact: true })
+    .fill("Verified in the synthetic fixture.")
+  const correctionResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/review/delete-score") && response.request().method() === "POST",
+  )
+  await page.getByRole("button", { name: "Add Correction", exact: true }).click()
+  expect((await correctionResponse).ok()).toBe(true)
+  await expect.poll(() => readCorrectionCount()).toBe(1)
+
+  await page.goto("/review")
+  await page.getByRole("button", { name: "Export" }).click()
+  await page.getByRole("radio", { name: "JSON" }).click()
+  const exportDownload = page.waitForEvent("download")
+  await page.locator("a[download]").filter({ hasText: "Download JSON" }).click()
+  const exportedPath = resolve(root, "reviewed-candidates.json")
+  await (await exportDownload).saveAs(exportedPath)
+  const exported = JSON.parse(readFileSync(exportedPath, "utf8")) as readonly {
+    reviewStatus: string
+  }[]
+  expect(exported.some((candidate) => candidate.reviewStatus === "Shortlisted")).toBe(true)
+
   await page.goto("/settings/data")
   await expect(statFor(page, "Prospecting Runs")).toHaveText("1")
   await expect(page.getByText("1 Files · 19 B", { exact: true })).toBeVisible()
@@ -163,4 +208,31 @@ test("downloads, resets and restores the complete workspace through the UI", asy
 
 function statFor(page: import("@playwright/test").Page, label: string) {
   return page.locator("dl > div").filter({ hasText: label }).locator("dd")
+}
+
+function readReviewStatus(): string | undefined {
+  return readWorkspaceValue("select status from candidate_reviews where score_id='delete-score'") as
+    | string
+    | undefined
+}
+
+function readPrivateNotes(): string | undefined {
+  return readWorkspaceValue(
+    "select private_notes from candidate_reviews where score_id='delete-score'",
+  ) as string | undefined
+}
+
+function readCorrectionCount(): number {
+  return Number(
+    readWorkspaceValue("select count(*) from candidate_corrections where score_id='delete-score'"),
+  )
+}
+
+function readWorkspaceValue(statement: string): unknown {
+  const database = new Database(databasePath, { readonly: true, fileMustExist: true })
+  try {
+    return database.prepare(statement).pluck().get()
+  } finally {
+    database.close()
+  }
 }

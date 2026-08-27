@@ -1,6 +1,10 @@
 import Database from "better-sqlite3"
 import {
   CORRECTION_TARGETS,
+  MAX_CORRECTED_VALUE_LENGTH,
+  MAX_CORRECTION_NOTE_LENGTH,
+  MAX_PRIVATE_NOTES_LENGTH,
+  MAX_REJECTION_NOTE_LENGTH,
   REJECTION_REASONS,
   REVIEW_STATUSES,
 } from "@/features/review-queue/domain/review-policy"
@@ -25,10 +29,19 @@ export function updateCandidateReview(
     throw new Error("rejection reason is required")
   if (
     update.status === "Rejected" &&
+    !REJECTION_REASONS.includes(update.rejectionReason as (typeof REJECTION_REASONS)[number])
+  )
+    throw new Error("invalid rejection reason")
+  if (
+    update.status === "Rejected" &&
     update.rejectionReason === "Other" &&
     !update.rejectionNote?.trim()
   )
     throw new Error("Other requires a note")
+  if ((update.rejectionNote?.length ?? 0) > MAX_REJECTION_NOTE_LENGTH)
+    throw new Error("rejection note is too long")
+  if ((update.privateNotes?.length ?? 0) > MAX_PRIVATE_NOTES_LENGTH)
+    throw new Error("private notes are too long")
   const followUpAt = update.followUpAt ? new Date(update.followUpAt).getTime() : null
   if (followUpAt !== null && !Number.isFinite(followUpAt)) throw new Error("invalid follow-up date")
   withDatabase(databasePath, (db) =>
@@ -42,7 +55,7 @@ export function updateCandidateReview(
         update.status,
         update.status === "Rejected" ? (update.rejectionReason ?? null) : null,
         update.status === "Rejected" ? (update.rejectionNote?.trim() ?? null) : null,
-        update.privateNotes?.slice(0, 10_000) ?? "",
+        update.privateNotes ?? "",
         followUpAt,
         Date.now(),
       ),
@@ -60,6 +73,10 @@ export function addCandidateCorrection(
 ): void {
   if (!CORRECTION_TARGETS.includes(input.target) || !input.correctedValue.trim())
     throw new Error("invalid correction")
+  if (input.correctedValue.length > MAX_CORRECTED_VALUE_LENGTH)
+    throw new Error("corrected value is too long")
+  if ((input.note?.length ?? 0) > MAX_CORRECTION_NOTE_LENGTH)
+    throw new Error("correction note is too long")
   withDatabase(databasePath, (db) =>
     db
       .prepare(
@@ -69,8 +86,8 @@ export function addCandidateCorrection(
         crypto.randomUUID(),
         scoreId,
         input.target,
-        input.correctedValue.trim().slice(0, 4_000),
-        input.note?.trim().slice(0, 2_000) ?? "",
+        input.correctedValue.trim(),
+        input.note?.trim() ?? "",
         Date.now(),
       ),
   )

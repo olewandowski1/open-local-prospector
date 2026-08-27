@@ -8,10 +8,10 @@ import {
   runtimeIds,
 } from "@/features/runtime-settings/application/runtime-readiness"
 import {
+  getRuntimeUpdateArguments,
   interpretUpdateResult,
   isUpdateAvailable,
   RUNTIME_PACKAGES,
-  RUNTIME_UPDATE_ARGUMENTS,
   RUNTIME_UPDATE_TIMEOUT_MILLISECONDS,
   type RuntimeUpdateResult,
   type RuntimeUpdateStatus,
@@ -37,7 +37,7 @@ export async function updateRuntime(runtimeId: RuntimeId): Promise<RuntimeUpdate
   const result = await Effect.runPromise(
     executeRuntimeCommand(
       executable.value,
-      RUNTIME_UPDATE_ARGUMENTS,
+      getRuntimeUpdateArguments(runtimeId),
       process.env,
       RUNTIME_UPDATE_TIMEOUT_MILLISECONDS,
     ).pipe(

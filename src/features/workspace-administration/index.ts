@@ -10,7 +10,7 @@ export {
   assertSameOrigin,
   getSuppressions,
   getWorkspaceInventory,
-  isLoopbackApiRequest,
+  isLoopbackRequest,
   withWorkspaceAdmission,
   workspaceMaintenanceIsActive,
 } from "@/features/workspace-administration/server/workspace-services"

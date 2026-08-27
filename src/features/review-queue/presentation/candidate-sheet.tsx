@@ -40,7 +40,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import { REJECTION_REASONS } from "@/features/review-queue/domain/review-policy"
+import {
+  MAX_REJECTION_NOTE_LENGTH,
+  REJECTION_REASONS,
+} from "@/features/review-queue/domain/review-policy"
 import { CandidateAdmin } from "@/features/review-queue/presentation/candidate-admin"
 import { CandidateDangerZone } from "@/features/review-queue/presentation/candidate-danger-zone"
 import { CandidateEvidence } from "@/features/review-queue/presentation/candidate-evidence"
@@ -306,6 +309,7 @@ function CandidateDecisionBar({
             <div className="flex items-center gap-2">
               <Input
                 id="reject-other"
+                maxLength={MAX_REJECTION_NOTE_LENGTH}
                 value={note}
                 placeholder="Say why in a few words"
                 onChange={(event) => setNote(event.target.value)}

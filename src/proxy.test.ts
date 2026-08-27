@@ -4,27 +4,34 @@ import { describe, expect, it } from "vitest"
 
 import { config, proxy } from "@/proxy"
 
-describe("API proxy", () => {
-  it.each(["/api/workspace/backup", "/api/export", "/api/runs/run-1/control"])(
-    "matches %s",
+describe("local application proxy", () => {
+  it.each([
+    "/",
+    "/review",
+    "/runs/run-1",
+    "/api/workspace/backup",
+    "/api/export",
+    "/api/runs/run-1/control",
+  ])("matches %s", (url) => {
+    expect(unstable_doesMiddlewareMatch({ config, url })).toBe(true)
+  })
+
+  it.each(["/_next/static/app.js", "/_next/image?url=%2Ficon.svg&w=64&q=75"])(
+    "does not match %s",
     (url) => {
-      expect(unstable_doesMiddlewareMatch({ config, url })).toBe(true)
+      expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false)
     },
   )
 
-  it.each(["/", "/runs/run-1", "/_next/static/app.js"])("does not match %s", (url) => {
-    expect(unstable_doesMiddlewareMatch({ config, url })).toBe(false)
-  })
-
-  it("refuses a hostile Host before an API route runs", async () => {
+  it("refuses a hostile Host before a dynamic page renders", async () => {
     const response = proxy(
-      new NextRequest("http://attacker.example/api/export", {
+      new NextRequest("http://attacker.example/review", {
         headers: { host: "attacker.example" },
       }),
     )
 
     expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({ error: "Local API request refused." })
+    await expect(response.json()).resolves.toEqual({ error: "Local application request refused." })
   })
 
   it("continues a request for the configured loopback Host", () => {

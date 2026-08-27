@@ -12,6 +12,7 @@ import {
   type RuntimeId,
   RuntimeProbe,
 } from "@/features/runtime-settings/application/runtime-readiness"
+import { terminateRuntimeProcessTree } from "@/features/runtime-settings/infrastructure/runtime-process"
 
 const COMMAND_TIMEOUT_MILLISECONDS = 5_000
 const COMMAND_OUTPUT_LIMIT_BYTES = 64 * 1024
@@ -28,6 +29,7 @@ export function executeRuntimeCommand(
     let child: ChildProcessByStdio<null, Readable, Readable>
     try {
       child = spawn(executable, arguments_, {
+        detached: process.platform !== "win32",
         shell: false,
         windowsHide: true,
         stdio: ["ignore", "pipe", "pipe"],
@@ -51,7 +53,7 @@ export function executeRuntimeCommand(
     const collect = (target: Buffer[], chunk: Buffer): void => {
       outputBytes += chunk.byteLength
       if (outputBytes > COMMAND_OUTPUT_LIMIT_BYTES) {
-        child.kill()
+        terminateRuntimeProcessTree(child)
         finish(Effect.fail(new RuntimeCommandError({ reason: "output-limit" })))
         return
       }
@@ -72,7 +74,7 @@ export function executeRuntimeCommand(
     )
 
     return Effect.sync(() => {
-      if (!settled) child.kill()
+      if (!settled) terminateRuntimeProcessTree(child)
     })
   }).pipe(
     Effect.timeoutFail({

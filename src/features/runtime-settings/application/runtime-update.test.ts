@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
+  getRuntimeUpdateArguments,
   interpretUpdateResult,
-  RUNTIME_UPDATE_ARGUMENTS,
 } from "@/features/runtime-settings/application/runtime-update"
 
 const result = (overrides: Partial<{ exitCode: number; stdout: string; stderr: string }> = {}) => ({
@@ -12,8 +12,10 @@ const result = (overrides: Partial<{ exitCode: number; stdout: string; stderr: s
 })
 
 describe("runtime update", () => {
-  it("invokes each provider CLI's own update command with no caller-supplied arguments", () => {
-    expect(RUNTIME_UPDATE_ARGUMENTS).toEqual(["update"])
+  it("invokes each provider CLI's fixed updater command", () => {
+    expect(getRuntimeUpdateArguments("codex")).toEqual(["update"])
+    expect(getRuntimeUpdateArguments("claude")).toEqual(["install", "stable"])
+    expect(getRuntimeUpdateArguments("opencode")).toEqual(["upgrade"])
   })
 
   it("reports a failure whenever the CLI exits non-zero", () => {

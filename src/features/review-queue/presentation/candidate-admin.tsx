@@ -19,7 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { CORRECTION_TARGETS } from "@/features/review-queue/domain/review-policy"
+import {
+  CORRECTION_TARGETS,
+  MAX_CORRECTED_VALUE_LENGTH,
+  MAX_CORRECTION_NOTE_LENGTH,
+  MAX_PRIVATE_NOTES_LENGTH,
+} from "@/features/review-queue/domain/review-policy"
 import {
   formatObservedAt,
   humanizeTerm,
@@ -73,6 +78,7 @@ export function CandidateAdmin({
                 <Textarea
                   id="privateNotes"
                   name="privateNotes"
+                  maxLength={MAX_PRIVATE_NOTES_LENGTH}
                   defaultValue={candidate.privateNotes}
                 />
               </Field>
@@ -125,11 +131,16 @@ export function CandidateAdmin({
               </Field>
               <Field className={fieldSpacing}>
                 <FieldLabel htmlFor="correctedValue">Corrected Value</FieldLabel>
-                <Textarea id="correctedValue" name="correctedValue" required />
+                <Textarea
+                  id="correctedValue"
+                  name="correctedValue"
+                  maxLength={MAX_CORRECTED_VALUE_LENGTH}
+                  required
+                />
               </Field>
               <Field className={fieldSpacing}>
                 <FieldLabel htmlFor="correctionNote">Reason</FieldLabel>
-                <Input id="correctionNote" name="note" />
+                <Input id="correctionNote" name="note" maxLength={MAX_CORRECTION_NOTE_LENGTH} />
               </Field>
               <div className="flex justify-end">
                 <Button type="submit" variant="outline" disabled={busy}>

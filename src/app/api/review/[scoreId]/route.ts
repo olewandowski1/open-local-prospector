@@ -3,6 +3,7 @@ import { loadLocalApplicationConfig } from "@/features/local-application"
 import {
   addCandidateCorrection,
   CORRECTION_TARGETS,
+  REJECTION_REASONS,
   REVIEW_STATUSES,
   updateCandidateReview,
 } from "@/features/review-queue/infrastructure/review-candidate"
@@ -22,6 +23,8 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
         typeof body.correctedValue !== "string"
       )
         throw new Error("invalid correction")
+      if (body.note !== undefined && typeof body.note !== "string")
+        throw new Error("invalid correction note")
       addCandidateCorrection(databasePath, scoreId, {
         target: body.target as (typeof CORRECTION_TARGETS)[number],
         correctedValue: body.correctedValue,
@@ -30,10 +33,27 @@ export async function POST(request: Request, context: { params: Promise<{ scoreI
     } else {
       if (typeof body.status !== "string" || !REVIEW_STATUSES.includes(body.status as never))
         throw new Error("invalid review")
+      if (
+        body.rejectionReason !== undefined &&
+        body.rejectionReason !== "" &&
+        (typeof body.rejectionReason !== "string" ||
+          !REJECTION_REASONS.includes(body.rejectionReason as never))
+      )
+        throw new Error("invalid rejection reason")
+      if (body.rejectionNote !== undefined && typeof body.rejectionNote !== "string")
+        throw new Error("invalid rejection note")
+      if (body.privateNotes !== undefined && typeof body.privateNotes !== "string")
+        throw new Error("invalid private notes")
+      if (
+        body.followUpAt !== undefined &&
+        body.followUpAt !== null &&
+        typeof body.followUpAt !== "string"
+      )
+        throw new Error("invalid follow-up date")
       updateCandidateReview(databasePath, scoreId, {
         status: body.status as (typeof REVIEW_STATUSES)[number],
-        ...(typeof body.rejectionReason === "string"
-          ? { rejectionReason: body.rejectionReason as never }
+        ...(typeof body.rejectionReason === "string" && body.rejectionReason !== ""
+          ? { rejectionReason: body.rejectionReason as (typeof REJECTION_REASONS)[number] }
           : {}),
         ...(typeof body.rejectionNote === "string" ? { rejectionNote: body.rejectionNote } : {}),
         ...(typeof body.privateNotes === "string" ? { privateNotes: body.privateNotes } : {}),

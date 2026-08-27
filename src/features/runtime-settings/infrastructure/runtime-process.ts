@@ -105,7 +105,7 @@ export const executeRuntimeProcess: RuntimeProcess = (request) => {
   })
 }
 
-function terminateRuntimeProcessTree(child: ChildProcess): void {
+export function terminateRuntimeProcessTree(child: ChildProcess): void {
   const pid = child.pid
   if (pid === undefined) {
     child.kill("SIGKILL")

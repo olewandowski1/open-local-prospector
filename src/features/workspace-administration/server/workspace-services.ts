@@ -40,7 +40,7 @@ export const withWorkspaceAdmission = <T>(work: () => T): T => {
   return work()
 }
 
-export function isLoopbackApiRequest(request: Request): boolean {
+export function isLoopbackRequest(request: Request): boolean {
   const host = request.headers.get("host")
   if (!host) return false
   const match = /^(?:127\.0\.0\.1|localhost)(?::([1-9]\d{0,4}))?$/i.exec(host)
@@ -49,7 +49,7 @@ export function isLoopbackApiRequest(request: Request): boolean {
 }
 
 export function assertSameOrigin(request: Request): void {
-  if (!isLoopbackApiRequest(request)) throw new Error("Local API request refused.")
+  if (!isLoopbackRequest(request)) throw new Error("Local application request refused.")
   const origin = request.headers.get("origin")
   if (!origin) return
   let originUrl: URL

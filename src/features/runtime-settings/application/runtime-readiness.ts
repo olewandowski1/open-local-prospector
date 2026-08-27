@@ -75,7 +75,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     },
     installInstruction: "Run: npm install -g @openai/codex, then: codex login",
     loginInstruction: "Run in your terminal: codex login",
-    updateInstruction: "Run: npm update -g @openai/codex",
+    updateInstruction: "Run: codex update",
     readyDetail: "Subscription login reported by the official CLI.",
   },
   opencode: {
@@ -115,8 +115,7 @@ const runtimeDefinitions: Record<RuntimeId, RuntimeDefinition> = {
     installInstruction:
       "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash. Then run: claude auth login",
     loginInstruction: "Run in your terminal: claude auth login",
-    updateInstruction:
-      "Windows: irm https://claude.ai/install.ps1 | iex. macOS/Linux: curl -fsSL https://claude.ai/install.sh | bash",
+    updateInstruction: "Run: claude install stable",
     readyDetail: "Subscription login reported by the official CLI.",
   },
 }

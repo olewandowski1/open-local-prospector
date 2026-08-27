@@ -6,16 +6,19 @@ export function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const format = url.searchParams.get("format") === "json" ? "json" : "csv"
+    const statuses = url.searchParams.getAll("status")
     const result = exportCandidates(loadLocalApplicationConfig().databasePath, {
       format,
-      statuses: url.searchParams.getAll("status"),
+      statuses: statuses.length > 0 ? statuses : undefined,
       includeNamedProfessionalContacts:
         url.searchParams.get("includeNamedProfessionalContacts") === "true",
     })
     return new NextResponse(result.body, {
       headers: {
-        "content-type": result.contentType,
-        "content-disposition": `attachment; filename="${result.filename}"`,
+        "Content-Type": result.contentType,
+        "Content-Disposition": `attachment; filename="${result.filename}"`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
       },
     })
   } catch {

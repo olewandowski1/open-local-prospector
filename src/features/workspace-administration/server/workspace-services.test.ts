@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   assertSameOrigin,
-  isLoopbackApiRequest,
+  isLoopbackRequest,
 } from "@/features/workspace-administration/server/workspace-services"
 
 describe("workspace mutation origin guard", () => {
@@ -43,14 +43,14 @@ describe("workspace mutation origin guard", () => {
           headers: { host: "attacker.example", origin: "http://attacker.example" },
         }),
       ),
-    ).toThrow("Local API request refused.")
+    ).toThrow("Local application request refused.")
   })
 
   it.each(["[::1]:4310", "127.0.0.2:4310", "127.0.0.1:65536"])(
     "refuses non-product Host %s",
     (host) => {
       expect(
-        isLoopbackApiRequest(
+        isLoopbackRequest(
           new Request("http://127.0.0.1:4310/api/workspace/reset", { headers: { host } }),
         ),
       ).toBe(false)

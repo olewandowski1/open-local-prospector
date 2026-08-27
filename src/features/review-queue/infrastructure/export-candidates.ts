@@ -104,10 +104,13 @@ function mapExport(db: Database.Database, row: ExportRow, includeNamed: boolean)
   }
 }
 function csv(value: unknown): string {
-  const text = typeof value === "string" ? value : JSON.stringify(value)
+  const raw = typeof value === "string" ? value : JSON.stringify(value)
+  // Quoting is not enough for spreadsheet programs: source-derived text beginning with a
+  // formula operator can still be evaluated when a reader opens the CSV.
+  const text = /^\s*[=+\-@]/u.test(raw) ? `'${raw}` : raw
   return `"${text.replaceAll('"', '""')}"`
 }
-function toCsv(data: readonly CandidateExport[]): string {
+export function toCsv(data: readonly CandidateExport[]): string {
   const header = [
     "business",
     "locality",
