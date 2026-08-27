@@ -95,6 +95,28 @@ test("shows captured pages and readable measurements without exposing artifact p
   await expect(page.getByText("1.23 s", { exact: true })).toBeVisible()
 })
 
+test("explains the deterministic score limits for blocked website evidence", async ({ page }) => {
+  await page.route(/\/api\/review\/[0-9a-f-]{36}$/u, async (route) => {
+    const response = await route.fetch()
+    const detail = (await response.json()) as Record<string, unknown>
+    await route.fulfill({
+      response,
+      json: {
+        ...detail,
+        inspectionState: "Blocked",
+        rubricVersion: "opportunity-score-v2",
+      },
+    })
+  })
+
+  await page.goto("/review")
+  await page.getByRole("button", { name: "Open For Review" }).first().click()
+
+  const limitation = page.getByRole("alert")
+  await expect(limitation).toContainText("Limited Website Evidence")
+  await expect(limitation).toContainText("caps severity at 4 of 5 and confidence at 0.6")
+})
+
 test("replaces a failed detail loader with a retryable error", async ({ page }) => {
   let attempts = 0
   await page.route(/\/api\/review\/[0-9a-f-]{36}$/u, async (route) => {

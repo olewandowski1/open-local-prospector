@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Limit fully blocked website inspections to severity 4 of 5 and confidence 0.6, retain them as
+  reviewable Candidate Businesses, and present their opportunity as Limited Website Evidence.
 - Rename repository, package, workspace, backup, and export identifiers to Open Prospector.
 - Present Overview as a fixed list of the 10 most recent Candidate Businesses with a direct link to
   the complete Review Workspace.

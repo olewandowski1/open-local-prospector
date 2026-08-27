@@ -4,6 +4,10 @@ import type {
   AllowedAssessmentCitations,
   AssessmentOutput,
 } from "@/features/website-assessment/domain/assessment-output"
+import {
+  BLOCKED_INSPECTION_MAX_CONFIDENCE,
+  BLOCKED_INSPECTION_MAX_SEVERITY,
+} from "@/features/website-assessment/domain/inspection-evidence-policy"
 
 export type AssessmentEvidencePage = Readonly<{
   sourceUrl: string
@@ -94,12 +98,35 @@ export function buildAssessmentPrompt(
     "Classify only observable website opportunities. Every opportunity must cite at least one exact sourceUrl from the evidence and use its observation timestamp.",
     "An observation states what is visible on the page it cites. The fields of this envelope are not observations: never quote websiteState, hasPublicContactRoute, or any other field name back as evidence, and do not describe 'the business record'.",
     "When a business has no website, the observation states what its public presence actually is, including which directory, social profile, or booking platform, rather than merely stating that a field says so.",
+    "An Inspection Block records that compliant inspection could not observe the page. It does not prove that the website is broken or unusable.",
+    "When websiteState is Blocked, use assessmentState Completed and classify the recorded Inspection Block itself as one opportunity, citing its sourceUrl and observation timestamp with evidenceState InspectionBlock.",
+    `When websiteState is Blocked and no pages were captured, keep severity at or below ${BLOCKED_INSPECTION_MAX_SEVERITY} and confidence at or below ${BLOCKED_INSPECTION_MAX_CONFIDENCE}, and claim nothing about page content that was never captured.`,
     "Do not produce or infer contact details. Do not score or rank the business.",
     "Aesthetic judgments are allowed only when connected to legibility, hierarchy, layout, trust, content clarity, conversion flow, performance, accessibility, or discoverability.",
     `BEGIN_${delimiter}`,
     source,
     `END_${delimiter}`,
   ].join("\n")
+}
+
+export function applyAssessmentEvidenceLimits(
+  evidence: AssessmentEvidenceEnvelope,
+  output: AssessmentOutput,
+): AssessmentOutput {
+  if (evidence.business.websiteState !== "Blocked" || evidence.pages.length > 0) return output
+  return {
+    ...output,
+    assessmentState: "Completed",
+    opportunities: output.opportunities.map((opportunity) => ({
+      ...opportunity,
+      severity: Math.min(opportunity.severity, BLOCKED_INSPECTION_MAX_SEVERITY),
+      confidence: Math.min(opportunity.confidence, BLOCKED_INSPECTION_MAX_CONFIDENCE),
+      observations: opportunity.observations.map((observation) => ({
+        ...observation,
+        confidence: Math.min(observation.confidence, BLOCKED_INSPECTION_MAX_CONFIDENCE),
+      })),
+    })),
+  }
 }
 
 function normalizeUrl(value: string): string {

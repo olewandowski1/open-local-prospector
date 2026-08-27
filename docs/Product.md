@@ -133,6 +133,8 @@ silently changes runtimes or falls back to a usage-based API.
 - Version prompt, schema, inspection, identity, and scoring behavior.
 - Exercise Polish-language identity fixtures, ambiguous matches, chains, inaccessible websites,
   strong existing websites, and every Website Opportunity class.
+- Verify that a fully blocked inspection remains reviewable while deterministic severity and
+  confidence limits prevent unsupported top scores.
 - Reject uncited claims and URLs absent from the report supplied to the structuring call.
 - Test restart recovery, bounded retries, partial inspection, and safe subprocess execution.
 - Keep factual Technical Run Logs while excluding provider credentials and hidden reasoning.

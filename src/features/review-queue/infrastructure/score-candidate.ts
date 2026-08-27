@@ -43,13 +43,14 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         }
       const row = db
         .prepare(
-          `select wa.run_business_id,wa.canonical_business_id,wa.apparent_commercial_value,cb.decision_scope,coalesce(max(wo.severity),0) severity,coalesce(avg(so.confidence),0) confidence,count(distinct wo.id) opportunities,count(distinct so.id) observations,exists(select 1 from contact_routes cr where cr.run_business_id=wa.run_business_id) has_contact from website_assessments wa join canonical_businesses cb on cb.id=wa.canonical_business_id left join website_opportunities wo on wo.assessment_id=wa.id left join supporting_observations so on so.opportunity_id=wo.id where wa.id=? group by wa.id`,
+          `select wa.run_business_id,wa.canonical_business_id,wa.apparent_commercial_value,wi.status inspection_state,cb.decision_scope,coalesce(max(wo.severity),0) severity,coalesce(avg(so.confidence),0) confidence,count(distinct wo.id) opportunities,count(distinct so.id) observations,exists(select 1 from contact_routes cr where cr.run_business_id=wa.run_business_id) has_contact from website_assessments wa join website_inspections wi on wi.id=wa.inspection_id join canonical_businesses cb on cb.id=wa.canonical_business_id left join website_opportunities wo on wo.assessment_id=wa.id left join supporting_observations so on so.opportunity_id=wo.id where wa.id=? group by wa.id`,
         )
         .get(assessmentId) as
         | {
             run_business_id: string
             canonical_business_id: string
             apparent_commercial_value: number
+            inspection_state: "Complete" | "Partial" | "Blocked" | "NoWebsite"
             decision_scope: string
             severity: number
             confidence: number
@@ -65,6 +66,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         hasContactRoute: Boolean(row.has_contact),
         localDecisionLikelihood: row.decision_scope === "Local" ? 1 : 0,
         apparentCommercialValue: row.apparent_commercial_value,
+        inspectionState: row.inspection_state,
       })
       const suppressed = db
         .prepare(

@@ -16,6 +16,7 @@ import {
 import {
   type AssessmentRuntime,
   AssessmentRuntimeError,
+  applyAssessmentEvidenceLimits,
   assessmentCitations,
   buildAssessmentPrompt,
 } from "@/features/website-assessment/application/assessment-runtime"
@@ -139,6 +140,7 @@ function makeRuntime(
                 ),
             })
             return yield* decodeAssessmentOutput(raw, assessmentCitations(evidence)).pipe(
+              Effect.map((output) => applyAssessmentEvidenceLimits(evidence, output)),
               Effect.mapError((error) => transient(error.code, error.message)),
             )
           }),

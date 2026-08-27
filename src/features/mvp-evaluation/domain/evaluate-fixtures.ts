@@ -6,7 +6,11 @@ import {
   qualityFixtures,
 } from "@/features/mvp-evaluation/domain/evaluation-fixtures"
 import { calculateOpportunityScore, qualifiesOpportunityScore } from "@/features/review-queue"
-import { assessmentCitations, decodeAssessmentOutput } from "@/features/website-assessment"
+import {
+  applyAssessmentEvidenceLimits,
+  assessmentCitations,
+  decodeAssessmentOutput,
+} from "@/features/website-assessment"
 
 type IdentityResult = Readonly<{
   name: string
@@ -95,7 +99,7 @@ export async function evaluateQualityFixtures(): Promise<QualityEvaluation> {
       assessmentResults.push({ id: fixture.id, accepted: false, errorCode: decoded.left.code })
       continue
     }
-    const output = decoded.right
+    const output = applyAssessmentEvidenceLimits(fixture.evidence, decoded.right)
     const opportunities = output.opportunities
     const observations = opportunities.flatMap((opportunity) => opportunity.observations)
     const score = calculateOpportunityScore({
@@ -108,6 +112,12 @@ export async function evaluateQualityFixtures(): Promise<QualityEvaluation> {
       hasContactRoute: fixture.evidence.business.hasPublicContactRoute,
       localDecisionLikelihood: 1,
       apparentCommercialValue: output.apparentCommercialValue,
+      inspectionState:
+        fixture.evidence.business.websiteState === "Present"
+          ? fixture.evidence.inspectionBlocks.length > 0
+            ? "Partial"
+            : "Complete"
+          : fixture.evidence.business.websiteState,
     })
     assessmentResults.push({
       id: fixture.id,

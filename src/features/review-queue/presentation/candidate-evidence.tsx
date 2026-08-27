@@ -1,10 +1,11 @@
 "use client"
 
-import { LinkSquare02Icon } from "@hugeicons/core-free-icons"
+import { Alert01Icon, LinkSquare02Icon } from "@hugeicons/core-free-icons"
 import Image from "next/image"
 import { Icon } from "@/components/icon"
 
 import { SectionHeader } from "@/components/page-layout"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -27,6 +28,18 @@ export function CandidateEvidence({ candidate }: { candidate: QueueCandidate }) 
 
   return (
     <div className="flex flex-col gap-6">
+      {candidate.inspectionState === "Blocked" ? (
+        <Alert>
+          <Icon icon={Alert01Icon} className="text-warning" />
+          <AlertTitle>Limited Website Evidence</AlertTitle>
+          <AlertDescription>
+            {candidate.rubricVersion === "opportunity-score-v2"
+              ? "The site blocked inspection before a page was captured. The rubric caps severity at 4 of 5 and confidence at 0.6."
+              : "The site blocked inspection before a page was captured. This historical score predates the evidence limits; explicitly reassess this business to apply them."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <section aria-labelledby="score-explanation-heading" className="flex flex-col gap-4">
         <SectionHeader
           title={<span id="score-explanation-heading">Score Explanation</span>}

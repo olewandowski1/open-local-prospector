@@ -8,6 +8,7 @@ import { executeRuntimeProcess, type RuntimeProcess } from "@/features/runtime-s
 import {
   type AssessmentRuntime,
   AssessmentRuntimeError,
+  applyAssessmentEvidenceLimits,
   assessmentCitations,
   buildAssessmentPrompt,
 } from "@/features/website-assessment/application/assessment-runtime"
@@ -53,6 +54,7 @@ export function makeCodexAssessmentRuntime(
               catch: () => transient("malformed-output", "The runtime returned malformed JSON."),
             })
             return yield* decodeAssessmentOutput(parsed, assessmentCitations(evidence)).pipe(
+              Effect.map((output) => applyAssessmentEvidenceLimits(evidence, output)),
               Effect.mapError((error) => transient(error.code, error.message)),
             )
           }),

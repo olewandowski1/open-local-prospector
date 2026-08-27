@@ -2,6 +2,7 @@ export type {
   QualificationEvidence,
   ScoreBreakdown,
   ScoreInputs,
+  ScoreInspectionState,
 } from "@/features/review-queue/domain/opportunity-score"
 export {
   calculateOpportunityScore,

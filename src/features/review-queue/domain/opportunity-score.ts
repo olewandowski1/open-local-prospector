@@ -1,5 +1,12 @@
-export const SCORE_RUBRIC_VERSION = "opportunity-score-v1" as const
+import {
+  BLOCKED_INSPECTION_MAX_CONFIDENCE,
+  BLOCKED_INSPECTION_MAX_SEVERITY,
+} from "@/features/website-assessment/client"
+
+export const SCORE_RUBRIC_VERSION = "opportunity-score-v2" as const
 export const REVIEW_QUEUE_THRESHOLD = 60
+
+export type ScoreInspectionState = "Complete" | "Partial" | "Blocked" | "NoWebsite"
 
 export type ScoreInputs = Readonly<{
   severity: number
@@ -7,6 +14,7 @@ export type ScoreInputs = Readonly<{
   hasContactRoute: boolean
   localDecisionLikelihood: number
   apparentCommercialValue: number
+  inspectionState: ScoreInspectionState
 }>
 export type ScoreBreakdown = Readonly<{
   severity: number
@@ -26,8 +34,16 @@ export type QualificationEvidence = Readonly<{
 }>
 
 export function calculateOpportunityScore(input: ScoreInputs): ScoreBreakdown {
-  const severity = bounded(input.severity / 5) * 40
-  const observationConfidence = bounded(input.observationConfidence) * 25
+  const severityInput =
+    input.inspectionState === "Blocked"
+      ? Math.min(input.severity, BLOCKED_INSPECTION_MAX_SEVERITY)
+      : input.severity
+  const confidenceInput =
+    input.inspectionState === "Blocked"
+      ? Math.min(input.observationConfidence, BLOCKED_INSPECTION_MAX_CONFIDENCE)
+      : input.observationConfidence
+  const severity = bounded(severityInput / 5) * 40
+  const observationConfidence = bounded(confidenceInput) * 25
   const contactRoute = input.hasContactRoute ? 15 : 0
   const localDecisionLikelihood = bounded(input.localDecisionLikelihood) * 10
   const apparentCommercialValue = bounded(input.apparentCommercialValue) * 10

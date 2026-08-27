@@ -1,7 +1,7 @@
 import { Effect, JSONSchema, Schema } from "effect"
 
 export const ASSESSMENT_SCHEMA_VERSION = "assessment-output-v1" as const
-export const ASSESSMENT_PROMPT_VERSION = "website-assessment-v2" as const
+export const ASSESSMENT_PROMPT_VERSION = "website-assessment-v3" as const
 
 export const WebsiteOpportunityClassSchema = Schema.Literal(
   "NoDedicatedWebsite",

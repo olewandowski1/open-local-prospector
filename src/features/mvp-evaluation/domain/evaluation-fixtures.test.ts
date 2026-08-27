@@ -74,7 +74,7 @@ describe(MVP_EVALUATION_VERSION, () => {
       identityPrecision: 1,
       unsupportedClaimRejectionCount: 2,
       opportunityClassCoverage: opportunityClasses,
-      qualifiedCases: 8,
+      qualifiedCases: 9,
       nonQualifiedCases: 3,
     })
   })

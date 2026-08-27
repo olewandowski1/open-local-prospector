@@ -91,6 +91,9 @@ _Avoid_: GDPR mode, compliance dashboard
 
 **Opportunity Score**:
 An explainable score from 0 to 100 calculated by application code from structured assessment fields: Website Opportunity severity (40%), confidence in the Supporting Observations (25%), Contact Route availability (15%), likelihood of local decision-making (10%), and the apparent value a better website could create (10%). A score of at least 60 initially qualifies a Candidate Business for Candidates. No single opportunity class, including having no website, automatically determines rank, and every score retains the rubric version used.
+When inspection is fully blocked before any page is captured, the Inspection Block remains classified
+and the business may still qualify, but severity is capped at 4 of 5 and confidence at 0.6. A
+partial inspection with captured page evidence is not subject to those limits.
 _Avoid_: AI score, lead score
 
 **Review Example**:

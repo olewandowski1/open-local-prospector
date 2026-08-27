@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v3" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v4" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -359,6 +359,22 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     }),
     runtimeOutput: emptyOutput("InsufficientEvidence"),
     expected: { accepted: true, score: 10, qualified: false },
+  },
+  {
+    id: "blocked-inspection-overclaim",
+    entryPoint: "AssessmentOutput",
+    evidence: evidence("blocked-inspection-overclaim", { websiteState: "Blocked" }),
+    runtimeOutput: completedOutput("BrokenOrUnusable", source("blocked-inspection-overclaim"), {
+      severity: 5,
+      confidence: 1,
+      commercialValue: 0.75,
+    }),
+    expected: {
+      accepted: true,
+      opportunityClass: "BrokenOrUnusable",
+      score: 79.5,
+      qualified: true,
+    },
   },
   {
     id: "partial-inspection",
