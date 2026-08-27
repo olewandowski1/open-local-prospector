@@ -1,6 +1,5 @@
 export {
   calculateOverviewMetrics,
-  isRunActive,
   type OverviewCandidateSummary,
   type OverviewMetric,
   type OverviewRunSnapshot,

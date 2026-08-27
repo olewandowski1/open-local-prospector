@@ -2,6 +2,7 @@ import { CircleGaugeIcon } from "@hugeicons/core-free-icons"
 import { Icon } from "@/components/icon"
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Empty,
   EmptyContent,
@@ -15,7 +16,7 @@ import { ReviewWorkspace } from "@/features/review-queue/presentation/review-wor
 import { getReviewQueueSummaries } from "@/features/review-queue/server/review-queue-read-model"
 
 export function ReviewQueuePage() {
-  const candidates = getReviewQueueSummaries()
+  const queue = getReviewQueueSummaries()
   return (
     <PageScroller>
       <div className="flex flex-col gap-6">
@@ -23,7 +24,16 @@ export function ReviewQueuePage() {
           title="Candidates"
           description="Review evidence, record decisions, and preserve machine history."
         />
-        {candidates.length === 0 ? (
+        {queue.truncated ? (
+          <Alert>
+            <AlertTitle>Candidate List Limited</AlertTitle>
+            <AlertDescription>
+              Showing the highest-scoring {queue.limit} candidates. Lower-scoring candidates are
+              held back from this view.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {queue.candidates.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -40,7 +50,7 @@ export function ReviewQueuePage() {
             </EmptyContent>
           </Empty>
         ) : (
-          <ReviewWorkspace candidates={candidates} />
+          <ReviewWorkspace candidates={queue.candidates} />
         )}
       </div>
     </PageScroller>

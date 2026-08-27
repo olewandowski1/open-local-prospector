@@ -12,7 +12,8 @@ import { sqliteRunMonitoringLive } from "@/features/run-monitoring/infrastructur
 
 const layer = () => sqliteRunMonitoringLive(loadLocalApplicationConfig().databasePath)
 
-export const listPersistedRuns = () => Effect.runPromise(listRuns.pipe(Effect.provide(layer())))
+export const listPersistedRuns = (now = new Date()) =>
+  Effect.runPromise(listRuns(now).pipe(Effect.provide(layer())))
 export const getPersistedRun = (runId: string) =>
   Effect.runPromise(getRun(runId).pipe(Effect.provide(layer())))
 export const requestRunControl = (runId: string, control: RunControl, runtime?: RuntimeId) =>

@@ -13,6 +13,12 @@ export type QueueCandidateSummary = Readonly<{
   reviewStatus: string
 }>
 
+export type BoundedReviewQueue = Readonly<{
+  candidates: readonly QueueCandidateSummary[]
+  limit: number
+  truncated: boolean
+}>
+
 export type QueueCandidate = Readonly<{
   id: string
   name: string
@@ -91,7 +97,7 @@ const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspec
 const REVIEW_QUEUE_LIMIT = 500
 
 // A read failure is left to surface: an empty queue and an unreachable database look identical otherwise.
-export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
+export function getReviewQueueSummaries(): BoundedReviewQueue {
   let db: Database.Database | undefined
   try {
     const database = new Database(loadLocalApplicationConfig().databasePath, {
@@ -101,16 +107,20 @@ export function getReviewQueueSummaries(): readonly QueueCandidateSummary[] {
     db = database
     const rows = database
       .prepare(`${QUEUE_SELECT} order by cs.total desc,cb.name collate nocase,cs.id limit ?`)
-      .all(REVIEW_QUEUE_LIMIT) as QueueRow[]
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      locality: row.locality,
-      score: row.total,
-      primaryOpportunity: row.opportunity_class,
-      contactAvailable: Boolean(row.contact_available),
-      reviewStatus: row.review_status ?? "Unreviewed",
-    }))
+      .all(REVIEW_QUEUE_LIMIT + 1) as QueueRow[]
+    return {
+      candidates: rows.slice(0, REVIEW_QUEUE_LIMIT).map((row) => ({
+        id: row.id,
+        name: row.name,
+        locality: row.locality,
+        score: row.total,
+        primaryOpportunity: row.opportunity_class,
+        contactAvailable: Boolean(row.contact_available),
+        reviewStatus: row.review_status ?? "Unreviewed",
+      })),
+      limit: REVIEW_QUEUE_LIMIT,
+      truncated: rows.length > REVIEW_QUEUE_LIMIT,
+    }
   } finally {
     db?.close()
   }
@@ -260,6 +270,12 @@ export type RecentCandidate = Readonly<{
   scoredAt: string
 }>
 
+export type BoundedRecentCandidates = Readonly<{
+  candidates: readonly RecentCandidate[]
+  limit: number
+  truncated: boolean
+}>
+
 export type CandidateSummary = Readonly<{
   qualified: number
   unreviewed: number
@@ -295,32 +311,35 @@ const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
 // Deliberately larger than one page: the grid pages through these client-side.
 const RECENT_CANDIDATE_LIMIT = 50
 
-export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): readonly RecentCandidate[] {
-  return readCandidates([], (database) =>
-    (
-      database
-        .prepare(
-          `select cs.id,rb.run_id,cb.name,cb.locality,cs.total,cs.scored_at,wo.opportunity_class,crv.status review_status,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available from candidate_scores cs join run_businesses rb on rb.id=cs.run_business_id join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null order by cs.scored_at desc,cs.total desc,cs.id limit ?`,
-        )
-        .all(limit) as RecentRow[]
-    ).map((row) => ({
-      id: row.id,
-      runId: row.run_id,
-      name: row.name,
-      locality: row.locality,
-      score: row.total,
-      primaryOpportunity: row.opportunity_class,
-      reviewStatus: row.review_status ?? "Unreviewed",
-      contactAvailable: Boolean(row.contact_available),
-      scoredAt: new Date(row.scored_at).toISOString(),
-    })),
-  )
+export function getRecentCandidates(limit = RECENT_CANDIDATE_LIMIT): BoundedRecentCandidates {
+  return readCandidates((database) => {
+    const rows = database
+      .prepare(
+        `select cs.id,rb.run_id,cb.name,cb.locality,cs.total,cs.scored_at,wo.opportunity_class,crv.status review_status,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available from candidate_scores cs join run_businesses rb on rb.id=cs.run_business_id join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null order by cs.scored_at desc,cs.total desc,cs.id limit ?`,
+      )
+      .all(limit + 1) as RecentRow[]
+    return {
+      candidates: rows.slice(0, limit).map((row) => ({
+        id: row.id,
+        runId: row.run_id,
+        name: row.name,
+        locality: row.locality,
+        score: row.total,
+        primaryOpportunity: row.opportunity_class,
+        reviewStatus: row.review_status ?? "Unreviewed",
+        contactAvailable: Boolean(row.contact_available),
+        scoredAt: new Date(row.scored_at).toISOString(),
+      })),
+      limit,
+      truncated: rows.length > limit,
+    }
+  })
 }
 
 export function getCandidateSummary(now = new Date()): CandidateSummary {
   const weekAgo = now.getTime() - WEEK_IN_MILLISECONDS
   const twoWeeksAgo = weekAgo - WEEK_IN_MILLISECONDS
-  return readCandidates(emptyCandidateSummary, (database) => {
+  return readCandidates((database) => {
     const row = database
       .prepare(
         `select count(*) qualified,coalesce(sum(case when coalesce(crv.status,'Unreviewed')='Unreviewed' then 1 else 0 end),0) unreviewed,coalesce(sum(case when crv.status='Shortlisted' then 1 else 0 end),0) shortlisted,coalesce(max(cs.total),0) top_score,coalesce(sum(case when cs.scored_at>? then 1 else 0 end),0) this_week,coalesce(sum(case when cs.scored_at>? and cs.scored_at<=? then 1 else 0 end),0) last_week from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null`,
@@ -347,7 +366,7 @@ const emptyCandidateSummary: CandidateSummary = {
   qualifiedLastWeek: 0,
 }
 
-function readCandidates<T>(fallback: T, read: (database: Database.Database) => T): T {
+function readCandidates<T>(read: (database: Database.Database) => T): T {
   let db: Database.Database | undefined
   try {
     const database = new Database(loadLocalApplicationConfig().databasePath, {
@@ -356,8 +375,6 @@ function readCandidates<T>(fallback: T, read: (database: Database.Database) => T
     })
     db = database
     return read(database)
-  } catch {
-    return fallback
   } finally {
     db?.close()
   }

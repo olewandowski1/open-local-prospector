@@ -210,10 +210,15 @@ describe("SQLite run monitoring", () => {
       sqlite.close()
     }
     const layer = sqliteRunMonitoringLive(database.path)
-    const summaries = await Effect.runPromise(listRuns.pipe(Effect.provide(layer)))
+    const runList = await Effect.runPromise(listRuns(new Date()).pipe(Effect.provide(layer)))
     const detail = await Effect.runPromise(getRun(run.id).pipe(Effect.provide(layer)))
 
-    expect(summaries[0]?.progress).toEqual({
+    expect(runList).toMatchObject({
+      limit: 200,
+      truncated: false,
+      overview: { discoveries: 8, activeRuns: 1, hasRuns: true },
+    })
+    expect(runList.runs[0]?.progress).toEqual({
       queries: 2,
       discoveries: 8,
       duplicates: 1,
@@ -234,6 +239,47 @@ describe("SQLite run monitoring", () => {
       ]),
     )
     expect(JSON.stringify(detail)).not.toContain("chain-of-thought")
+  })
+
+  it("bounds displayed run history without truncating overview totals", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const firstRun = await createTestProspectingRun(database.path, "bounded-run-0")
+    const sqlite = new Database(database.path)
+    try {
+      const duplicateRun = sqlite.prepare(
+        `insert into prospecting_runs
+         (id,request_id,search_brief,state,completion_state,current_stage,requested_control,version,
+          created_at,updated_at)
+         select ?,?,search_brief,state,completion_state,current_stage,requested_control,version,?,?
+         from prospecting_runs where id=?`,
+      )
+      sqlite.transaction(() => {
+        for (let index = 1; index < 201; index += 1) {
+          duplicateRun.run(
+            `bounded-run-${index}`,
+            `bounded-request-${index}`,
+            index,
+            index,
+            firstRun.id,
+          )
+        }
+      })()
+      sqlite.prepare("update run_metrics set discoveries = 1").run()
+    } finally {
+      sqlite.close()
+    }
+
+    const runList = await Effect.runPromise(
+      listRuns(new Date()).pipe(Effect.provide(sqliteRunMonitoringLive(database.path))),
+    )
+
+    expect(runList).toMatchObject({
+      limit: 200,
+      truncated: true,
+      overview: { discoveries: 201, activeRuns: 201, hasRuns: true },
+    })
+    expect(runList.runs).toHaveLength(200)
   })
 
   it("pauses after the active atomic step, resumes pending checkpoints, and cancels without new work", async () => {

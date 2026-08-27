@@ -1,6 +1,6 @@
 import { Context, Data, Effect } from "effect"
 import type { RuntimeId } from "@/features/prospecting-runs"
-import type { RunDetail, RunSummary } from "@/features/run-monitoring/domain/run-progress"
+import type { BoundedRunList, RunDetail } from "@/features/run-monitoring/domain/run-progress"
 
 export type RunControl = "Pause" | "Resume" | "Cancel"
 
@@ -9,7 +9,7 @@ export class RunMonitoringError extends Data.TaggedError("RunMonitoringError")<{
 }> {}
 
 export interface RunReadRepositoryService {
-  readonly list: Effect.Effect<readonly RunSummary[], RunMonitoringError>
+  readonly list: (now: Date) => Effect.Effect<BoundedRunList, RunMonitoringError>
   readonly get: (runId: string) => Effect.Effect<RunDetail, RunMonitoringError>
 }
 
@@ -31,7 +31,8 @@ export class RunControlRepository extends Context.Tag("RunMonitoring/RunControlR
   RunControlRepositoryService
 >() {}
 
-export const listRuns = RunReadRepository.pipe(Effect.flatMap((repository) => repository.list))
+export const listRuns = (now = new Date()) =>
+  RunReadRepository.pipe(Effect.flatMap((repository) => repository.list(now)))
 export const getRun = (runId: string) =>
   RunReadRepository.pipe(Effect.flatMap((repository) => repository.get(runId)))
 export const controlRun = (runId: string, control: RunControl, runtime?: RuntimeId) =>

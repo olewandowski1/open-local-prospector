@@ -10,9 +10,11 @@ export type OverviewMetric = Readonly<{
 }>
 
 export type OverviewRunSnapshot = Readonly<{
-  state: string
-  createdAt: string
-  progress: Readonly<{ discoveries: number; qualifiedCandidates: number }>
+  discoveries: number
+  activeRuns: number
+  discoveriesThisWeek: number
+  discoveriesLastWeek: number
+  hasRuns: boolean
 }>
 
 export type OverviewCandidateSummary = Readonly<{
@@ -24,29 +26,20 @@ export type OverviewCandidateSummary = Readonly<{
   qualifiedLastWeek: number
 }>
 
-const terminalRunStates = ["Completed", "Cancelled"]
-const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
-
-export function isRunActive(run: OverviewRunSnapshot): boolean {
-  return !terminalRunStates.includes(run.state)
-}
-
 export function calculateOverviewMetrics(
-  runs: readonly OverviewRunSnapshot[],
+  runs: OverviewRunSnapshot,
   candidates: OverviewCandidateSummary,
-  now: Date,
 ): readonly OverviewMetric[] {
-  const discovered = runs.reduce((total, run) => total + run.progress.discoveries, 0)
-  const activeRuns = runs.filter(isRunActive).length
-  const discoveredThisWeek = discoveriesWithin(runs, now, 0)
-  const discoveredLastWeek = discoveriesWithin(runs, now, 1)
-
   return [
     {
       id: "discovered",
       label: "Businesses Discovered",
-      value: String(discovered),
-      ...change(discoveredThisWeek, discoveredLastWeek, runs.length === 0 ? "No Runs Yet" : ""),
+      value: String(runs.discoveries),
+      ...change(
+        runs.discoveriesThisWeek,
+        runs.discoveriesLastWeek,
+        runs.hasRuns ? "" : "No Runs Yet",
+      ),
     },
     {
       id: "qualified",
@@ -55,7 +48,7 @@ export function calculateOverviewMetrics(
       ...change(
         candidates.qualifiedThisWeek,
         candidates.qualifiedLastWeek,
-        discovered === 0 ? "Nothing Discovered Yet" : "",
+        runs.discoveries === 0 ? "Nothing Discovered Yet" : "",
       ),
     },
     {
@@ -71,7 +64,7 @@ export function calculateOverviewMetrics(
     {
       id: "active-runs",
       label: "Active Runs",
-      value: String(activeRuns),
+      value: String(runs.activeRuns),
       trend: "none",
       note:
         candidates.qualified === 0
@@ -91,20 +84,6 @@ function change(
   if (difference > 0) return { trend: "up", note: `+${difference} This Week` }
   if (difference < 0) return { trend: "down", note: `${difference} This Week` }
   return { trend: "flat", note: "No Change This Week" }
-}
-
-function discoveriesWithin(
-  runs: readonly OverviewRunSnapshot[],
-  now: Date,
-  weeksAgo: number,
-): number {
-  const end = now.getTime() - weeksAgo * WEEK_IN_MILLISECONDS
-  const start = end - WEEK_IN_MILLISECONDS
-  return runs.reduce((total, run) => {
-    const createdAt = Date.parse(run.createdAt)
-    if (Number.isNaN(createdAt) || createdAt <= start || createdAt > end) return total
-    return total + run.progress.discoveries
-  }, 0)
 }
 
 function formatScore(score: number): string {

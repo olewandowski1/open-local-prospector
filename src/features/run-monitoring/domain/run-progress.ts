@@ -36,6 +36,21 @@ export type RunSummary = Readonly<{
   version: number
 }>
 
+export type BoundedRunList = Readonly<{
+  runs: readonly RunSummary[]
+  limit: number
+  truncated: boolean
+  overview: RunOverviewSnapshot
+}>
+
+export type RunOverviewSnapshot = Readonly<{
+  discoveries: number
+  activeRuns: number
+  discoveriesThisWeek: number
+  discoveriesLastWeek: number
+  hasRuns: boolean
+}>
+
 export type BusinessProgress = Readonly<{
   id: string
   // Absent for runs checkpointed before names were recorded.

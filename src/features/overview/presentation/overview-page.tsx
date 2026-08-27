@@ -11,6 +11,7 @@ import { Icon, type IconSvg } from "@/components/icon"
 
 import { PageHeader, SectionHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Empty,
   EmptyContent,
@@ -27,7 +28,7 @@ import {
 } from "@/features/overview/domain/overview-metrics"
 import { RecentCandidatesGrid } from "@/features/overview/presentation/recent-candidates-grid"
 import { NewRunButton } from "@/features/prospecting-runs/client"
-import type { RecentCandidate } from "@/features/review-queue"
+import type { BoundedRecentCandidates } from "@/features/review-queue"
 
 // An arrow means a measured week-over-week change; standing facts get a subject icon instead.
 const trendIcons: Partial<Record<OverviewTrend, IconSvg>> = {
@@ -46,15 +47,13 @@ export function OverviewPage({
   candidateSummary,
   recentCandidates,
   steeringPanel,
-  now,
 }: {
-  runs: readonly OverviewRunSnapshot[]
+  runs: OverviewRunSnapshot
   candidateSummary: OverviewCandidateSummary
-  recentCandidates: readonly RecentCandidate[]
+  recentCandidates: BoundedRecentCandidates
   steeringPanel: ReactNode
-  now: Date
 }) {
-  const metrics = calculateOverviewMetrics(runs, candidateSummary, now)
+  const metrics = calculateOverviewMetrics(runs, candidateSummary)
 
   return (
     <PageScroller>
@@ -91,10 +90,19 @@ export function OverviewPage({
         <section aria-label="Recent Candidates" className="flex flex-col gap-3">
           <SectionHeader
             title="Recent Candidates"
-            description="The most recently scored qualified businesses. Suppressed businesses never appear."
+            description={`Up to ${recentCandidates.limit} of the most recently scored qualified businesses. Suppressed businesses never appear.`}
           />
+          {recentCandidates.truncated ? (
+            <Alert>
+              <AlertTitle>Recent Candidate List Limited</AlertTitle>
+              <AlertDescription>
+                Showing the {recentCandidates.limit} most recently scored candidates. Older
+                candidates are held back from this overview.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div>
-            {recentCandidates.length === 0 ? (
+            {recentCandidates.candidates.length === 0 ? (
               <Empty>
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -112,7 +120,7 @@ export function OverviewPage({
                 </EmptyContent>
               </Empty>
             ) : (
-              <RecentCandidatesGrid candidates={recentCandidates} />
+              <RecentCandidatesGrid candidates={recentCandidates.candidates} />
             )}
           </div>
         </section>

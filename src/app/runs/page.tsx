@@ -6,11 +6,11 @@ import { listPersistedRuns } from "@/features/run-monitoring/server/run-services
 
 export default async function RunsRoute() {
   await connection()
-  const runs = await listPersistedRuns()
+  const runList = await listPersistedRuns()
 
   return (
     <AppShell>
-      <RunsPage runs={runs} now={new Date()} />
+      <RunsPage runList={runList} now={new Date()} />
     </AppShell>
   )
 }

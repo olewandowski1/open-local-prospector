@@ -3,6 +3,7 @@ import { Icon } from "@/components/icon"
 
 import { PageHeader } from "@/components/page-layout"
 import { PageScroller } from "@/components/page-scroller"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Empty,
   EmptyContent,
@@ -12,12 +13,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { NewRunButton } from "@/features/prospecting-runs/client"
-import type { RunSummary } from "@/features/run-monitoring/domain/run-progress"
+import type { BoundedRunList } from "@/features/run-monitoring/domain/run-progress"
 import { toRunRow } from "@/features/run-monitoring/presentation/run-presentation"
 import { RunsWorkspace } from "@/features/run-monitoring/presentation/runs-workspace"
 
-export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date }) {
-  const rows = runs.map((run) => toRunRow(run, now))
+export function RunsPage({ runList, now }: { runList: BoundedRunList; now: Date }) {
+  const rows = runList.runs.map((run) => toRunRow(run, now))
 
   return (
     <PageScroller>
@@ -26,6 +27,15 @@ export function RunsPage({ runs, now }: { runs: readonly RunSummary[]; now: Date
           title="Prospecting Runs"
           description="Persisted work and checkpointed progress. Every run keeps its own evidence and history."
         />
+
+        {runList.truncated ? (
+          <Alert>
+            <AlertTitle>Run List Limited</AlertTitle>
+            <AlertDescription>
+              Showing the {runList.limit} most recent runs. Older runs are held back from this view.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         {rows.length === 0 ? (
           <Empty>

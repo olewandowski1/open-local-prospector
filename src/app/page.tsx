@@ -66,14 +66,13 @@ async function SteeringPanel() {
 
 export default async function OverviewRoute() {
   await connection()
-  const runs = await listPersistedRuns()
   const now = new Date()
+  const runList = await listPersistedRuns(now)
 
   return (
     <AppShell>
       <OverviewPage
-        now={now}
-        runs={runs}
+        runs={runList.overview}
         candidateSummary={getCandidateSummary(now)}
         recentCandidates={getRecentCandidates()}
         steeringPanel={

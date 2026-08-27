@@ -11,6 +11,7 @@ import {
   RunReadRepository,
 } from "@/features/run-monitoring/application/run-repositories"
 import {
+  type BoundedRunList,
   type BusinessProgress,
   type RunCompletionState,
   type RunDetail,
@@ -44,7 +45,7 @@ type RunRow = Readonly<{
 export const sqliteRunMonitoringLive = (databasePath: string) =>
   Layer.merge(
     Layer.succeed(RunReadRepository, {
-      list: readEffect(databasePath, "list", (database) => list(database)),
+      list: (now) => readEffect(databasePath, "list", (database) => list(database, now)),
       get: (runId) => readEffect(databasePath, "read", (database) => get(database, runId)),
     }),
     Layer.succeed(RunControlRepository, {
@@ -91,12 +92,47 @@ const runSelect = `
   from prospecting_runs r left join run_metrics m on m.run_id = r.id`
 
 const RUN_LIST_LIMIT = 200
+const WEEK_IN_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
 
-function list(database: Database.Database): readonly RunSummary[] {
+function list(database: Database.Database, now: Date): BoundedRunList {
   const rows = database
     .prepare(`${runSelect} order by r.created_at desc, r.id limit ?`)
-    .all(RUN_LIST_LIMIT) as RunRow[]
-  return rows.map(mapSummary)
+    .all(RUN_LIST_LIMIT + 1) as RunRow[]
+  return {
+    runs: rows.slice(0, RUN_LIST_LIMIT).map(mapSummary),
+    limit: RUN_LIST_LIMIT,
+    truncated: rows.length > RUN_LIST_LIMIT,
+    overview: readOverview(database, now),
+  }
+}
+
+function readOverview(database: Database.Database, now: Date): BoundedRunList["overview"] {
+  const end = now.getTime()
+  const weekAgo = end - WEEK_IN_MILLISECONDS
+  const twoWeeksAgo = weekAgo - WEEK_IN_MILLISECONDS
+  const row = database
+    .prepare(
+      `select count(*) as run_count,
+       coalesce(sum(coalesce(m.discoveries, 0)), 0) as discoveries,
+       coalesce(sum(case when r.state not in ('Completed', 'Cancelled') then 1 else 0 end), 0) as active_runs,
+       coalesce(sum(case when r.created_at > ? and r.created_at <= ? then coalesce(m.discoveries, 0) else 0 end), 0) as this_week,
+       coalesce(sum(case when r.created_at > ? and r.created_at <= ? then coalesce(m.discoveries, 0) else 0 end), 0) as last_week
+       from prospecting_runs r left join run_metrics m on m.run_id = r.id`,
+    )
+    .get(weekAgo, end, twoWeeksAgo, weekAgo) as {
+    run_count: number
+    discoveries: number
+    active_runs: number
+    this_week: number
+    last_week: number
+  }
+  return {
+    discoveries: row.discoveries,
+    activeRuns: row.active_runs,
+    discoveriesThisWeek: row.this_week,
+    discoveriesLastWeek: row.last_week,
+    hasRuns: row.run_count > 0,
+  }
 }
 
 function get(database: Database.Database, runId: string): RunDetail {
