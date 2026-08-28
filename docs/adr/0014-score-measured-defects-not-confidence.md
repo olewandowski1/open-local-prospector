@@ -138,5 +138,13 @@ network conditions. Paint time is still recorded, shown to the reader and given 
 simply no longer moves the deterministic score.
 
 Candidates within about 1.3 points of each other are therefore ties, and their order between runs
-is arbitrary. The qualified set currently spans 66.3 to 70.6, so it holds roughly three distinct
-tiers rather than seven distinct ranks.
+is arbitrary.
+
+That mattered while the runtime placed almost everything in severity band 3, which left the
+qualified set spanning 66.3 to 70.6 and inverted it: a garage with a visible telephone, navigation
+and hero action scored above one whose first screen offered no way to act, because the better-built
+site had measurable accessibility defects to find. Anchoring the bands in the prompt separated them.
+A first screen with no visible telephone, enquiry or booking action is a 4, an accessibility or
+layout defect on a page a visitor can still complete is a 3 at most however many instances it has,
+and at most one opportunity is raised per class. The same three businesses then spread across 13.4
+points rather than 2.5, and ordered by what the visitor loses.

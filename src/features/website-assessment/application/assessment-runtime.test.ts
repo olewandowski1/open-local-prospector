@@ -76,6 +76,13 @@ describe("assessment prompt boundary", () => {
     expect(withImages).not.toContain("/tmp/desktop.png")
   })
 
+  it("anchors the severity range so findings do not all land on three", () => {
+    const prompt = buildAssessmentPrompt(evidence("Captured page"), "fixed-nonce")
+    expect(prompt).toContain("no visible telephone, enquiry or booking action is severity 4")
+    expect(prompt).toContain("is severity 3 at most, however many instances it has")
+    expect(prompt).toContain("Raise at most one opportunity per class")
+  })
+
   it("requires every measured defect to be accounted for and bars technology credits", () => {
     const prompt = buildAssessmentPrompt(evidence("Captured page"), "fixed-nonce")
     expect(prompt).toContain("Account for every measurement that shows a defect")

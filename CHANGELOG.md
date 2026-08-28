@@ -19,6 +19,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Anchor the severity bands so an assessment uses the range instead of rating almost everything 3.
+  A captured first screen with no visible telephone, enquiry or booking action is severity 4,
+  because the visitor arrived and cannot act; an accessibility or layout defect on a page a visitor
+  can still complete is 3 at most however many instances it has. A garage whose first screen offered
+  no way to act had been scoring below one with a visible telephone, navigation and hero action, and
+  now scores above it, 76.8 against 68.8.
+- Raise at most one Website Opportunity per class. One business had reported unlabelled controls,
+  missing alternative text and horizontal overflow as three separate accessibility entries.
 - Stop scoring first contentful paint. One home page measured 296 ms and 3,448 ms across runs, so a
   business moved up to 2 points on network conditions rather than on its website. Paint time is
   still recorded, shown to the reader and given to the runtime. Rescoring the same business twice
