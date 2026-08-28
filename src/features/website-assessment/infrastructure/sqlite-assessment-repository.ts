@@ -24,8 +24,14 @@ type TargetRow = {
   search_brief: string
   has_contact: number
 }
+type ScreenshotRow = {
+  path: string
+  viewport: "Desktop" | "Mobile"
+  final_url: string
+}
 type PageRow = {
   final_url: string
+  sequence: number
   captured_at: number
   viewport: "Desktop" | "Mobile"
   title: string
@@ -99,6 +105,11 @@ function loadTarget(
       "select type, url, collected_at from online_presences where run_business_id = ? and association_state = 'Confirmed' order by collected_at, id",
     )
     .all(row.run_business_id) as PresenceRow[]
+  const screenshotRows = db
+    .prepare(
+      "select ia.path, ia.viewport, ip.final_url from inspection_artifacts ia join inspection_pages ip on ip.id = ia.page_id where ia.inspection_id = ? and ia.kind = 'Screenshot' and ip.sequence = 0 order by ia.viewport",
+    )
+    .all(inspectionId) as ScreenshotRow[]
   const blocks = db
     .prepare(
       "select code, url, recorded_at from inspection_blocks where inspection_id = ? order by recorded_at, id",
@@ -113,6 +124,12 @@ function loadTarget(
     runtimeId: brief.runtime,
     ...(brief.runtimeConfiguration ? { runtimeConfiguration: brief.runtimeConfiguration } : {}),
     inspectionConfigurationVersion: row.configuration_version,
+    // Only the entry page of each viewport, so the attachment stays bounded.
+    screenshots: screenshotRows.map((screenshot) => ({
+      sourceUrl: screenshot.final_url,
+      viewport: screenshot.viewport,
+      path: screenshot.path,
+    })),
     evidence: {
       envelopeVersion: "assessment-evidence-v1",
       business: {

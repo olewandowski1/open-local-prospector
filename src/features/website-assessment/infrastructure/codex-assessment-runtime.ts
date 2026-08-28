@@ -25,7 +25,7 @@ export function makeCodexAssessmentRuntime(
   return {
     id: "codex",
     ...(version ? { version } : {}),
-    assess: (evidence, configuration) =>
+    assess: (evidence, configuration, screenshots = []) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
           try: () => mkdtemp(join(tmpdir(), "open-prospector-assessment-")),
@@ -45,8 +45,8 @@ export function makeCodexAssessmentRuntime(
             })
             const result = yield* runProcess({
               executable,
-              arguments: codexArguments(schemaPath, directory, configuration),
-              input: buildAssessmentPrompt(evidence),
+              arguments: codexArguments(schemaPath, directory, configuration, screenshots),
+              input: buildAssessmentPrompt(evidence, undefined, screenshots),
               cwd: directory,
             }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const parsed = yield* Effect.try({
@@ -67,6 +67,7 @@ export function codexArguments(
   schemaPath: string,
   directory: string,
   configuration?: Readonly<{ model: string; reasoningEffort: string }>,
+  screenshots: readonly Readonly<{ path: string }>[] = [],
 ): readonly string[] {
   return [
     "exec",
@@ -82,6 +83,8 @@ export function codexArguments(
     directory,
     "--output-schema",
     schemaPath,
+    // Codex attaches images to the initial prompt, so the runtime can see the page a visitor sees.
+    ...screenshots.flatMap((screenshot) => ["--image", screenshot.path]),
     ...(configuration
       ? [
           "--model",

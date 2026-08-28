@@ -1,6 +1,6 @@
 import { BLOCKED_INSPECTION_MAX_SEVERITY } from "@/features/website-assessment/client"
 
-export const SCORE_RUBRIC_VERSION = "opportunity-score-v3" as const
+export const SCORE_RUBRIC_VERSION = "opportunity-score-v4" as const
 export const REVIEW_QUEUE_THRESHOLD = 60
 
 export type ScoreInspectionState = "Complete" | "Partial" | "Blocked" | "NoWebsite"
@@ -45,7 +45,7 @@ const MISSING_ALT_CEILING = 8
 const SLOW_PAINT_MS = 1_500
 const VERY_SLOW_PAINT_MS = 4_500
 
-/** How defective a typical captured page is, so a site is not judged by how many pages were seen. */
+/** The worst captured page, because averaging hid a slow home page behind three fast ones. */
 export function observedDefectDensity(
   pages: readonly PageDefectMeasurements[],
   inspectionState?: ScoreInspectionState,
@@ -53,8 +53,7 @@ export function observedDefectDensity(
   // Having no website at all is the worst a website can be, and it is observed rather than assumed.
   if (inspectionState === "NoWebsite") return 1
   if (pages.length === 0) return 0
-  const total = pages.reduce((sum, page) => sum + pageDefectDensity(page), 0)
-  return bounded(total / pages.length)
+  return bounded(Math.max(...pages.map(pageDefectDensity)))
 }
 
 function pageDefectDensity(page: PageDefectMeasurements): number {
@@ -75,9 +74,9 @@ export function calculateOpportunityScore(input: ScoreInputs): ScoreBreakdown {
     input.inspectionState === "Blocked"
       ? Math.min(input.severity, BLOCKED_INSPECTION_MAX_SEVERITY)
       : input.severity
-  const severity = bounded(severityInput / 5) * 40
-  // A blocked inspection saw nothing, so it claims nothing here.
-  const observedDefects = observedDefectDensity(input.observedPages, input.inspectionState) * 25
+  const severity = bounded(severityInput / 5) * 55
+  // Measurements break ties between sites the runtime rated alike, but cannot carry the score: a site can measure clean and still be why a business needs a new website.
+  const observedDefects = observedDefectDensity(input.observedPages, input.inspectionState) * 10
   const contactRoute = input.hasContactRoute ? 15 : 0
   const localDecisionLikelihood = bounded(input.localDecisionLikelihood) * 10
   const apparentCommercialValue = bounded(input.apparentCommercialValue) * 10

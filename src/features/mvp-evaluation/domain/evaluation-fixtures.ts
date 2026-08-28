@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v5" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v6" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -353,7 +353,7 @@ const classFixtures: AssessmentReplayFixture[] = opportunityClasses.map((opportu
       accepted: true,
       opportunityClass,
       // No website at all is the worst a website can be, so it scores above a site with a defect.
-      score: opportunityClass === "NoDedicatedWebsite" ? 81 : 66,
+      score: opportunityClass === "NoDedicatedWebsite" ? 75 : 69,
       qualified: true,
     },
   }
@@ -395,7 +395,7 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     expected: {
       accepted: true,
       opportunityClass: "BrokenOrUnusable",
-      score: 64.5,
+      score: 76.5,
       qualified: true,
     },
   },
@@ -407,7 +407,7 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
       measurements: DEFECTIVE_PAGE_MEASUREMENTS,
     }),
     runtimeOutput: completedOutput("BrokenOrUnusable", source("partial-inspection")),
-    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 66, qualified: true },
+    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 69, qualified: true },
   },
   {
     id: "threshold-at",
@@ -415,8 +415,9 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     evidence: evidence("threshold-at", {
       measurements: {
         ...DEFECTIVE_PAGE_MEASUREMENTS,
+        imagesMissingAlt: 8,
         horizontalOverflow: true,
-        firstContentfulPaintMs: 2_250,
+        firstContentfulPaintMs: 3_000,
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-at"), {
@@ -437,8 +438,9 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     evidence: evidence("threshold-below", {
       measurements: {
         ...DEFECTIVE_PAGE_MEASUREMENTS,
+        imagesMissingAlt: 8,
         horizontalOverflow: true,
-        firstContentfulPaintMs: 2_200,
+        firstContentfulPaintMs: 2_850,
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-below"), {
@@ -449,7 +451,7 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     expected: {
       accepted: true,
       opportunityClass: "WeakDiscoverability",
-      score: 59.92,
+      score: 59.9,
       qualified: false,
     },
   },

@@ -29,12 +29,12 @@ describe("observed defect density", () => {
     expect(observedDefectDensity([cleanPage])).toBe(0)
   })
 
-  // A four-page site must not look worse than a one-page site simply for having more pages.
-  it("judges a typical page rather than accumulating across pages", () => {
+  // Averaging hid a slow home page behind three fast ones, so the worst page decides.
+  it("reports the worst captured page and does not dilute it", () => {
     const defective = page({ unlabeledControls: 8 })
     expect(observedDefectDensity([defective])).toBe(0.4)
-    expect(observedDefectDensity([defective, defective, defective, defective])).toBe(0.4)
-    expect(observedDefectDensity([defective, cleanPage])).toBeCloseTo(0.2, 5)
+    expect(observedDefectDensity([defective, cleanPage, cleanPage, cleanPage])).toBe(0.4)
+    expect(observedDefectDensity([cleanPage, page({ firstContentfulPaintMs: 4_500 })])).toBe(0.2)
   })
 
   it("ranks a heavier defect above a lighter one of the same kind", () => {
@@ -86,8 +86,8 @@ describe("opportunity score", () => {
       }),
     ).toMatchObject({
       total: 100,
-      severity: 40,
-      observedDefects: 25,
+      severity: 55,
+      observedDefects: 10,
       contactRoute: 15,
       localDecisionLikelihood: 10,
       apparentCommercialValue: 10,
@@ -104,7 +104,7 @@ describe("opportunity score", () => {
       apparentCommercialValue: 0,
       inspectionState: "NoWebsite",
     })
-    expect(score.observedDefects).toBe(25)
+    expect(score.observedDefects).toBe(10)
     expect(
       qualifiesOpportunityScore(score, {
         hasOpportunity: true,
@@ -144,10 +144,10 @@ describe("opportunity score", () => {
   it("requires threshold, evidence, contact, and no suppression", () => {
     const score = calculateOpportunityScore({
       severity: 3,
-      observedPages: [page({ unlabeledControls: 8 })],
+      observedPages: [cleanPage],
       hasContactRoute: true,
       localDecisionLikelihood: 1,
-      apparentCommercialValue: 0.1,
+      apparentCommercialValue: 0.2,
       inspectionState: "Complete",
     })
     expect(score.total).toBe(REVIEW_QUEUE_THRESHOLD)
@@ -191,10 +191,10 @@ describe("opportunity score", () => {
         inspectionState: "Blocked",
       }),
     ).toMatchObject({
-      severity: 32,
+      severity: 44,
       // Nothing was observed, so nothing is claimed about the pages.
       observedDefects: 0,
-      total: 64.5,
+      total: 76.5,
     })
   })
 
@@ -215,6 +215,6 @@ describe("opportunity score", () => {
       observedPages: [page({ unlabeledControls: 2 }), page({ unlabeledControls: 2 })],
     })
     expect(worse.total).toBeGreaterThan(better.total)
-    expect(worse.total - better.total).toBeCloseTo(7.5, 5)
+    expect(worse.total - better.total).toBeCloseTo(3, 5)
   })
 })

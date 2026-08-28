@@ -16,6 +16,7 @@ import {
 import {
   type AssessmentRuntime,
   AssessmentRuntimeError,
+  type AssessmentScreenshot,
   applyAssessmentEvidenceLimits,
   assessmentCitations,
   buildAssessmentPrompt,
@@ -72,7 +73,7 @@ export function makeOpencodeAssessmentRuntime(
     executable,
     runProcess,
     version,
-    (directory, configuration) => {
+    (directory, configuration, screenshots) => {
       const policy = openCodeRuntimePolicy("no-tools")
       return {
         // OpenCode calls the reasoning effort a model variant.
@@ -85,6 +86,8 @@ export function makeOpencodeAssessmentRuntime(
             : []),
           "--dir",
           directory,
+          // OpenCode attaches files to the message, which is how the screenshots reach the model.
+          ...screenshots.flatMap((screenshot) => ["--file", screenshot.path]),
         ],
         cwd: directory,
         environment: policy.environment,
@@ -106,7 +109,8 @@ function makeRuntime(
   version: string | undefined,
   command: (
     directory: string,
-    configuration?: Readonly<{ model: string; reasoningEffort: string }>,
+    configuration: Readonly<{ model: string; reasoningEffort: string }> | undefined,
+    screenshots: readonly AssessmentScreenshot[],
   ) => Pick<
     Parameters<RuntimeProcess>[0],
     "arguments" | "cwd" | "environment" | "settleOnExitMilliseconds" | "timeoutMilliseconds"
@@ -116,7 +120,7 @@ function makeRuntime(
   return {
     id,
     ...(version ? { version } : {}),
-    assess: (evidence, configuration) =>
+    assess: (evidence, configuration, screenshots = []) =>
       Effect.acquireUseRelease(
         Effect.tryPromise({
           try: () => mkdtemp(join(tmpdir(), `open-prospector-${id}-`)),
@@ -125,10 +129,10 @@ function makeRuntime(
         }),
         (directory) =>
           Effect.gen(function* () {
-            const prompt = `${buildAssessmentPrompt(evidence)}\nThe required JSON Schema is trusted application configuration:\n${JSON.stringify(assessmentOutputJsonSchema)}`
+            const prompt = `${buildAssessmentPrompt(evidence, undefined, screenshots)}\nThe required JSON Schema is trusted application configuration:\n${JSON.stringify(assessmentOutputJsonSchema)}`
             const result = yield* runProcess({
               executable,
-              ...command(directory, configuration),
+              ...command(directory, configuration, screenshots),
               input: prompt,
             }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const raw = yield* Effect.try({

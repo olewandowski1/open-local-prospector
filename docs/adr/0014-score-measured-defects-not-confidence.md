@@ -50,13 +50,14 @@ Replace evidence confidence with an observed-defect component, computed by appli
 measurements the inspection already records. Severity, contactability, local decision-making and
 apparent commercial value keep their weights.
 
-- **Opportunity severity 40%, observed defects 25%, contactability 15%, local decision-making 10%,
+- **Opportunity severity 55%, observed defects 10%, contactability 15%, local decision-making 10%,
   apparent commercial value 10%.** The threshold stays at 60.
-- The component is the mean defect density of the **captured pages**, not the total, so a site is
-  judged by how defective a typical page is rather than by how many pages were inspected. Within a
-  page, unlabelled controls carry 0.4, images missing alternative text 0.25, horizontal overflow
-  0.15, a page not served over HTTPS 0.2, and first contentful paint between 1.5 s and 4.5 s up to
-  0.2. Counts saturate at eight so one very poor page cannot swamp the score.
+- The component reads the **worst captured page**, not the mean. Averaging was tried first and hid a
+  home page that took 3.4 seconds to paint behind three fast pages, which is the page a visitor lands
+  on. Within a page, unlabelled controls carry 0.4, images missing alternative text 0.25, horizontal
+  overflow 0.15, a page not served over HTTPS 0.2, and first contentful paint between 1.5 s and 4.5 s
+  up to 0.2. Counts saturate at eight, which keeps the component bounded and is the first thing to
+  revisit if the ranking looks wrong.
 - **A measurement that was never recorded is not a defect.** Only an explicit negative counts, so an
   absent `usesHttps` does not read as insecure.
 - **Having no website at all scores the component in full.** That is knowledge of absence, not
@@ -65,12 +66,13 @@ apparent commercial value keep their weights.
 - **A blocked inspection scores the component at zero.** Nothing was observed, so nothing is claimed.
   This replaces the confidence half of the blocked-inspection limits; the severity cap of 4 of 5
   stays.
-- Persisted as `observed_defect_component` under rubric `opportunity-score-v3`. Existing rows keep
+- Persisted as `observed_defect_component` under rubric `opportunity-score-v4`. Existing rows keep
   `confidence_component` and their recorded rubric, and are not recalculated.
 
 ## What it does to real candidates
 
-The eight candidates with captured pages, rescored through the worker:
+The eight candidates with captured pages, at the intermediate 25% weighting that this ADR corrects
+below. The spread is the point: the runtime had placed six of them in one severity band.
 
 | Business | Worst unlabelled controls | Severity | Before | After |
 |---|---|---|---|---|
@@ -83,9 +85,9 @@ The eight candidates with captured pages, rescored through the worker:
 | Auto Tytan Rumia | 0 | 0 | 72.80 | 33.61 (rejected) |
 | F.H.U SAMLI | 0 | 0 | 72.50 | 33.53 (rejected) |
 
-The spread across the six the runtime placed in one severity band went from **1.00 to 7.56 points**,
-and the order now follows the measurements. The two sites with no measured defect fell out of
-Candidates.
+The spread across those six went from **1.00 to 7.56 points** and the order followed the
+measurements. But the two sites with no measured defect fell out of Candidates, and one of them
+should not have.
 
 ## Consequences
 
@@ -98,11 +100,27 @@ Candidates.
 - The component measures what the inspection can count. Conversion journey, content clarity and
   discoverability remain entirely in the runtime's severity, so a site can still be poor in ways the
   score cannot see.
-- Severity remains an integer from 1 to 5 carrying 40 points. `website-assessment-v4` made it track
-  the measurements rather than the site's overall polish, but it still moves in 8-point steps and the
-  runtime still tends to one band. A severity floor for qualification was considered and deferred:
-  it should be calibrated from severities the current prompt produced, and it is now less pressing
-  because the defect component supplies the resolution the floor was meant to approximate.
+- Severity remains an integer from 1 to 5, now carrying 55 points, so it moves in 11-point steps and
+  the runtime still tends to one band. A severity floor for qualification was considered and deferred:
+  it should be calibrated from severities produced once the runtime can see the pages.
 - The evaluation fixtures were re-tuned, since a fixture page carrying no measurements scored nothing
   on a component that reads measurements. `threshold-at` and `threshold-below` again straddle 60 by
-  design, at 60.00 and 59.92.
+  design, at 60.00 and 59.90.
+
+## Corrected after release
+
+The component first carried 25% and averaged across pages. Both were wrong, and a real candidate
+showed it. Auto Tytan Rumia measures clean, with no unlabelled controls, no missing alternative
+text, HTTPS and no overflow, yet its first screen is a dated photograph with no visible call to
+action and its only form is a search box. At 25% the component took a quarter of the score away
+from exactly the business the product exists to find, and averaging reduced its 3.4 second home
+page to 0.81 of 25 points.
+
+Measurements are good at separating sites the runtime rated alike and bad as a gate, because a site
+can measure clean and still be why a business needs a new website. They now break ties at 10% while
+severity carries the judgement at 55%.
+
+The deeper cause was not the rubric. The assessment had never been shown a screenshot, so it judged
+presentation from body text and had no way to see a wasted first screen. See
+[ADR 0004](0004-application-owned-browser-inspection.md). With the screenshot attached, the same site
+moved from no finding at all to a dated first screen with no visible action, severity 3.

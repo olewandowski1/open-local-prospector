@@ -19,6 +19,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Show the Website Assessment the pages it is judging. The captured desktop and mobile screenshots
+  are now attached to the runtime call, so presentation is assessed from what a visitor sees rather
+  than from body text. Auto Tytan Rumia had drawn no finding at all from text, and with the
+  screenshot the runtime reported a visually dated first screen dominated by a photograph with no
+  visible contact or booking action. Codex and OpenCode accept image attachments; a Claude
+  assessment still reads text and measurements only.
+- Rebalance the Opportunity Score to severity 55% and measured defects 10%, and read the worst
+  captured page rather than the mean. At 25% the measured component rejected a site that measured
+  clean but gave a visitor no reason to act, and averaging hid a home page that took 3.4 seconds to
+  paint behind three fast pages.
 - Score the defects measured on a candidate website instead of how confident the runtime was that
   it saw them. Evidence confidence sat at 24 to 25 of 25 for every candidate with captured pages,
   so a quarter of the score carried no information, while the runtime placed six of eight observed

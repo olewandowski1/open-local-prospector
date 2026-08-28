@@ -30,7 +30,7 @@ export function makeAssessmentTaskExecutor(
           `The selected ${target.runtimeId} subscription runtime is not available.`,
         )
       const output = yield* runtime
-        .assess(target.evidence, target.runtimeConfiguration)
+        .assess(target.evidence, target.runtimeConfiguration, target.screenshots)
         .pipe(Effect.mapError((error) => failure(error.classification, error.code, error.message)))
       const assessmentId = yield* repository
         .commit(target, output, runtime.version)
