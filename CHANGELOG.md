@@ -73,6 +73,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Settle a run that stops midway through cancelling or pausing. Cancelling or pausing a run while a
+  task holds a lease leaves the run waiting for that task, and recovering the expired lease returns
+  the task to Pending, which the worker refuses to claim while the run still requests Cancel or
+  Pause. Two runs in the developer's workspace had sat in Cancelling for a day, holding work that
+  would never run and never end. The recovery sweep now settles any such run, cancelling the work a
+  cancelled run left behind and keeping the work a paused run will resume.
 - Rate an obstacle the visitor can dismiss as severity 3 rather than 4. A cookie dialog covering a
   garage's first screen scored 4 in one assessment and 3 in the next on identical findings, moving
   the business 11.4 points between runs. A consent dialog, newsletter overlay or age gate delays a

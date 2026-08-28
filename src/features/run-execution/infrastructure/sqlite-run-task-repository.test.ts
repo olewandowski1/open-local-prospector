@@ -172,6 +172,81 @@ describe("SQLite durable task repository", () => {
     ).toEqual({ state: "Completed", completion_state: "Infrastructure Failed" })
   })
 
+  // Its last leased task returned to Pending, which the claim query skips, so the run never ended.
+  it("settles a cancelling run when its last leased task returns to pending", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "cancel-recovery-run")
+    const repository = makeSqliteRunTaskRepository(database.path)
+    const startedAt = new Date(Date.now() + 1_000)
+
+    requiredTask(await Effect.runPromise(repository.claimNext("worker-a", startedAt, 1_000)))
+    const connection = new Database(database.path)
+    try {
+      // What cancel() records when a task is still leased.
+      connection
+        .prepare(
+          "update prospecting_runs set requested_control='Cancel', state='Cancelling' where id=?",
+        )
+        .run(run.id)
+    } finally {
+      connection.close()
+    }
+
+    expect(
+      await Effect.runPromise(repository.recoverAbandoned(new Date(startedAt.getTime() + 1_101))),
+    ).toBe(1)
+
+    expect(
+      readRow(
+        database.path,
+        "select state, completion_state from prospecting_runs where id = ?",
+        run.id,
+      ),
+    ).toEqual({ state: "Cancelled", completion_state: "Cancelled with Partial Results" })
+    expect(
+      Option.isNone(
+        await Effect.runPromise(
+          repository.claimNext("worker-b", new Date(startedAt.getTime() + 1_200), 1_000),
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  // Pausing strands the same way, and its pending work must survive so a resume can run it.
+  it("settles a pausing run when its last leased task returns to pending, keeping its work", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const run = await createTestProspectingRun(database.path, "pause-recovery-run")
+    const repository = makeSqliteRunTaskRepository(database.path)
+    const startedAt = new Date(Date.now() + 1_000)
+
+    requiredTask(await Effect.runPromise(repository.claimNext("worker-a", startedAt, 1_000)))
+    const connection = new Database(database.path)
+    try {
+      connection
+        .prepare(
+          "update prospecting_runs set requested_control='Pause', state='Pausing' where id=?",
+        )
+        .run(run.id)
+    } finally {
+      connection.close()
+    }
+
+    await Effect.runPromise(repository.recoverAbandoned(new Date(startedAt.getTime() + 1_101)))
+
+    expect(
+      readRow(
+        database.path,
+        "select state, completion_state from prospecting_runs where id = ?",
+        run.id,
+      ),
+    ).toEqual({ state: "Paused", completion_state: "Paused" })
+    expect(readRow(database.path, "select status from run_tasks where run_id = ?", run.id)).toEqual(
+      { status: "Pending" },
+    )
+  })
+
   it("retries transient work at most twice and leaves unrelated work visible", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)

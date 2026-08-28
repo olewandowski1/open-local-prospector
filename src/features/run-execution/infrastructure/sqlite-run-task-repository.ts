@@ -132,6 +132,23 @@ function recover(database: Database.Database, now: Date): number {
     for (const [runId, stage] of exhaustedRuns) {
       reconcileRunAfterTaskSettlement(database, runId, stage, now)
     }
+    // A run stranded mid-cancel holds Pending work the claim query skips, so it never ends.
+    const stranded = database
+      .prepare(
+        `select r.id, r.state, r.current_stage from prospecting_runs r
+         where r.state in ('Cancelling', 'Pausing')
+         and not exists(select 1 from run_tasks t where t.run_id = r.id and t.status = 'Leased')`,
+      )
+      .all() as readonly { id: string; state: string; current_stage: string | null }[]
+    const cancelStrandedTasks = database.prepare(
+      `update run_tasks set status = 'Cancelled', updated_at = ?, version = version + 1
+       where run_id = ? and status in ('Pending', 'Blocked')`,
+    )
+    for (const run of stranded) {
+      if (run.state === "Cancelling") cancelStrandedTasks.run(now.getTime(), run.id)
+      reconcileRunAfterTaskSettlement(database, run.id, run.current_stage ?? "RunPlanning", now)
+    }
+
     const incorrectlySettled = database
       .prepare(
         `select distinct r.id from prospecting_runs r join run_tasks t on t.run_id = r.id
