@@ -9,6 +9,9 @@ import {
   BLOCKED_INSPECTION_MAX_SEVERITY,
 } from "@/features/website-assessment/domain/inspection-evidence-policy"
 
+// Assessments average 26 seconds and reach 115, so the process default of two minutes lost five.
+export const ASSESSMENT_TIMEOUT_MILLISECONDS = 900_000
+
 export type AssessmentEvidencePage = Readonly<{
   sourceUrl: string
   observedAt: string

@@ -73,6 +73,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Give every Website Assessment the same time to answer. Only the OpenCode call had asked for a
+  budget, so the Codex and Claude calls inherited the runtime process default of two minutes.
+  Successful assessments average 26 seconds and reach 115, pressed right against that ceiling, and
+  attaching screenshots pushed five businesses over it: each exhausted three attempts and lost its
+  refreshed score. The budget is now one shared value, so a runtime cannot quietly inherit a
+  different one.
+- Report the Claude CLI as ready when its status names a field the application does not read. The
+  readiness check accepted only a closed set of fields, so the CLI reporting `analyticsDisabled` and
+  `projectsDirectory` made every Claude runtime unusable, including reassessment of the five
+  businesses discovered with it. A status payload carrying a credential is still refused, now by
+  looking for one rather than by refusing everything unfamiliar.
 - Settle a run that stops midway through cancelling or pausing. Cancelling or pausing a run while a
   task holds a lease leaves the run waiting for that task, and recovering the expired lease returns
   the task to Pending, which the worker refuses to claim while the run still requests Cancel or

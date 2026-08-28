@@ -220,20 +220,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
+// Refusing an unrecognised field let an upstream addition disable the runtime, so only credentials are.
+const CREDENTIAL_KEY = /token|secret|apikey|password|credential/iu
+
 function isSupportedClaudeStatus(
   value: Record<string, unknown>,
 ): value is Record<string, unknown> & { loggedIn: boolean; subscriptionType: string } {
-  const allowedKeys = new Set([
-    "apiProvider",
-    "authMethod",
-    "email",
-    "loggedIn",
-    "orgId",
-    "orgName",
-    "subscriptionType",
-  ])
   return (
-    Object.keys(value).every((key) => allowedKeys.has(key)) &&
+    Object.keys(value).every((key) => !CREDENTIAL_KEY.test(key)) &&
     typeof value.loggedIn === "boolean" &&
     (!value.loggedIn || typeof value.subscriptionType === "string")
   )

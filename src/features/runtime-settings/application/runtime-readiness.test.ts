@@ -173,7 +173,8 @@ it("returns only readiness metadata from provider status output", async () => {
   expect(JSON.stringify(result)).not.toContain("subscriptionType")
 })
 
-it("rejects a status response containing an undocumented field", async () => {
+// The CLI adding analyticsDisabled and projectsDirectory had disabled the runtime altogether.
+it("accepts a status response carrying a field it does not read", async () => {
   let call = 0
   const result = await runProbe("claude", {
     resolveExecutable: () => Effect.succeed(Option.some("/bin/claude")),
@@ -187,7 +188,33 @@ it("rejects a status response containing an undocumented field", async () => {
               stdout: JSON.stringify({
                 loggedIn: true,
                 subscriptionType: "pro",
-                unexpected: "value",
+                analyticsDisabled: false,
+                projectsDirectory: "/home/user/.claude/projects",
+              }),
+              stderr: "",
+            },
+      )
+    },
+  })
+
+  expect(result.status).toBe("Ready")
+})
+
+it("refuses a status response that carries a credential", async () => {
+  let call = 0
+  const result = await runProbe("claude", {
+    resolveExecutable: () => Effect.succeed(Option.some("/bin/claude")),
+    execute: () => {
+      call += 1
+      return Effect.succeed(
+        call === 1
+          ? { exitCode: 0, stdout: versionOutput.claude, stderr: "" }
+          : {
+              exitCode: 0,
+              stdout: JSON.stringify({
+                loggedIn: true,
+                subscriptionType: "pro",
+                refreshToken: "secret-value",
               }),
               stderr: "",
             },

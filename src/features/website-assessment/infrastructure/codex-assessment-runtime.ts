@@ -6,6 +6,7 @@ import { Effect } from "effect"
 import { executeRuntimeProcess, type RuntimeProcess } from "@/features/runtime-settings"
 
 import {
+  ASSESSMENT_TIMEOUT_MILLISECONDS,
   type AssessmentRuntime,
   AssessmentRuntimeError,
   applyAssessmentEvidenceLimits,
@@ -48,6 +49,7 @@ export function makeCodexAssessmentRuntime(
               arguments: codexArguments(schemaPath, directory, configuration, screenshots),
               input: buildAssessmentPrompt(evidence, undefined, screenshots),
               cwd: directory,
+              timeoutMilliseconds: ASSESSMENT_TIMEOUT_MILLISECONDS,
             }).pipe(Effect.mapError((error) => new AssessmentRuntimeError(error)))
             const parsed = yield* Effect.try({
               try: () => JSON.parse(result.stdout) as unknown,

@@ -14,6 +14,7 @@ import {
   withoutTerminalColour,
 } from "@/features/runtime-settings"
 import {
+  ASSESSMENT_TIMEOUT_MILLISECONDS,
   type AssessmentRuntime,
   AssessmentRuntimeError,
   type AssessmentScreenshot,
@@ -58,6 +59,7 @@ export function makeClaudeAssessmentRuntime(
         EMPTY_MCP_CONFIG,
       ],
       cwd: directory,
+      timeoutMilliseconds: ASSESSMENT_TIMEOUT_MILLISECONDS,
     }),
     parseClaude,
   )
@@ -91,8 +93,7 @@ export function makeOpencodeAssessmentRuntime(
         ],
         cwd: directory,
         environment: policy.environment,
-        // The hosted model drives its work one step at a time; the default two minutes cuts it off.
-        timeoutMilliseconds: 900_000,
+        timeoutMilliseconds: ASSESSMENT_TIMEOUT_MILLISECONDS,
         // OpenCode answers and exits, but a helper keeps the stdio pipes open; settle on exit.
         settleOnExitMilliseconds: 2_000,
       }

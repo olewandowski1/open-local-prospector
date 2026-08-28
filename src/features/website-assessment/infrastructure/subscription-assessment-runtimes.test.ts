@@ -1,7 +1,11 @@
 import { Effect } from "effect"
 import { describe, expect, it } from "vitest"
 import type { RuntimeProcessRequest } from "@/features/runtime-settings"
-import type { AssessmentEvidenceEnvelope } from "@/features/website-assessment/application/assessment-runtime"
+import {
+  ASSESSMENT_TIMEOUT_MILLISECONDS,
+  type AssessmentEvidenceEnvelope,
+} from "@/features/website-assessment/application/assessment-runtime"
+import { makeCodexAssessmentRuntime } from "@/features/website-assessment/infrastructure/codex-assessment-runtime"
 import {
   makeClaudeAssessmentRuntime,
   makeOpencodeAssessmentRuntime,
@@ -57,6 +61,25 @@ const evidence: AssessmentEvidenceEnvelope = {
   publicPresenceSources: [],
   inspectionBlocks: [],
 }
+
+// Only OpenCode had asked for a budget, so the others inherited a default that cut them off.
+describe("every assessment runtime", () => {
+  it.each([
+    ["claude", makeClaudeAssessmentRuntime, JSON.stringify({ structured_output: output })],
+    ["opencode", makeOpencodeAssessmentRuntime, JSON.stringify(output)],
+    ["codex", makeCodexAssessmentRuntime, JSON.stringify(output)],
+  ])("gives %s the shared assessment budget", async (_name, makeRuntime, stdout) => {
+    const captured: { request?: RuntimeProcessRequest } = {}
+    const runtime = makeRuntime("executable", (request) => {
+      captured.request = request
+      return Effect.succeed({ exitCode: 0, stdout })
+    })
+
+    await Effect.runPromise(runtime.assess(evidence))
+
+    expect(captured.request?.timeoutMilliseconds).toBe(ASSESSMENT_TIMEOUT_MILLISECONDS)
+  })
+})
 
 describe("claude assessment adapter", () => {
   const runnerCapturing =
