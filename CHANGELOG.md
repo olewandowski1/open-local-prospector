@@ -60,6 +60,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Withhold a screenshot too small to depict the text its page contains. A working garage site
+  screenshotted its home page as a flat preloader that the capture froze in place, and the runtime
+  read the image and reported the site broken at severity 5 and confidence 0.99, sending it to the
+  top of Candidates at 90.8. The same page had recorded 3,965 characters of services, telephone,
+  email and address. Such an image is a capture artifact rather than evidence of appearance, so the
+  assessment now falls back to text and measurements and the business scores 67.2 on its real
+  accessibility and resource defects.
 - Show one Candidate Business per row in Candidates, Overview and exports, reading its current
   score instead of one row for every score it has ever had. The workspace listed 183 rows for 120
   businesses, one of them five times. A re-scored business now replaces its earlier entry, and its

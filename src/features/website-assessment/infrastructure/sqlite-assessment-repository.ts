@@ -12,6 +12,7 @@ import {
   ASSESSMENT_SCHEMA_VERSION,
   type AssessmentOutput,
 } from "@/features/website-assessment/domain/assessment-output"
+import { depictsRenderedPage } from "@/features/website-assessment/domain/screenshot-evidence"
 
 type TargetRow = {
   id: string
@@ -28,6 +29,8 @@ type ScreenshotRow = {
   path: string
   viewport: "Desktop" | "Mobile"
   final_url: string
+  byte_size: number
+  rendered_text_length: number
 }
 type PageRow = {
   final_url: string
@@ -107,7 +110,7 @@ function loadTarget(
     .all(row.run_business_id) as PresenceRow[]
   const screenshotRows = db
     .prepare(
-      "select ia.path, ia.viewport, ip.final_url from inspection_artifacts ia join inspection_pages ip on ip.id = ia.page_id where ia.inspection_id = ? and ia.kind = 'Screenshot' and ip.sequence = 0 order by ia.viewport",
+      "select ia.path, ia.viewport, ia.byte_size, ip.final_url, length(ip.rendered_text) rendered_text_length from inspection_artifacts ia join inspection_pages ip on ip.id = ia.page_id where ia.inspection_id = ? and ia.kind = 'Screenshot' and ip.sequence = 0 order by ia.viewport",
     )
     .all(inspectionId) as ScreenshotRow[]
   const blocks = db
@@ -125,11 +128,18 @@ function loadTarget(
     ...(brief.runtimeConfiguration ? { runtimeConfiguration: brief.runtimeConfiguration } : {}),
     inspectionConfigurationVersion: row.configuration_version,
     // Only the entry page of each viewport, so the attachment stays bounded.
-    screenshots: screenshotRows.map((screenshot) => ({
-      sourceUrl: screenshot.final_url,
-      viewport: screenshot.viewport,
-      path: screenshot.path,
-    })),
+    screenshots: screenshotRows
+      .filter((screenshot) =>
+        depictsRenderedPage(
+          { byteSize: screenshot.byte_size },
+          { renderedTextLength: screenshot.rendered_text_length },
+        ),
+      )
+      .map((screenshot) => ({
+        sourceUrl: screenshot.final_url,
+        viewport: screenshot.viewport,
+        path: screenshot.path,
+      })),
     evidence: {
       envelopeVersion: "assessment-evidence-v1",
       business: {
