@@ -42,8 +42,6 @@ export type QualificationEvidence = Readonly<{
 // Counts above the ceiling stop adding, so one very poor page cannot swamp the rest of the score.
 const CONTROL_CEILING = 8
 const MISSING_ALT_CEILING = 8
-const SLOW_PAINT_MS = 1_500
-const VERY_SLOW_PAINT_MS = 4_500
 
 /** The worst captured page, because averaging hid a slow home page behind three fast ones. */
 export function observedDefectDensity(
@@ -56,16 +54,13 @@ export function observedDefectDensity(
   return bounded(Math.max(...pages.map(pageDefectDensity)))
 }
 
+// Paint time is deliberately absent: one home page measured 296 ms and 3,448 ms across runs, so scoring it moved the total on network luck.
 function pageDefectDensity(page: PageDefectMeasurements): number {
   return bounded(
     bounded(page.unlabeledControls / CONTROL_CEILING) * 0.4 +
       bounded(page.imagesMissingAlt / MISSING_ALT_CEILING) * 0.25 +
       (page.horizontalOverflow ? 0.15 : 0) +
-      (page.usesHttps ? 0 : 0.2) +
-      bounded(
-        (page.firstContentfulPaintMs - SLOW_PAINT_MS) / (VERY_SLOW_PAINT_MS - SLOW_PAINT_MS),
-      ) *
-        0.2,
+      (page.usesHttps ? 0 : 0.2),
   )
 }
 

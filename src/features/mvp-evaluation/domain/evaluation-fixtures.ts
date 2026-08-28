@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v6" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v7" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -417,13 +417,12 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
         ...DEFECTIVE_PAGE_MEASUREMENTS,
         imagesMissingAlt: 8,
         horizontalOverflow: true,
-        firstContentfulPaintMs: 3_000,
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-at"), {
       severity: 2,
       confidence: 0.6,
-      commercialValue: 0.4,
+      commercialValue: 0.5,
     }),
     expected: {
       accepted: true,
@@ -440,7 +439,6 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
         ...DEFECTIVE_PAGE_MEASUREMENTS,
         imagesMissingAlt: 8,
         horizontalOverflow: true,
-        firstContentfulPaintMs: 2_850,
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-below"), {
@@ -451,7 +449,7 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     expected: {
       accepted: true,
       opportunityClass: "WeakDiscoverability",
-      score: 59.9,
+      score: 59,
       qualified: false,
     },
   },

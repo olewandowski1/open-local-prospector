@@ -19,6 +19,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Stop scoring first contentful paint. One home page measured 296 ms and 3,448 ms across runs, so a
+  business moved up to 2 points on network conditions rather than on its website. Paint time is
+  still recorded, shown to the reader and given to the runtime. Rescoring the same business twice
+  now moves the total by at most 1.3 points with severity identical, against swings of 34, 12 and 23
+  points before the runtime could see the pages.
 - Show the Website Assessment the pages it is judging. The captured desktop and mobile screenshots
   are now attached to the runtime call, so presentation is assessed from what a visitor sees rather
   than from body text. Auto Tytan Rumia had drawn no finding at all from text, and with the

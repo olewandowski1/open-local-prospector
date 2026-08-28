@@ -124,3 +124,19 @@ The deeper cause was not the rubric. The assessment had never been shown a scree
 presentation from body text and had no way to see a wasted first screen. See
 [ADR 0004](0004-application-owned-browser-inspection.md). With the screenshot attached, the same site
 moved from no finding at all to a dated first screen with no visible action, severity 3.
+
+## Reproducibility
+
+Rescoring the same business twice on the same captured evidence now moves the total by 1.3 points
+at most, with severity identical across runs. Before the runtime was shown the pages, the same
+three businesses swung by 34, 12 and 23 points, because severity was guessed from body text.
+
+What remains is apparent commercial value, a runtime judgement that varied between 6.8 and 8.4 for
+one business. First contentful paint was removed from the measured component for the same reason:
+one home page measured 296 ms and 3,448 ms across runs, so it moved the total by up to 2 points on
+network conditions. Paint time is still recorded, shown to the reader and given to the runtime, it
+simply no longer moves the deterministic score.
+
+Candidates within about 1.3 points of each other are therefore ties, and their order between runs
+is arbitrary. The qualified set currently spans 66.3 to 70.6, so it holds roughly three distinct
+tiers rather than seven distinct ranks.

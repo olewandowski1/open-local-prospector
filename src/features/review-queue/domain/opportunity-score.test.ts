@@ -34,7 +34,7 @@ describe("observed defect density", () => {
     const defective = page({ unlabeledControls: 8 })
     expect(observedDefectDensity([defective])).toBe(0.4)
     expect(observedDefectDensity([defective, cleanPage, cleanPage, cleanPage])).toBe(0.4)
-    expect(observedDefectDensity([cleanPage, page({ firstContentfulPaintMs: 4_500 })])).toBe(0.2)
+    expect(observedDefectDensity([cleanPage, page({ imagesMissingAlt: 8 })])).toBe(0.25)
   })
 
   it("ranks a heavier defect above a lighter one of the same kind", () => {
@@ -47,7 +47,11 @@ describe("observed defect density", () => {
     expect(observedDefectDensity([page({ imagesMissingAlt: 8 })])).toBe(0.25)
     expect(observedDefectDensity([page({ horizontalOverflow: true })])).toBe(0.15)
     expect(observedDefectDensity([page({ usesHttps: false })])).toBe(0.2)
-    expect(observedDefectDensity([page({ firstContentfulPaintMs: 4_500 })])).toBe(0.2)
+  })
+
+  // The same home page measured 296 ms and 3,448 ms across runs, so paint time cannot move the score.
+  it("ignores paint time, which varies with the network rather than the site", () => {
+    expect(observedDefectDensity([page({ firstContentfulPaintMs: 30_000 })])).toBe(0)
   })
 
   it("stays bounded when every measurement is at its worst", () => {
