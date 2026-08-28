@@ -140,4 +140,13 @@ describe("formatQualified", () => {
     expect(formatQualified(0, 5)).toBe("0/5")
     expect(formatQualified(5, 5)).toBe("5/5")
   })
+
+  // A reassessment that correctly disqualifies a business had read as a failed search.
+  it("reads a finished reassessment as reassessed rather than exhausted", () => {
+    expect(runStatusPresentation("Completed", "Reassessment Complete")).toMatchObject({
+      label: "Reassessed",
+      variant: "success",
+      detail: "Reassessment Complete",
+    })
+  })
 })

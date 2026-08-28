@@ -412,7 +412,11 @@ export function reconcileRunAfterTaskSettlement(
             ? { state: "Completed", completion: "Completed with Warnings" }
             : {
                 state: "Completed",
-                completion: targetRemaining === 0 ? "Target Reached" : "Search Exhausted",
+                completion: namesReassessedBusinesses(database, runId)
+                  ? "Reassessment Complete"
+                  : targetRemaining === 0
+                    ? "Target Reached"
+                    : "Search Exhausted",
               }
   database
     .prepare(
@@ -469,4 +473,16 @@ function mapTask(row: TaskRow): RunTask {
     schemaVersion: row.schema_version,
     version: row.version,
   }
+}
+
+// A reassessment names its businesses, so it has no target left to exhaust when one drops out.
+function namesReassessedBusinesses(database: Database.Database, runId: string): boolean {
+  return Boolean(
+    database
+      .prepare(
+        "select 1 from prospecting_runs where id = ? and json_extract(search_brief,'$.reassessment') is not null",
+      )
+      .pluck()
+      .get(runId),
+  )
 }

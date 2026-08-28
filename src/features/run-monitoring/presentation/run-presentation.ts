@@ -22,6 +22,7 @@ export type RunStatusPresentation = Readonly<{
 
 // Persisted states read as sentences, too long for a badge, so the original is kept as the detail.
 const statusPresentations: Readonly<Record<string, Omit<RunStatusPresentation, "detail">>> = {
+  "Reassessment Complete": { label: "Reassessed", variant: "success" },
   "Target Reached": { label: "Target Met", variant: "success" },
   "Search Exhausted": { label: "Exhausted", variant: "warning" },
   "Cancelled with Partial Results": { label: "Cancelled", variant: "destructive" },

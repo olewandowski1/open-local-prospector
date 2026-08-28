@@ -73,6 +73,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Read a finished reassessment as Reassessed rather than Exhausted. A reassessment names the
+  business it observes, so it has no target left to exhaust, and one that correctly disqualified a
+  business had been settling as a failed search.
 - Give the verification gate a timeout the Windows CI runner can meet. Suites that migrate real
   SQLite files and copy artifacts finish in well under a second locally but twice exceeded vitest’s
   five second default on a contended runner, failing `pnpm check` on work that had not touched them.

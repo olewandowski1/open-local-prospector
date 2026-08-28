@@ -1,6 +1,7 @@
 import type { SearchBrief } from "@/features/prospecting-runs"
 
 export const runCompletionStates = [
+  "Reassessment Complete",
   "Target Reached",
   "Search Exhausted",
   "Cancelled with Partial Results",
