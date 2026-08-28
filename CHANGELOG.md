@@ -73,6 +73,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Give the verification gate a timeout the Windows CI runner can meet. Suites that migrate real
+  SQLite files and copy artifacts finish in well under a second locally but twice exceeded vitest’s
+  five second default on a contended runner, failing `pnpm check` on work that had not touched them.
 - Capture a screenshot that depicts the page rather than the preloader covering it. A full-screen
   overlay outlived the network settling, so the image was blank while the same page had already
   yielded its text. The capture is now retried, bounded, until the image can depict that text: one
