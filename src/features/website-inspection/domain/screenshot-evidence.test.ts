@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { depictsRenderedPage } from "@/features/website-assessment/domain/screenshot-evidence"
+import { depictsRenderedPage } from "@/features/website-inspection/domain/screenshot-evidence"
 
 describe("screenshot evidence", () => {
   // A working garage site screenshotted as a flat preloader was called broken at confidence 0.99.

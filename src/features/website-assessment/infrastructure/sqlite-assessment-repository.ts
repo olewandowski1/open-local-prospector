@@ -12,7 +12,7 @@ import {
   ASSESSMENT_SCHEMA_VERSION,
   type AssessmentOutput,
 } from "@/features/website-assessment/domain/assessment-output"
-import { depictsRenderedPage } from "@/features/website-assessment/domain/screenshot-evidence"
+import { depictsRenderedPage } from "@/features/website-inspection"
 
 type TargetRow = {
   id: string

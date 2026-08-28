@@ -18,6 +18,7 @@ import {
   resolveHostAddresses,
   validatePublicHttpUrl,
 } from "@/features/website-inspection/domain/network-policy"
+import { depictsRenderedPage } from "@/features/website-inspection/domain/screenshot-evidence"
 import {
   detectInterstitial,
   selectRelevantPage,
@@ -300,13 +301,11 @@ async function capturePage(
       artifactDirectory,
       `${String(sequence + 1).padStart(2, "0")}-${viewport.toLocaleLowerCase("en")}.png`,
     )
-    await page.screenshot({
-      path: screenshotPath,
-      fullPage: false,
-      animations: "disabled",
-      timeout: 10_000,
-    })
-    const screenshot = await readFile(screenshotPath)
+    const screenshot = await captureDepictingScreenshot(
+      page,
+      screenshotPath,
+      facts.renderedText.length,
+    )
     return {
       sequence,
       viewport,
@@ -364,4 +363,28 @@ function blockedResult(startedAt: Date, block: InspectionBlock): WebsiteInspecti
 function failureDetail(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
   return message.split(/\r?\n/u)[0]?.trim().slice(0, 200) || "no detail reported"
+}
+
+const SCREENSHOT_ATTEMPTS = 3
+const SCREENSHOT_SETTLE_MS = 700
+
+// A full-screen preloader outlived networkidle, so the page's text was captured while the image was blank.
+async function captureDepictingScreenshot(
+  page: Page,
+  screenshotPath: string,
+  renderedTextLength: number,
+): Promise<Buffer> {
+  let screenshot = Buffer.alloc(0)
+  for (let attempt = 1; attempt <= SCREENSHOT_ATTEMPTS; attempt += 1) {
+    await page.screenshot({
+      path: screenshotPath,
+      fullPage: false,
+      animations: "disabled",
+      timeout: 10_000,
+    })
+    screenshot = await readFile(screenshotPath)
+    if (depictsRenderedPage({ byteSize: screenshot.byteLength }, { renderedTextLength })) break
+    if (attempt < SCREENSHOT_ATTEMPTS) await page.waitForTimeout(SCREENSHOT_SETTLE_MS)
+  }
+  return screenshot
 }

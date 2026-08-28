@@ -58,6 +58,31 @@ describe("Playwright website inspector", () => {
     expect(result.blocks).toEqual([])
   }, 30_000)
 
+  // A full-screen preloader outlived networkidle, and the blank capture was read as a broken site.
+  it("captures a page that reveals itself after the network settles", async () => {
+    const inspector = makePlaywrightWebsiteInspector({
+      resolveHost: publicResolver,
+      fixtureResponses: {
+        "https://public.test/": {
+          body: '<!doctype html><html lang="pl"><head><title>Serwis</title></head><body><div id="preloader" style="position:fixed;inset:0;background:red;z-index:9"></div><h1>Warsztat Samochodowy</h1><p>Naprawa silnika, diagnostyka komputerowa, wymiana opon i obsluga klimatyzacji dla samochodow osobowych oraz dostawczych w Rumi.</p><a href="/kontakt">Kontakt</a><script>setTimeout(function(){document.querySelector("#preloader").remove()},900)</script></body></html>',
+        },
+        "https://public.test/kontakt": {
+          body: '<!doctype html><html><head><title>Kontakt</title></head><body><h1>Kontakt</h1><form method="post"><input type="email"><button>Wyślij</button></form></body></html>',
+        },
+      },
+    })
+
+    const result = await Effect.runPromise(
+      inspector.inspect({ url: "https://public.test/", artifactDirectory: temporaryArtifacts() }),
+    )
+
+    const entry = result.pages.find((page) => page.sequence === 0 && page.viewport === "Desktop")
+    expect(entry).toBeDefined()
+    expect(entry?.renderedText).toContain("Warsztat Samochodowy")
+    // A flat preloader compresses to a few kilobytes; a rendered page cannot.
+    expect(entry?.screenshotBytes ?? 0).toBeGreaterThan(15_000)
+  }, 30_000)
+
   it("treats a one-page site with a contact fragment as complete rather than blocked", async () => {
     const inspector = makePlaywrightWebsiteInspector({
       resolveHost: publicResolver,

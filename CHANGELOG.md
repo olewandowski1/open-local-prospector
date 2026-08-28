@@ -60,6 +60,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Capture a screenshot that depicts the page rather than the preloader covering it. A full-screen
+  overlay outlived the network settling, so the image was blank while the same page had already
+  yielded its text. The capture is now retried, bounded, until the image can depict that text: one
+  garage home page went from 6 KB of flat colour to 728 KB showing its telephone number,
+  navigation and enquiry action. Withholding such an image remains the fallback when it never
+  resolves.
 - Withhold a screenshot too small to depict the text its page contains. A working garage site
   screenshotted its home page as a flat preloader that the capture froze in place, and the runtime
   read the image and reported the site broken at severity 5 and confidence 0.99, sending it to the
