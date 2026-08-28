@@ -1,16 +1,84 @@
 import { describe, expect, it } from "vitest"
 import {
   calculateOpportunityScore,
+  observedDefectDensity,
+  type PageDefectMeasurements,
   qualifiesOpportunityScore,
   REVIEW_QUEUE_THRESHOLD,
 } from "@/features/review-queue/domain/opportunity-score"
+
+const cleanPage: PageDefectMeasurements = {
+  unlabeledControls: 0,
+  imagesMissingAlt: 0,
+  horizontalOverflow: false,
+  usesHttps: true,
+  firstContentfulPaintMs: 300,
+}
+
+const page = (overrides: Partial<PageDefectMeasurements> = {}): PageDefectMeasurements => ({
+  ...cleanPage,
+  ...overrides,
+})
+
+describe("observed defect density", () => {
+  it("reports nothing when no page was captured", () => {
+    expect(observedDefectDensity([])).toBe(0)
+  })
+
+  it("scores a clean page at nearly nothing", () => {
+    expect(observedDefectDensity([cleanPage])).toBe(0)
+  })
+
+  // A four-page site must not look worse than a one-page site simply for having more pages.
+  it("judges a typical page rather than accumulating across pages", () => {
+    const defective = page({ unlabeledControls: 8 })
+    expect(observedDefectDensity([defective])).toBe(0.4)
+    expect(observedDefectDensity([defective, defective, defective, defective])).toBe(0.4)
+    expect(observedDefectDensity([defective, cleanPage])).toBeCloseTo(0.2, 5)
+  })
+
+  it("ranks a heavier defect above a lighter one of the same kind", () => {
+    expect(observedDefectDensity([page({ unlabeledControls: 6 })])).toBeGreaterThan(
+      observedDefectDensity([page({ unlabeledControls: 2 })]),
+    )
+  })
+
+  it("counts each measured defect kind", () => {
+    expect(observedDefectDensity([page({ imagesMissingAlt: 8 })])).toBe(0.25)
+    expect(observedDefectDensity([page({ horizontalOverflow: true })])).toBe(0.15)
+    expect(observedDefectDensity([page({ usesHttps: false })])).toBe(0.2)
+    expect(observedDefectDensity([page({ firstContentfulPaintMs: 4_500 })])).toBe(0.2)
+  })
+
+  it("stays bounded when every measurement is at its worst", () => {
+    expect(
+      observedDefectDensity([
+        {
+          unlabeledControls: 500,
+          imagesMissingAlt: 500,
+          horizontalOverflow: true,
+          usesHttps: false,
+          firstContentfulPaintMs: 60_000,
+        },
+      ]),
+    ).toBe(1)
+  })
+})
 
 describe("opportunity score", () => {
   it("uses the versioned weighted rubric", () => {
     expect(
       calculateOpportunityScore({
         severity: 5,
-        observationConfidence: 1,
+        observedPages: [
+          {
+            unlabeledControls: 8,
+            imagesMissingAlt: 8,
+            horizontalOverflow: true,
+            usesHttps: false,
+            firstContentfulPaintMs: 4_500,
+          },
+        ],
         hasContactRoute: true,
         localDecisionLikelihood: 1,
         apparentCommercialValue: 1,
@@ -19,29 +87,52 @@ describe("opportunity score", () => {
     ).toMatchObject({
       total: 100,
       severity: 40,
-      observationConfidence: 25,
+      observedDefects: 25,
       contactRoute: 15,
       localDecisionLikelihood: 10,
       apparentCommercialValue: 10,
     })
   })
-  it("does not let no-site severity alone cross the threshold", () => {
+
+  // Having no website is the strongest opportunity class, so the contact route is what gates it.
+  it("never qualifies a business with no website and no way to reach it", () => {
+    const score = calculateOpportunityScore({
+      severity: 5,
+      observedPages: [],
+      hasContactRoute: false,
+      localDecisionLikelihood: 0,
+      apparentCommercialValue: 0,
+      inspectionState: "NoWebsite",
+    })
+    expect(score.observedDefects).toBe(25)
+    expect(
+      qualifiesOpportunityScore(score, {
+        hasOpportunity: true,
+        hasObservation: true,
+        hasContactRoute: false,
+        suppressed: false,
+      }),
+    ).toBe(false)
+  })
+
+  it("claims nothing about pages a blocked inspection never captured", () => {
     expect(
       calculateOpportunityScore({
         severity: 5,
-        observationConfidence: 0,
-        hasContactRoute: false,
-        localDecisionLikelihood: 0,
+        observedPages: [],
+        hasContactRoute: true,
+        localDecisionLikelihood: 1,
         apparentCommercialValue: 0,
-        inspectionState: "NoWebsite",
-      }).total,
-    ).toBeLessThan(REVIEW_QUEUE_THRESHOLD)
+        inspectionState: "Blocked",
+      }).observedDefects,
+    ).toBe(0)
   })
+
   it("handles invalid components deterministically", () => {
     expect(
       calculateOpportunityScore({
         severity: Number.NaN,
-        observationConfidence: -1,
+        observedPages: [],
         hasContactRoute: false,
         localDecisionLikelihood: 2,
         apparentCommercialValue: 0,
@@ -49,13 +140,14 @@ describe("opportunity score", () => {
       }).total,
     ).toBe(10)
   })
+
   it("requires threshold, evidence, contact, and no suppression", () => {
     const score = calculateOpportunityScore({
-      severity: 2,
-      observationConfidence: 0.6,
+      severity: 3,
+      observedPages: [page({ unlabeledControls: 8 })],
       hasContactRoute: true,
       localDecisionLikelihood: 1,
-      apparentCommercialValue: 0.4,
+      apparentCommercialValue: 0.1,
       inspectionState: "Complete",
     })
     expect(score.total).toBe(REVIEW_QUEUE_THRESHOLD)
@@ -92,7 +184,7 @@ describe("opportunity score", () => {
     expect(
       calculateOpportunityScore({
         severity: 5,
-        observationConfidence: 1,
+        observedPages: [],
         hasContactRoute: true,
         localDecisionLikelihood: 1,
         apparentCommercialValue: 0.75,
@@ -100,21 +192,29 @@ describe("opportunity score", () => {
       }),
     ).toMatchObject({
       severity: 32,
-      observationConfidence: 15,
-      total: 79.5,
+      // Nothing was observed, so nothing is claimed about the pages.
+      observedDefects: 0,
+      total: 64.5,
     })
   })
 
-  it("does not limit a partial inspection with captured page evidence", () => {
-    expect(
-      calculateOpportunityScore({
-        severity: 5,
-        observationConfidence: 1,
-        hasContactRoute: true,
-        localDecisionLikelihood: 1,
-        apparentCommercialValue: 1,
-        inspectionState: "Partial",
-      }).total,
-    ).toBe(100)
+  it("separates two sites the runtime placed in one severity band", () => {
+    const inputs = {
+      severity: 3,
+      hasContactRoute: true,
+      localDecisionLikelihood: 1,
+      apparentCommercialValue: 0.8,
+      inspectionState: "Complete" as const,
+    }
+    const worse = calculateOpportunityScore({
+      ...inputs,
+      observedPages: [page({ unlabeledControls: 9 }), page({ unlabeledControls: 9 })],
+    })
+    const better = calculateOpportunityScore({
+      ...inputs,
+      observedPages: [page({ unlabeledControls: 2 }), page({ unlabeledControls: 2 })],
+    })
+    expect(worse.total).toBeGreaterThan(better.total)
+    expect(worse.total - better.total).toBeCloseTo(7.5, 5)
   })
 })

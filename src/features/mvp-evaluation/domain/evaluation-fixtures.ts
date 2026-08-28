@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v4" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v5" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -220,12 +220,27 @@ const opportunityClasses: readonly OpportunityClass[] = [
   "ConfusingConversionJourney",
 ]
 
+const CLEAN_PAGE_MEASUREMENTS = {
+  unlabeledControls: 0,
+  imagesMissingAlt: 0,
+  horizontalOverflow: false,
+  usesHttps: true,
+  firstContentfulPaintMs: 400,
+} as const
+
+// Eight unlabelled controls is the ceiling for that measurement, so this reads as a plain defect.
+const DEFECTIVE_PAGE_MEASUREMENTS = {
+  ...CLEAN_PAGE_MEASUREMENTS,
+  unlabeledControls: 8,
+} as const
+
 function evidence(
   id: string,
   options: Readonly<{
     websiteState?: "Present" | "NoWebsite" | "Blocked"
     hasContactRoute?: boolean
     partial?: boolean
+    measurements?: Readonly<Record<string, number | boolean>>
   }> = {},
 ): AssessmentEvidenceEnvelope {
   const sourceUrl = source(id)
@@ -240,7 +255,7 @@ function evidence(
     forms: [],
     consoleFailures: [],
     networkFailures: [],
-    measurements: {},
+    measurements: options.measurements ?? CLEAN_PAGE_MEASUREMENTS,
   }
   return {
     envelopeVersion: "assessment-evidence-v1",
@@ -325,14 +340,22 @@ function withObservationTime(output: AssessmentOutput, observedAt: string): Asse
 const classFixtures: AssessmentReplayFixture[] = opportunityClasses.map((opportunityClass) => {
   const id = `class-${opportunityClass}`
   const fixtureEvidence = evidence(id, {
-    ...(opportunityClass === "NoDedicatedWebsite" ? { websiteState: "NoWebsite" as const } : {}),
+    ...(opportunityClass === "NoDedicatedWebsite"
+      ? { websiteState: "NoWebsite" as const }
+      : { measurements: DEFECTIVE_PAGE_MEASUREMENTS }),
   })
   return {
     id,
     entryPoint: "AssessmentOutput",
     evidence: fixtureEvidence,
     runtimeOutput: completedOutput(opportunityClass, source(id)),
-    expected: { accepted: true, opportunityClass, score: 76, qualified: true },
+    expected: {
+      accepted: true,
+      opportunityClass,
+      // No website at all is the worst a website can be, so it scores above a site with a defect.
+      score: opportunityClass === "NoDedicatedWebsite" ? 81 : 66,
+      qualified: true,
+    },
   }
 })
 
@@ -372,21 +395,30 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     expected: {
       accepted: true,
       opportunityClass: "BrokenOrUnusable",
-      score: 79.5,
+      score: 64.5,
       qualified: true,
     },
   },
   {
     id: "partial-inspection",
     entryPoint: "AssessmentOutput",
-    evidence: evidence("partial-inspection", { partial: true }),
+    evidence: evidence("partial-inspection", {
+      partial: true,
+      measurements: DEFECTIVE_PAGE_MEASUREMENTS,
+    }),
     runtimeOutput: completedOutput("BrokenOrUnusable", source("partial-inspection")),
-    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 76, qualified: true },
+    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 66, qualified: true },
   },
   {
     id: "threshold-at",
     entryPoint: "AssessmentOutput",
-    evidence: evidence("threshold-at"),
+    evidence: evidence("threshold-at", {
+      measurements: {
+        ...DEFECTIVE_PAGE_MEASUREMENTS,
+        horizontalOverflow: true,
+        firstContentfulPaintMs: 2_250,
+      },
+    }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-at"), {
       severity: 2,
       confidence: 0.6,
@@ -402,7 +434,13 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
   {
     id: "threshold-below",
     entryPoint: "AssessmentOutput",
-    evidence: evidence("threshold-below"),
+    evidence: evidence("threshold-below", {
+      measurements: {
+        ...DEFECTIVE_PAGE_MEASUREMENTS,
+        horizontalOverflow: true,
+        firstContentfulPaintMs: 2_200,
+      },
+    }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-below"), {
       severity: 2,
       confidence: 0.59,
@@ -411,7 +449,7 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
     expected: {
       accepted: true,
       opportunityClass: "WeakDiscoverability",
-      score: 59.75,
+      score: 59.92,
       qualified: false,
     },
   },

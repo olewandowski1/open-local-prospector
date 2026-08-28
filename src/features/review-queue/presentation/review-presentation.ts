@@ -26,7 +26,10 @@ export type ScoreComponent = Readonly<{
 export function scoreComponents(candidate: QueueCandidate): readonly ScoreComponent[] {
   return [
     { label: "Severity", value: candidate.breakdown.severity, max: 40 },
-    { label: "Confidence", value: candidate.breakdown.confidence, max: 25 },
+    // Earlier rubrics scored how sure the runtime was; v3 scores what the pages measured.
+    candidate.breakdown.observedDefects === undefined
+      ? { label: "Confidence", value: candidate.breakdown.confidence, max: 25 }
+      : { label: "Observed Defects", value: candidate.breakdown.observedDefects, max: 25 },
     { label: "Contact Route", value: candidate.breakdown.contact, max: 15 },
     { label: "Local Decision", value: candidate.breakdown.localDecision, max: 10 },
     { label: "Commercial Value", value: candidate.breakdown.commercialValue, max: 10 },

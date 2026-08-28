@@ -59,7 +59,7 @@ describe(MVP_EVALUATION_VERSION, () => {
     ).toMatchObject({ score: 60, qualified: true })
     expect(
       evaluation.assessmentResults.find((result) => result.id === "threshold-below"),
-    ).toMatchObject({ score: 59.75, qualified: false })
+    ).toMatchObject({ score: 59.92, qualified: false })
   })
 
   it("reports stable versioned metrics on repeated runs", async () => {

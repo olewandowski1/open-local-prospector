@@ -120,6 +120,13 @@
       "when": 1787421254763,
       "tag": "0016_stiff_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1787921076613,
+      "tag": "0017_giant_sentinel",
+      "breakpoints": true
     }
   ]
 }

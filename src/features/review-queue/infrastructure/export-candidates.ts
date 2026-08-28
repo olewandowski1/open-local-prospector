@@ -37,7 +37,7 @@ export function exportCandidates(
     }
     const rows = db
       .prepare(
-        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null and ${CURRENT_SCORE_PER_BUSINESS} ${filters.join(" ")} order by cs.total desc,cb.name collate nocase,cs.id`,
+        `select cs.id,cb.name,cb.locality,cs.total,cs.rubric_version,cs.severity_component,cs.confidence_component,cs.observed_defect_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,wa.assessed_at,coalesce(cr.status,'Unreviewed') review_status,cs.run_business_id from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id left join candidate_reviews cr on cr.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null and ${CURRENT_SCORE_PER_BUSINESS} ${filters.join(" ")} order by cs.total desc,cb.name collate nocase,cs.id`,
       )
       .all(...bindings) as ExportRow[]
     const evidenceByScore = readEvidenceByScore(
@@ -79,7 +79,8 @@ type ExportRow = {
   total: number
   rubric_version: string
   severity_component: number
-  confidence_component: number
+  confidence_component: number | null
+  observed_defect_component: number | null
   contact_component: number
   local_decision_component: number
   commercial_value_component: number
@@ -158,7 +159,9 @@ function mapExport(
     reviewStatus: row.review_status,
     scoreBreakdown: {
       severity: row.severity_component,
-      observationConfidence: row.confidence_component,
+      ...(row.observed_defect_component === null
+        ? { observationConfidence: row.confidence_component ?? 0 }
+        : { observedDefects: row.observed_defect_component }),
       contactRoute: row.contact_component,
       localDecisionLikelihood: row.local_decision_component,
       apparentCommercialValue: row.commercial_value_component,

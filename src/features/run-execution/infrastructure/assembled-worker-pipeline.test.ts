@@ -84,7 +84,7 @@ describe("assembled worker pipeline", () => {
       ).toBe(4)
       const candidate = checked
         .prepare(
-          `select cs.severity_component,cs.confidence_component,cs.contact_component,
+          `select cs.severity_component,cs.observed_defect_component,cs.contact_component,
            cs.local_decision_component,cs.commercial_value_component,cs.total,cs.qualified,
            so.source_url,so.observed_at,ip.captured_at
            from candidate_scores cs
@@ -96,11 +96,11 @@ describe("assembled worker pipeline", () => {
         .get() as Record<string, unknown>
       expect(candidate).toMatchObject({
         severity_component: 24,
-        confidence_component: 20,
+        observed_defect_component: 10,
         contact_component: 15,
         local_decision_component: 10,
         commercial_value_component: 7,
-        total: 76,
+        total: 66,
         qualified: 1,
       })
       expect(candidate.observed_at).toBe(candidate.captured_at)
@@ -337,7 +337,8 @@ function inspectionResult(url: string, artifactDirectory: string): WebsiteInspec
           forms: 0,
           images: 0,
           imagesMissingAlt: 0,
-          unlabeledControls: 0,
+          // The funnel is driven all the way to Candidates, so the page carries a measured defect.
+          unlabeledControls: 8,
           horizontalOverflow: false,
           usesHttps: true,
         },

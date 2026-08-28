@@ -22,7 +22,9 @@ export const candidateScores = sqliteTable(
     assessmentId: text("assessment_id").notNull(),
     rubricVersion: text("rubric_version").notNull(),
     severityComponent: real("severity_component").notNull(),
-    confidenceComponent: real("confidence_component").notNull(),
+    // Earlier rubrics scored evidence confidence; opportunity-score-v3 scores observed defects.
+    confidenceComponent: real("confidence_component"),
+    observedDefectComponent: real("observed_defect_component"),
     contactComponent: real("contact_component").notNull(),
     localDecisionComponent: real("local_decision_component").notNull(),
     commercialValueComponent: real("commercial_value_component").notNull(),

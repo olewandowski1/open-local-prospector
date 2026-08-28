@@ -104,11 +104,13 @@ export async function evaluateQualityFixtures(): Promise<QualityEvaluation> {
     const observations = opportunities.flatMap((opportunity) => opportunity.observations)
     const score = calculateOpportunityScore({
       severity: Math.max(0, ...opportunities.map((opportunity) => opportunity.severity)),
-      observationConfidence:
-        observations.length === 0
-          ? 0
-          : observations.reduce((sum, observation) => sum + observation.confidence, 0) /
-            observations.length,
+      observedPages: fixture.evidence.pages.map((page) => ({
+        unlabeledControls: numeric(page.measurements.unlabeledControls),
+        imagesMissingAlt: numeric(page.measurements.imagesMissingAlt),
+        horizontalOverflow: Boolean(page.measurements.horizontalOverflow),
+        usesHttps: page.measurements.usesHttps !== false,
+        firstContentfulPaintMs: numeric(page.measurements.firstContentfulPaintMs),
+      })),
       hasContactRoute: fixture.evidence.business.hasPublicContactRoute,
       localDecisionLikelihood: 1,
       apparentCommercialValue: output.apparentCommercialValue,
@@ -170,4 +172,8 @@ function isSyntheticPublicUrl(value: string): boolean {
   } catch {
     return false
   }
+}
+
+function numeric(value: number | boolean | undefined): number {
+  return typeof value === "number" ? value : 0
 }

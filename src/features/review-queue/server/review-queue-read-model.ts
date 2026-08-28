@@ -44,6 +44,7 @@ export type QueueCandidate = Readonly<{
   breakdown: Readonly<{
     severity: number
     confidence: number
+    observedDefects?: number
     contact: number
     localDecision: number
     commercialValue: number
@@ -72,7 +73,8 @@ type QueueRow = {
   locality: string
   total: number
   severity_component: number
-  confidence_component: number
+  confidence_component: number | null
+  observed_defect_component: number | null
   contact_component: number
   local_decision_component: number
   commercial_value_component: number
@@ -92,7 +94,7 @@ type QueueRow = {
   inspection_id: string
 }
 
-const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,case when wi.status='Blocked' then 'LimitedWebsiteEvidence' else wo.opportunity_class end opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null and ${CURRENT_SCORE_PER_BUSINESS}`
+const QUEUE_SELECT = `select cs.id,cs.run_business_id,cs.assessment_id,wa.inspection_id,cb.name,cb.locality,cs.total,cs.severity_component,cs.confidence_component,cs.observed_defect_component,cs.contact_component,cs.local_decision_component,cs.commercial_value_component,cs.rubric_version,case when wi.status='Blocked' then 'LimitedWebsiteEvidence' else wo.opportunity_class end opportunity_class,wo.confidence,wi.status inspection_state,exists(select 1 from online_presences op where op.run_business_id=cs.run_business_id and op.type='Website' and op.association_state='Confirmed') website_available,exists(select 1 from contact_routes cr where cr.run_business_id=cs.run_business_id) contact_available,crv.status review_status,crv.rejection_reason,crv.rejection_note,crv.private_notes,crv.follow_up_at from candidate_scores cs join canonical_businesses cb on cb.id=cs.canonical_business_id join website_assessments wa on wa.id=cs.assessment_id join website_inspections wi on wi.id=wa.inspection_id join website_opportunities wo on wo.id=(select id from website_opportunities where assessment_id=wa.id order by severity desc,confidence desc,sequence limit 1) left join candidate_reviews crv on crv.score_id=cs.id left join suppression_entries se on se.identity_fingerprint=cb.identity_fingerprint where cs.qualified=1 and se.identity_fingerprint is null and ${CURRENT_SCORE_PER_BUSINESS}`
 
 // The queue only grows, and the whole of it is serialised into the page.
 const REVIEW_QUEUE_LIMIT = 500
@@ -247,7 +249,10 @@ function readQueueCandidate(scoreId: string): readonly QueueCandidate[] {
       })),
       breakdown: {
         severity: row.severity_component,
-        confidence: row.confidence_component,
+        confidence: row.confidence_component ?? 0,
+        ...(row.observed_defect_component === null
+          ? {}
+          : { observedDefects: row.observed_defect_component }),
         contact: row.contact_component,
         localDecision: row.local_decision_component,
         commercialValue: row.commercial_value_component,

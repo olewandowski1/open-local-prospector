@@ -2,6 +2,7 @@ import Database from "better-sqlite3"
 import { Effect } from "effect"
 import {
   calculateOpportunityScore,
+  type PageDefectMeasurements,
   qualifiesOpportunityScore,
 } from "@/features/review-queue/domain/opportunity-score"
 import type { RunTask, TaskCheckpoint } from "@/features/run-execution"
@@ -43,13 +44,14 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         }
       const row = db
         .prepare(
-          `select wa.run_business_id,wa.canonical_business_id,wa.apparent_commercial_value,wi.status inspection_state,cb.decision_scope,coalesce(max(wo.severity),0) severity,coalesce(avg(so.confidence),0) confidence,count(distinct wo.id) opportunities,count(distinct so.id) observations,exists(select 1 from contact_routes cr where cr.run_business_id=wa.run_business_id) has_contact from website_assessments wa join website_inspections wi on wi.id=wa.inspection_id join canonical_businesses cb on cb.id=wa.canonical_business_id left join website_opportunities wo on wo.assessment_id=wa.id left join supporting_observations so on so.opportunity_id=wo.id where wa.id=? group by wa.id`,
+          `select wa.run_business_id,wa.canonical_business_id,wa.apparent_commercial_value,wa.inspection_id,wi.status inspection_state,cb.decision_scope,coalesce(max(wo.severity),0) severity,coalesce(avg(so.confidence),0) confidence,count(distinct wo.id) opportunities,count(distinct so.id) observations,exists(select 1 from contact_routes cr where cr.run_business_id=wa.run_business_id) has_contact from website_assessments wa join website_inspections wi on wi.id=wa.inspection_id join canonical_businesses cb on cb.id=wa.canonical_business_id left join website_opportunities wo on wo.assessment_id=wa.id left join supporting_observations so on so.opportunity_id=wo.id where wa.id=? group by wa.id`,
         )
         .get(assessmentId) as
         | {
             run_business_id: string
             canonical_business_id: string
             apparent_commercial_value: number
+            inspection_id: string
             inspection_state: "Complete" | "Partial" | "Blocked" | "NoWebsite"
             decision_scope: string
             severity: number
@@ -62,7 +64,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
       if (!row) throw new Error("assessment missing")
       const breakdown = calculateOpportunityScore({
         severity: row.severity,
-        observationConfidence: row.confidence,
+        observedPages: readObservedPages(db, row.inspection_id),
         hasContactRoute: Boolean(row.has_contact),
         localDecisionLikelihood: row.decision_scope === "Local" ? 1 : 0,
         apparentCommercialValue: row.apparent_commercial_value,
@@ -84,7 +86,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
       const id = crypto.randomUUID()
       const now = Date.now()
       db.prepare(
-        `insert into candidate_scores (id,run_id,task_id,run_business_id,canonical_business_id,assessment_id,rubric_version,severity_component,confidence_component,contact_component,local_decision_component,commercial_value_component,total,qualified,scored_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `insert into candidate_scores (id,run_id,task_id,run_business_id,canonical_business_id,assessment_id,rubric_version,severity_component,observed_defect_component,contact_component,local_decision_component,commercial_value_component,total,qualified,scored_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       ).run(
         id,
         task.runId,
@@ -94,7 +96,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         assessmentId,
         breakdown.rubricVersion,
         breakdown.severity,
-        breakdown.observationConfidence,
+        breakdown.observedDefects,
         breakdown.contactRoute,
         breakdown.localDecisionLikelihood,
         breakdown.apparentCommercialValue,
@@ -155,4 +157,29 @@ function carryReviewNotes(
   db.prepare(
     `insert into candidate_reviews (id,score_id,status,private_notes,follow_up_at,updated_at) values (?,?,'Unreviewed',?,?,?)`,
   ).run(crypto.randomUUID(), scoreId, previous.private_notes, previous.follow_up_at, now)
+}
+
+// The rubric reads the recorded measurements directly, so they are loaded rather than summarised.
+function readObservedPages(
+  db: Database.Database,
+  inspectionId: string,
+): readonly PageDefectMeasurements[] {
+  const rows = db
+    .prepare(
+      "select json_extract(measurements,'$.unlabeledControls') unlabeled_controls,json_extract(measurements,'$.imagesMissingAlt') images_missing_alt,json_extract(measurements,'$.horizontalOverflow') horizontal_overflow,json_extract(measurements,'$.usesHttps') uses_https,json_extract(measurements,'$.firstContentfulPaintMs') first_contentful_paint_ms from inspection_pages where inspection_id=?",
+    )
+    .all(inspectionId) as {
+    unlabeled_controls: number | null
+    images_missing_alt: number | null
+    horizontal_overflow: number | null
+    uses_https: number | null
+    first_contentful_paint_ms: number | null
+  }[]
+  return rows.map((page) => ({
+    unlabeledControls: page.unlabeled_controls ?? 0,
+    imagesMissingAlt: page.images_missing_alt ?? 0,
+    horizontalOverflow: Boolean(page.horizontal_overflow),
+    usesHttps: page.uses_https !== 0,
+    firstContentfulPaintMs: page.first_contentful_paint_ms ?? 0,
+  }))
 }

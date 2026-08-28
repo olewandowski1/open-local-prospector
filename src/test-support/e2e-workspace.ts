@@ -512,9 +512,9 @@ function writeBusiness(
     .prepare(
       `insert into candidate_scores
        (id, run_id, task_id, run_business_id, canonical_business_id, assessment_id, rubric_version,
-        severity_component, confidence_component, contact_component, local_decision_component,
+        severity_component, observed_defect_component, contact_component, local_decision_component,
         commercial_value_component, total, qualified, scored_at)
-       values (?, ?, ?, ?, ?, ?, 'opportunity-score-v2', ?, ?, ?, ?, ?, ?, ?, ?)`,
+       values (?, ?, ?, ?, ?, ?, 'opportunity-score-v3', ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id(`score-${slug}`),

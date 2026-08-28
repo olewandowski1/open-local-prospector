@@ -19,6 +19,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Score the defects measured on a candidate website instead of how confident the runtime was that
+  it saw them. Evidence confidence sat at 24 to 25 of 25 for every candidate with captured pages,
+  so a quarter of the score carried no information, while the runtime placed six of eight observed
+  candidates in one severity band and left them within a single point of each other. The 25 points
+  now come from the recorded per-page measurements, which spread those six across 7.6 points and
+  order them by what was measured. Two sites with no measured defect left Candidates.
 - Require a Website Assessment to account for every deterministic measurement it was given: a
   measured accessibility, overflow or HTTPS defect is now classified or explicitly dismissed in the
   summary rather than silently ignored. Five unlabelled controls were previously left unmentioned on
