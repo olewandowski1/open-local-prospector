@@ -73,6 +73,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Rate an obstacle the visitor can dismiss as severity 3 rather than 4. A cookie dialog covering a
+  garage's first screen scored 4 in one assessment and 3 in the next on identical findings, moving
+  the business 11.4 points between runs. A consent dialog, newsletter overlay or age gate delays a
+  visit and does not end it, so severity 4 stays reserved for a first screen offering nothing to act
+  on once such a dialog is closed. The same business now reproduces within 0.6 points.
+- Keep one Website Opportunity per class in application code rather than asking the runtime for it.
+  One assessment reported the same class twice despite the instruction, so the most severe of each
+  class is kept and the rest dropped, which cannot change a score that already reads the maximum.
 - Read a finished reassessment as Reassessed rather than Exhausted. A reassessment names the
   business it observes, so it has no target left to exhaust, and one that correctly disqualified a
   business had been settling as a failed search.

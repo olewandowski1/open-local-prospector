@@ -120,6 +120,7 @@ export function buildAssessmentPrompt(
     "Severity states how much the opportunity costs the business, on this scale. 5: a visitor cannot get what they came for, or there is no website at all. 4: a visitor can get there but most will give up first, for example no way to enquire, a home page that says nothing about the business, or a page that takes seconds to appear. 3: a clear obstacle a visitor works around, for example an unclear route to contact, or content that does not answer an obvious question. 2: friction that costs some visitors, for example dated presentation that undercuts trust. 1: cosmetic only.",
     "Judge severity on what the business loses, not on how technically tidy the page is. A site that validates cleanly, loads over HTTPS and still gives a visitor no reason or route to make contact is a severity 4, not a 2.",
     "Two anchors, because most sites otherwise land on 3. A captured first screen with no visible telephone, enquiry or booking action is severity 4: the visitor arrived and cannot act. An accessibility or layout defect on a page a visitor can still complete is severity 3 at most, however many instances it has.",
+    "An obstacle the visitor can dismiss is severity 3, not 4. A cookie or consent dialog, a newsletter overlay or an age gate delays the visit and does not end it, however much of the first screen it covers. Severity 4 is reserved for a first screen that offers nothing to act on once any such dialog is closed.",
     "Use the whole range. If every opportunity you raise is a 3, ask which one actually costs the business a customer and which merely inconveniences one, and separate them.",
     "Raise at most one opportunity per class, combining everything you found in that class into its explanation. Three separate entries for unlabelled controls, missing alternative text and overflow are one MobileAccessibilityOrPerformance opportunity.",
     "Each captured page carries deterministic measurements. Account for every measurement that shows a defect: either classify it as an opportunity or say in the summary why it is not one. Treat imagesMissingAlt above zero, unlabeledControls above zero, horizontalOverflow true, and usesHttps false as defects that are present on the page.",
@@ -133,15 +134,29 @@ export function buildAssessmentPrompt(
   ].join("\n")
 }
 
+/** One opportunity per class, keeping the most severe, because the prompt alone did not hold it. */
+export function collapseOpportunitiesByClass(output: AssessmentOutput): AssessmentOutput {
+  const strongest = new Map<string, AssessmentOutput["opportunities"][number]>()
+  for (const opportunity of output.opportunities) {
+    const held = strongest.get(opportunity.class)
+    if (!held || opportunity.severity > held.severity) strongest.set(opportunity.class, opportunity)
+  }
+  if (strongest.size === output.opportunities.length) return output
+  // Order follows what the runtime reported, so the reader sees its ranking rather than a map's.
+  const kept = new Set(strongest.values())
+  return { ...output, opportunities: output.opportunities.filter((item) => kept.has(item)) }
+}
+
 export function applyAssessmentEvidenceLimits(
   evidence: AssessmentEvidenceEnvelope,
   output: AssessmentOutput,
 ): AssessmentOutput {
-  if (evidence.business.websiteState !== "Blocked" || evidence.pages.length > 0) return output
+  const collapsed = collapseOpportunitiesByClass(output)
+  if (evidence.business.websiteState !== "Blocked" || evidence.pages.length > 0) return collapsed
   return {
-    ...output,
+    ...collapsed,
     assessmentState: "Completed",
-    opportunities: output.opportunities.map((opportunity) => ({
+    opportunities: collapsed.opportunities.map((opportunity) => ({
       ...opportunity,
       severity: Math.min(opportunity.severity, BLOCKED_INSPECTION_MAX_SEVERITY),
       confidence: Math.min(opportunity.confidence, BLOCKED_INSPECTION_MAX_CONFIDENCE),

@@ -5,6 +5,7 @@ import {
   applyAssessmentEvidenceLimits,
   assessmentCitations,
   buildAssessmentPrompt,
+  collapseOpportunitiesByClass,
 } from "@/features/website-assessment/application/assessment-runtime"
 
 describe("assessment prompt boundary", () => {
@@ -81,6 +82,8 @@ describe("assessment prompt boundary", () => {
     expect(prompt).toContain("no visible telephone, enquiry or booking action is severity 4")
     expect(prompt).toContain("is severity 3 at most, however many instances it has")
     expect(prompt).toContain("Raise at most one opportunity per class")
+    // A cookie dialog covering the first screen scored 4 in one run and 3 in the next.
+    expect(prompt).toContain("An obstacle the visitor can dismiss is severity 3, not 4")
   })
 
   it("requires every measured defect to be accounted for and bars technology credits", () => {
@@ -187,6 +190,35 @@ describe("assessment prompt boundary", () => {
     )
 
     expect(output.assessmentState).toBe("Completed")
+  })
+})
+
+describe("opportunity collapsing", () => {
+  // One run reported ConfusingConversionJourney twice despite the prompt asking for one per class.
+  it("keeps the most severe opportunity of each class in the order reported", () => {
+    const opportunity = (klass: string, severity: number) => ({
+      class: klass as "BrokenOrUnusable",
+      severity,
+      confidence: 0.9,
+      observableEffect: "Trust" as const,
+      explanation: `${klass} at ${severity}`,
+      observations: [],
+    })
+    const collapsed = collapseOpportunitiesByClass({
+      schemaVersion: "assessment-output-v1",
+      assessmentState: "Completed",
+      summary: "s",
+      apparentCommercialValue: 0.5,
+      opportunities: [
+        opportunity("ConfusingConversionJourney", 3),
+        opportunity("MobileAccessibilityOrPerformance", 3),
+        opportunity("ConfusingConversionJourney", 4),
+      ],
+    } as never)
+    expect(collapsed.opportunities.map((o) => `${o.class}:${o.severity}`)).toEqual([
+      "MobileAccessibilityOrPerformance:3",
+      "ConfusingConversionJourney:4",
+    ])
   })
 })
 
