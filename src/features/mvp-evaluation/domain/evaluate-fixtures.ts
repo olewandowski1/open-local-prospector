@@ -10,6 +10,7 @@ import {
   applyAssessmentEvidenceLimits,
   assessmentCitations,
   decodeAssessmentOutput,
+  MINIMUM_ABSENCE_SOURCES,
 } from "@/features/website-assessment"
 
 type IdentityResult = Readonly<{
@@ -114,6 +115,7 @@ export async function evaluateQualityFixtures(): Promise<QualityEvaluation> {
       hasContactRoute: fixture.evidence.business.hasPublicContactRoute,
       localDecisionLikelihood: 1,
       apparentCommercialValue: output.apparentCommercialValue,
+      corroboratingSources: fixture.corroboratingSources ?? MINIMUM_ABSENCE_SOURCES,
       inspectionState:
         fixture.evidence.business.websiteState === "Present"
           ? fixture.evidence.inspectionBlocks.length > 0

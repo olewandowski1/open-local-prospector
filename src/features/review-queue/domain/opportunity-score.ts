@@ -1,6 +1,10 @@
-import { BLOCKED_INSPECTION_MAX_SEVERITY } from "@/features/website-assessment/client"
+import {
+  BLOCKED_INSPECTION_MAX_SEVERITY,
+  MINIMUM_ABSENCE_SOURCES,
+  UNCORROBORATED_ABSENCE_MAX_SEVERITY,
+} from "@/features/website-assessment/client"
 
-export const SCORE_RUBRIC_VERSION = "opportunity-score-v5" as const
+export const SCORE_RUBRIC_VERSION = "opportunity-score-v6" as const
 // Severity 3 alone scores 64.5 before any defect is counted, so 60 qualified every site that exists.
 export const REVIEW_QUEUE_THRESHOLD = 72
 
@@ -22,6 +26,8 @@ export type ScoreInputs = Readonly<{
   localDecisionLikelihood: number
   apparentCommercialValue: number
   inspectionState: ScoreInspectionState
+  /** Distinct public pages recorded for the business, which is what corroborates an absent website. */
+  corroboratingSources: number
 }>
 export type ScoreBreakdown = Readonly<{
   severity: number
@@ -65,11 +71,22 @@ function pageDefectDensity(page: PageDefectMeasurements): number {
   )
 }
 
+// One directory listing that did not mention a website is not the same as having none.
+function cappedSeverity(input: ScoreInputs): number {
+  if (input.inspectionState === "Blocked") {
+    return Math.min(input.severity, BLOCKED_INSPECTION_MAX_SEVERITY)
+  }
+  if (
+    input.inspectionState === "NoWebsite" &&
+    input.corroboratingSources < MINIMUM_ABSENCE_SOURCES
+  ) {
+    return Math.min(input.severity, UNCORROBORATED_ABSENCE_MAX_SEVERITY)
+  }
+  return input.severity
+}
+
 export function calculateOpportunityScore(input: ScoreInputs): ScoreBreakdown {
-  const severityInput =
-    input.inspectionState === "Blocked"
-      ? Math.min(input.severity, BLOCKED_INSPECTION_MAX_SEVERITY)
-      : input.severity
+  const severityInput = cappedSeverity(input)
   const severity = bounded(severityInput / 5) * 55
   // Measurements break ties between sites the runtime rated alike, but cannot carry the score: a site can measure clean and still be why a business needs a new website.
   const observedDefects = observedDefectDensity(input.observedPages, input.inspectionState) * 10

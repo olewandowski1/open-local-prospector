@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v8" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v9" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -34,6 +34,8 @@ export type AssessmentReplayFixture = Readonly<{
   entryPoint: "AssessmentOutput"
   evidence: AssessmentEvidenceEnvelope
   runtimeOutput: AssessmentOutput
+  /** Distinct public pages read about the business. Corroborated unless a fixture says otherwise. */
+  corroboratingSources?: number
   expected: Readonly<{
     accepted: boolean
     opportunityClass?: OpportunityClass
@@ -410,6 +412,21 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
       severity: 4,
     }),
     expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 80, qualified: true },
+  },
+  {
+    id: "absence-seen-on-one-page",
+    entryPoint: "AssessmentOutput",
+    evidence: evidence("absence-seen-on-one-page", { websiteState: "NoWebsite" }),
+    runtimeOutput: completedOutput("NoDedicatedWebsite", source("absence-seen-on-one-page"), {
+      severity: 5,
+    }),
+    corroboratingSources: 1,
+    expected: {
+      accepted: true,
+      opportunityClass: "NoDedicatedWebsite",
+      score: 86,
+      qualified: true,
+    },
   },
   {
     id: "threshold-at",

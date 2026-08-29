@@ -69,6 +69,7 @@ function score(databasePath: string, task: RunTask): TaskCheckpoint {
         localDecisionLikelihood: row.decision_scope === "Local" ? 1 : 0,
         apparentCommercialValue: row.apparent_commercial_value,
         inspectionState: row.inspection_state,
+        corroboratingSources: countCorroboratingSources(db, row.canonical_business_id),
       })
       const suppressed = db
         .prepare(
@@ -157,6 +158,16 @@ function carryReviewNotes(
   db.prepare(
     `insert into candidate_reviews (id,score_id,status,private_notes,follow_up_at,updated_at) values (?,?,'Unreviewed',?,?,?)`,
   ).run(crypto.randomUUID(), scoreId, previous.private_notes, previous.follow_up_at, now)
+}
+
+// Distinct public pages read about the business, which is what corroborates an absent website.
+function countCorroboratingSources(db: Database.Database, canonicalBusinessId: string): number {
+  return Number(
+    db
+      .prepare("select count(distinct url) from online_presences where canonical_business_id = ?")
+      .pluck()
+      .get(canonicalBusinessId),
+  )
 }
 
 // The rubric reads the recorded measurements directly, so they are loaded rather than summarised.

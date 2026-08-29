@@ -27,6 +27,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   business, rejected nothing. Re-running it after the change took the report from 4 cited blocks to
   21, contact rejections from 20 to 10, and businesses reaching scoring from 0 of 12 to 10 of 13.
 
+- Score an absent website in full only when more than one public page evidences the business, as
+  rubric `opportunity-score-v6`. A `NoWebsite` inspection rates severity 5 and scores 95 to 98.5,
+  the top of the queue, on the grounds that absence is knowledge rather than ignorance. Run across
+  fourteen cities that premise did not hold: 25 of the 31 leads scoring 95 or above rested on a
+  single directory listing that simply had not mentioned a website. One market returned nine car
+  repair garages of nine as having none, all read from one page. An absence corroborated by fewer
+  than two pages now caps severity at 4 and scores about 86, so a confirmed absence outranks a
+  probable one, and both outrank a site whose first screen offers no way to act. The cap lifts by
+  itself when the business is seen on another page. See
+  [ADR 0017](docs/adr/0017-corroborate-an-absent-website.md).
+
 - Qualify a candidate at 72 points rather than 60, and record it as rubric `opportunity-score-v5`.
   Severity 3 contributes 33 points, contactability and local decision-making contribute 25 to every
   candidate, and apparent commercial value has never fallen below 6.5, so anything the runtime rated

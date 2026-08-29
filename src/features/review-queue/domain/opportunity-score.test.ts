@@ -87,6 +87,7 @@ describe("opportunity score", () => {
         localDecisionLikelihood: 1,
         apparentCommercialValue: 1,
         inspectionState: "Complete",
+        corroboratingSources: 2,
       }),
     ).toMatchObject({
       total: 100,
@@ -107,6 +108,7 @@ describe("opportunity score", () => {
       localDecisionLikelihood: 0,
       apparentCommercialValue: 0,
       inspectionState: "NoWebsite",
+      corroboratingSources: 2,
     })
     expect(score.observedDefects).toBe(10)
     expect(
@@ -128,6 +130,7 @@ describe("opportunity score", () => {
         localDecisionLikelihood: 1,
         apparentCommercialValue: 0,
         inspectionState: "Blocked",
+        corroboratingSources: 2,
       }).observedDefects,
     ).toBe(0)
   })
@@ -141,6 +144,7 @@ describe("opportunity score", () => {
         localDecisionLikelihood: 2,
         apparentCommercialValue: 0,
         inspectionState: "Complete",
+        corroboratingSources: 2,
       }).total,
     ).toBe(10)
   })
@@ -153,6 +157,7 @@ describe("opportunity score", () => {
       localDecisionLikelihood: 1,
       apparentCommercialValue: 0.3,
       inspectionState: "Complete",
+      corroboratingSources: 2,
     })
     expect(score.total).toBe(REVIEW_QUEUE_THRESHOLD)
     expect(
@@ -193,6 +198,7 @@ describe("opportunity score", () => {
         localDecisionLikelihood: 1,
         apparentCommercialValue: 0.75,
         inspectionState: "Blocked",
+        corroboratingSources: 2,
       }),
     ).toMatchObject({
       severity: 44,
@@ -202,6 +208,26 @@ describe("opportunity score", () => {
     })
   })
 
+  // One directory listing that did not mention a website had been scoring 98, the top of the queue.
+  it("caps an absent website nobody corroborated, and scores a corroborated one in full", () => {
+    const absent = (corroboratingSources: number) =>
+      calculateOpportunityScore({
+        severity: 5,
+        observedPages: [],
+        hasContactRoute: true,
+        localDecisionLikelihood: 1,
+        apparentCommercialValue: 0.7,
+        inspectionState: "NoWebsite",
+        corroboratingSources,
+      })
+
+    expect(absent(2).severity).toBe(55)
+    expect(absent(1).severity).toBe(44)
+    expect(absent(1).total).toBeLessThan(absent(2).total)
+    // Still a strong lead, just not a confirmed one.
+    expect(absent(1).total).toBeGreaterThan(REVIEW_QUEUE_THRESHOLD)
+  })
+
   it("separates two sites the runtime placed in one severity band", () => {
     const inputs = {
       severity: 3,
@@ -209,6 +235,7 @@ describe("opportunity score", () => {
       localDecisionLikelihood: 1,
       apparentCommercialValue: 0.8,
       inspectionState: "Complete" as const,
+      corroboratingSources: 2,
     }
     const worse = calculateOpportunityScore({
       ...inputs,

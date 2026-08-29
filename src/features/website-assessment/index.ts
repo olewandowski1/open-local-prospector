@@ -21,5 +21,7 @@ export {
 export {
   BLOCKED_INSPECTION_MAX_CONFIDENCE,
   BLOCKED_INSPECTION_MAX_SEVERITY,
+  MINIMUM_ABSENCE_SOURCES,
+  UNCORROBORATED_ABSENCE_MAX_SEVERITY,
 } from "@/features/website-assessment/domain/inspection-evidence-policy"
 export { makeSqliteAssessmentRepository } from "@/features/website-assessment/infrastructure/sqlite-assessment-repository"
