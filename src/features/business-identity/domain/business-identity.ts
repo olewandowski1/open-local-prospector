@@ -136,7 +136,8 @@ function fingerprint(
 ): string {
   const country = countryCode.toUpperCase()
   const telephone = contacts.find((contact) => contact.type === "BusinessTelephone")?.value
-  if (telephone) return `tel:${normalizeWords(telephone)}|${country}`
+  const dialled = telephone ? normalizeTelephone(telephone) : ""
+  if (dialled) return `tel:${dialled}|${country}`
   const host = websiteUrl ? websiteHost(websiteUrl) : undefined
   if (host) return `web:${host}|${country}`
   const contact = contacts
@@ -148,6 +149,11 @@ function fingerprint(
     )[0]
   if (contact) return `contact:${contact.type}:${contact.value}|${country}`
   return `name:${normalizeWords(canonicalName)}|${locality}|${country}`
+}
+
+// A number is its digits: word normalising kept "tel." and "telefon", so one business became two.
+export function normalizeTelephone(value: string): string {
+  return value.replace(/\D/gu, "")
 }
 
 function normalizeContactValue(contact: ContactRoute): string {

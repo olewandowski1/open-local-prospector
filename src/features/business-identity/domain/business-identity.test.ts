@@ -81,6 +81,42 @@ describe("canonical fingerprint", () => {
     expect(new Set(fingerprints).size).toBe(1)
   })
 
+  // "tel. 59 842 82 91" and "59 842 82 91" had keyed two businesses, so one appeared twice in the queue.
+  it("keys one business on its telephone however the number was written", () => {
+    const fingerprints = [
+      "tel. 59 842 82 91",
+      "telefon 59 842 82 91",
+      "59 842 82 91",
+      "59 84 28 291",
+      "(59) 842-82-91",
+    ].map(
+      (value) =>
+        evaluate(
+          business({
+            contacts: [
+              { type: "BusinessTelephone", value, sourceUrl: "https://muszelka.pl/kontakt" },
+            ],
+          }),
+        ).canonicalFingerprint,
+    )
+
+    expect(new Set(fingerprints)).toEqual(new Set(["tel:598428291|PL"]))
+  })
+
+  // An empty telephone key would have merged every business that carried one.
+  it("ignores a telephone that holds no digits", () => {
+    const result = evaluate(
+      business({
+        contacts: [
+          { type: "BusinessTelephone", value: "brak telefonu", sourceUrl: "https://usmiech.pl/" },
+        ],
+        websiteUrl: "https://usmiech.pl/",
+      }),
+    )
+
+    expect(result.canonicalFingerprint).toBe("web:usmiech pl|PL")
+  })
+
   it("falls back to the website host, then to the name and locality", () => {
     const byWebsite = evaluate(
       business({ contacts: [], websiteUrl: "https://www.usmiech.pl/kontakt" }),

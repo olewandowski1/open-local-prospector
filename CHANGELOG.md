@@ -73,6 +73,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Key a business on the digits of its telephone. The identity fingerprint ran the number through
+  the general word normaliser, so "tel. 59 842 82 91" and "59 842 82 91" described two businesses,
+  as did "509 180 099" and "509 18 00 99". Eleven businesses appeared in the queue twice, and
+  because reassessment re-resolves identity, the refreshed score landed on one copy while the
+  inflated copy stayed at the top and could never be refreshed. A telephone holding no digits now
+  falls through to the website or name rather than keying every business on an empty value.
 - Give every Website Assessment the same time to answer. Only the OpenCode call had asked for a
   budget, so the Codex and Claude calls inherited the runtime process default of two minutes.
   Successful assessments average 26 seconds and reach 115, pressed right against that ceiling, and
