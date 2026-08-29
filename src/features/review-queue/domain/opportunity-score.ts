@@ -1,7 +1,8 @@
 import { BLOCKED_INSPECTION_MAX_SEVERITY } from "@/features/website-assessment/client"
 
-export const SCORE_RUBRIC_VERSION = "opportunity-score-v4" as const
-export const REVIEW_QUEUE_THRESHOLD = 60
+export const SCORE_RUBRIC_VERSION = "opportunity-score-v5" as const
+// Severity 3 alone scores 64.5 before any defect is counted, so 60 qualified every site that exists.
+export const REVIEW_QUEUE_THRESHOLD = 72
 
 export type ScoreInspectionState = "Complete" | "Partial" | "Blocked" | "NoWebsite"
 

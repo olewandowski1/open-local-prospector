@@ -147,11 +147,11 @@ describe("opportunity score", () => {
 
   it("requires threshold, evidence, contact, and no suppression", () => {
     const score = calculateOpportunityScore({
-      severity: 3,
+      severity: 4,
       observedPages: [cleanPage],
       hasContactRoute: true,
       localDecisionLikelihood: 1,
-      apparentCommercialValue: 0.2,
+      apparentCommercialValue: 0.3,
       inspectionState: "Complete",
     })
     expect(score.total).toBe(REVIEW_QUEUE_THRESHOLD)

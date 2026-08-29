@@ -8,7 +8,7 @@ import { SCORE_RUBRIC_VERSION } from "@/features/review-queue"
 import type { AssessmentEvidenceEnvelope, AssessmentOutput } from "@/features/website-assessment"
 import { ASSESSMENT_PROMPT_VERSION, ASSESSMENT_SCHEMA_VERSION } from "@/features/website-assessment"
 
-export const MVP_EVALUATION_VERSION = "mvp-evaluation-v7" as const
+export const MVP_EVALUATION_VERSION = "mvp-evaluation-v8" as const
 export const FIXTURE_OBSERVED_AT = "2026-08-16T10:00:00.000Z" as const
 
 export type IdentityExpectation = Readonly<{
@@ -348,12 +348,12 @@ const classFixtures: AssessmentReplayFixture[] = opportunityClasses.map((opportu
     id,
     entryPoint: "AssessmentOutput",
     evidence: fixtureEvidence,
-    runtimeOutput: completedOutput(opportunityClass, source(id)),
+    runtimeOutput: completedOutput(opportunityClass, source(id), { severity: 4 }),
     expected: {
       accepted: true,
       opportunityClass,
       // No website at all is the worst a website can be, so it scores above a site with a defect.
-      score: opportunityClass === "NoDedicatedWebsite" ? 75 : 69,
+      score: opportunityClass === "NoDedicatedWebsite" ? 86 : 80,
       qualified: true,
     },
   }
@@ -406,8 +406,10 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
       partial: true,
       measurements: DEFECTIVE_PAGE_MEASUREMENTS,
     }),
-    runtimeOutput: completedOutput("BrokenOrUnusable", source("partial-inspection")),
-    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 69, qualified: true },
+    runtimeOutput: completedOutput("BrokenOrUnusable", source("partial-inspection"), {
+      severity: 4,
+    }),
+    expected: { accepted: true, opportunityClass: "BrokenOrUnusable", score: 80, qualified: true },
   },
   {
     id: "threshold-at",
@@ -420,14 +422,14 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-at"), {
-      severity: 2,
+      severity: 3,
       confidence: 0.6,
-      commercialValue: 0.5,
+      commercialValue: 0.6,
     }),
     expected: {
       accepted: true,
       opportunityClass: "WeakDiscoverability",
-      score: 60,
+      score: 72,
       qualified: true,
     },
   },
@@ -442,14 +444,14 @@ export const assessmentReplayFixtures: readonly AssessmentReplayFixture[] = [
       },
     }),
     runtimeOutput: completedOutput("WeakDiscoverability", source("threshold-below"), {
-      severity: 2,
+      severity: 3,
       confidence: 0.59,
-      commercialValue: 0.4,
+      commercialValue: 0.5,
     }),
     expected: {
       accepted: true,
       opportunityClass: "WeakDiscoverability",
-      score: 59,
+      score: 71,
       qualified: false,
     },
   },

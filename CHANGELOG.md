@@ -19,6 +19,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Qualify a candidate at 72 points rather than 60, and record it as rubric `opportunity-score-v5`.
+  Severity 3 contributes 33 points, contactability and local decision-making contribute 25 to every
+  candidate, and apparent commercial value has never fallen below 6.5, so anything the runtime rated
+  3 scored at least 64.5 and could not fail. Since severity 3 means a defect on a page the visitor
+  can still complete, which nearly every website has, three markets the rubric had never been tuned
+  on produced 26 candidates and 26 qualified, including eight of eight dental clinics. No score has
+  ever landed between 55 and 65, so the old threshold sat in an empty band and decided nothing. The
+  queue now holds 15 of 53 businesses instead of 50, and qualification means a visitor who arrived
+  and cannot act, or no website at all. See
+  [ADR 0016](docs/adr/0016-qualify-on-a-blocked-visitor-not-a-defect.md).
+
 - Anchor the severity bands so an assessment uses the range instead of rating almost everything 3.
   A captured first screen with no visible telephone, enquiry or booking action is severity 4,
   because the visitor arrived and cannot act; an accessibility or layout defect on a page a visitor

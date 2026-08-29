@@ -56,10 +56,10 @@ describe(MVP_EVALUATION_VERSION, () => {
     expect(evaluation.metrics.unsupportedClaimRejectionCount).toBe(2)
     expect(
       evaluation.assessmentResults.find((result) => result.id === "threshold-at"),
-    ).toMatchObject({ score: 60, qualified: true })
+    ).toMatchObject({ score: 72, qualified: true })
     expect(
       evaluation.assessmentResults.find((result) => result.id === "threshold-below"),
-    ).toMatchObject({ score: 59, qualified: false })
+    ).toMatchObject({ score: 71, qualified: false })
   })
 
   it("reports stable versioned metrics on repeated runs", async () => {

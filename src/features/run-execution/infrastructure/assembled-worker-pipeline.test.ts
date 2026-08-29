@@ -95,12 +95,12 @@ describe("assembled worker pipeline", () => {
         )
         .get() as Record<string, unknown>
       expect(candidate).toMatchObject({
-        severity_component: 33,
+        severity_component: 44,
         observed_defect_component: 4,
         contact_component: 15,
         local_decision_component: 10,
         commercial_value_component: 7,
-        total: 69,
+        total: 80,
         qualified: 1,
       })
       expect(candidate.observed_at).toBe(candidate.captured_at)
