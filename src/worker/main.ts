@@ -7,6 +7,7 @@ import {
   makeSubscriptionDiscoveryRuntime,
 } from "@/features/business-discovery/worker"
 import {
+  makeAbsenceConfirmationExecutor,
   makeIdentityTaskExecutor,
   makeSqliteIdentityRepository,
 } from "@/features/business-identity/worker"
@@ -57,8 +58,11 @@ const program = Effect.gen(function* () {
   const discoveryRepository = makeSqliteDiscoveryRepository(localConfig.databasePath)
   const executeDiscovery = makeDiscoveryTaskExecutor(discoveryRuntime, discoveryRepository)
   const executeReassessmentSeed = makeReassessmentSeedTaskExecutor(discoveryRepository)
-  const executeIdentity = makeIdentityTaskExecutor(
-    makeSqliteIdentityRepository(localConfig.databasePath),
+  const identityRepository = makeSqliteIdentityRepository(localConfig.databasePath)
+  const executeIdentity = makeIdentityTaskExecutor(identityRepository)
+  const executeAbsenceConfirmation = makeAbsenceConfirmationExecutor(
+    identityRepository,
+    discoveryRuntime,
   )
   const assessmentRuntimes = {
     ...(Option.isSome(codexExecutable)
@@ -111,6 +115,7 @@ const program = Effect.gen(function* () {
             DiscoverBusinesses: executeDiscovery,
             CorroborateBusiness: executeIdentity,
             InspectWebsite: executeInspection,
+            ConfirmAbsentWebsite: executeAbsenceConfirmation,
             AssessWebsiteOpportunity: executeAssessment,
             ScoreCandidate: executeScoring,
           }),

@@ -58,12 +58,15 @@ export function makeInspectionTaskExecutor(
         },
         nextTasks: [
           {
-            stage: "AssessWebsiteOpportunity",
+            // An absent website is the strongest claim the run makes, so it is confirmed before use.
+            stage:
+              result.status === "NoWebsite" ? "ConfirmAbsentWebsite" : "AssessWebsiteOpportunity",
             businessId: task.businessId,
             input: {
               inspectionId,
               runBusinessId,
               canonicalBusinessId: target.canonicalBusinessId,
+              ...(readString(task.input, "absenceConfirmed") ? { absenceConfirmed: "yes" } : {}),
             },
             schemaVersion: 1,
           },

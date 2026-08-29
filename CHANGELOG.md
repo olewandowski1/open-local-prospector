@@ -19,6 +19,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Confirm an absent website by searching for that one business, in a new `ConfirmAbsentWebsite`
+  stage between inspection and assessment. It spends nothing when the business already carries two
+  public pages, so in one workspace 2 businesses of 78 would search, against the two searches per
+  business that [ADR 0013](docs/adr/0013-search-then-structure.md) rejected on cost. A website it
+  finds is inspected rather than scored as absent; an absence it confirms is recorded as pages read,
+  so the cap from [ADR 0017](docs/adr/0017-corroborate-an-absent-website.md) lifts on evidence. See
+  [ADR 0018](docs/adr/0018-confirm-an-absent-website-by-search.md).
+
 - Ask discovery to look for a website by name before reporting that a business has none, and to
   corroborate each business from more than one page, as `discovery-report-v3`. One market had
   returned nine car repair garages of nine as having no website, every one read from a single
@@ -105,15 +113,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Split the New Run sheet into focused bootstrap, form, field, runtime, and preflight components.
 - Enforce the repository rule that source comments remain concise, single-line rationale.
 
-### Security
-
-- Apply one runtime environment allowlist to probes and task execution, preserving custom Codex
-  homes while excluding inherited provider credentials.
-- Reject over-limit Suppression Entry reasons consistently at the route and persistence boundaries.
-- Document private vulnerability reporting and enable it for the repository.
-
-### Fixed
-
 - Recognise a business by any route it carries, not by one computed key. Identity was a single
   fingerprint taken from the first available of a telephone, website host, contact or name, then
   matched by exact equality, so the same business forked three ways: on which of its telephones a
@@ -123,6 +122,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the queue while every attempt to refresh it wrote to the other copy. A business is now found by a
   shared telephone, website host or address. See
   [ADR 0015](docs/adr/0015-resolve-identity-by-any-shared-route.md).
+
+### Security
+
+- Apply one runtime environment allowlist to probes and task execution, preserving custom Codex
+  homes while excluding inherited provider credentials.
+- Reject over-limit Suppression Entry reasons consistently at the route and persistence boundaries.
+- Document private vulnerability reporting and enable it for the repository.
+
+### Fixed
+
+- Keep a business whose telephone was reported from more than one page. Contact routes are unique per
+  business, type and value, so the same number arriving from two pages aborted the whole corroboration
+  and lost the business. Asking discovery to read more pages made it common: four businesses of ten
+  were lost in one run. Contacts and public presences are now written once each.
+
 - Stop attributing a neighbour's telephone to a business. A contact must appear beside its source
   inside the section of the report describing that business, but when the section could not be
   located the check fell back to the whole report, and a difference as small as a pair of quotation

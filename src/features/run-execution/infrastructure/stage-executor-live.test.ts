@@ -11,6 +11,7 @@ const executors = {
   DiscoverBusinesses: unreachable,
   CorroborateBusiness: unreachable,
   InspectWebsite: unreachable,
+  ConfirmAbsentWebsite: unreachable,
   AssessWebsiteOpportunity: unreachable,
   ScoreCandidate: unreachable,
 }

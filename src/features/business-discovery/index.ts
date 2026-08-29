@@ -13,6 +13,7 @@ export type {
   DiscoveryPage,
   DiscoveryResult,
 } from "@/features/business-discovery/domain/discovered-business"
+export { normalizeDiscoveryUrl } from "@/features/business-discovery/domain/discovered-business"
 export type {
   DiscoveryStructure,
   StructuredBusiness,

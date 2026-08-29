@@ -2,6 +2,7 @@ import type Database from "better-sqlite3"
 import { Effect } from "effect"
 import type { StructuredBusiness } from "@/features/business-discovery"
 import type {
+  AbsenceContext,
   CommittedIdentity,
   IdentityRepository,
   IdentityTaskContext,
@@ -32,6 +33,16 @@ export function makeSqliteIdentityRepository(databasePath: string): IdentityRepo
       databaseEffect(databasePath, "load", (database) =>
         loadContext(database, runId, discoveredBusinessId),
       ),
+    loadAbsenceContext: (runBusinessId) =>
+      Effect.try({
+        try: () => readAbsenceContext(sharedDatabase(databasePath), runBusinessId),
+        catch: () => new IdentityPersistenceError({ operation: "load" }),
+      }),
+    recordAbsenceConfirmation: (input) =>
+      Effect.try({
+        try: () => writeAbsenceConfirmation(sharedDatabase(databasePath), input),
+        catch: () => new IdentityPersistenceError({ operation: "commit" }),
+      }),
     commitEvaluation: (input) =>
       databaseEffect(databasePath, "commit", (database) => commitEvaluation(database, input)),
   }
@@ -144,6 +155,68 @@ function commitEvaluation(
       status,
       ...(websiteUrl ? { websiteUrl } : {}),
       shouldInspect: status === "Eligible" && Boolean(canonicalBusinessId),
+    }
+  })()
+}
+
+function readAbsenceContext(database: Database.Database, runBusinessId: string): AbsenceContext {
+  const row = database
+    .prepare(
+      `select rb.canonical_business_id, cb.name, cb.locality, pr.search_brief
+       from run_businesses rb
+       join canonical_businesses cb on cb.id = rb.canonical_business_id
+       join prospecting_runs pr on pr.id = rb.run_id
+       where rb.id = ?`,
+    )
+    .get(runBusinessId) as
+    | { canonical_business_id: string; name: string; locality: string; search_brief: string }
+    | undefined
+  if (!row) throw new Error("run business missing")
+  return {
+    canonicalBusinessId: row.canonical_business_id,
+    name: row.name,
+    locality: row.locality,
+    searchBrief: JSON.parse(row.search_brief) as SearchBrief,
+    corroboratingSources: Number(
+      database
+        .prepare("select count(distinct url) from online_presences where canonical_business_id = ?")
+        .pluck()
+        .get(row.canonical_business_id),
+    ),
+  }
+}
+
+// The pages the confirming search read become presences, so the absence is corroborated by them.
+function writeAbsenceConfirmation(
+  database: Database.Database,
+  input: {
+    runBusinessId: string
+    canonicalBusinessId: string
+    pagesRead: readonly string[]
+    websiteUrl?: string
+    collectedAt: Date
+  },
+): void {
+  const insert = database.prepare(
+    `insert into online_presences
+     (id, canonical_business_id, run_business_id, type, url, source_identifier,
+      association_state, match_key, collected_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     on conflict(run_business_id, url) do nothing`,
+  )
+  database.transaction(() => {
+    for (const url of new Set(input.pagesRead)) {
+      const website = url === input.websiteUrl
+      insert.run(
+        crypto.randomUUID(),
+        input.canonicalBusinessId,
+        input.runBusinessId,
+        website ? "Website" : "Directory",
+        url,
+        "absence-confirmation",
+        "Confirmed",
+        (website ? websiteMatchKey(url) : undefined) ?? null,
+        input.collectedAt.getTime(),
+      )
     }
   })()
 }
@@ -270,7 +343,10 @@ function replacePresences(
      (id, canonical_business_id, run_business_id, type, url, source_identifier,
       association_state, match_key, collected_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
+  const seenUrls = new Set<string>()
   for (const presence of evaluation.presences) {
+    if (seenUrls.has(presence.url)) continue
+    seenUrls.add(presence.url)
     insert.run(
       crypto.randomUUID(),
       canonicalBusinessId ?? null,
@@ -297,7 +373,12 @@ function replaceContacts(
      (id, canonical_business_id, run_business_id, type, value, source_url, match_key, collected_at)
      values (?, ?, ?, ?, ?, ?, ?, ?)`,
   )
+  // Reading several pages about one business reports its telephone more than once.
+  const seen = new Set<string>()
   for (const contact of evaluation.contacts) {
+    const key = `${contact.type}:${contact.value}`
+    if (seen.has(key)) continue
+    seen.add(key)
     insert.run(
       crypto.randomUUID(),
       canonicalBusinessId,

@@ -12,6 +12,7 @@ import {
   makeSqliteDiscoveryRepository,
 } from "@/features/business-discovery"
 import {
+  makeAbsenceConfirmationExecutor,
   makeIdentityTaskExecutor,
   makeSqliteIdentityRepository,
 } from "@/features/business-identity"
@@ -69,6 +70,8 @@ describe("assembled worker pipeline", () => {
         DiscoverBusinesses: 1,
         CorroborateBusiness: 9,
         InspectWebsite: 4,
+        // One business reported no website, and one search confirmed it.
+        ConfirmAbsentWebsite: 1,
         AssessWebsiteOpportunity: 4,
         ScoreCandidate: 4,
       })
@@ -226,7 +229,12 @@ function assembledWorkerLayer(
     discoveryRuntime(Boolean(options.blockDiscovery)),
     discoveryRepository,
   )
-  const executeIdentity = makeIdentityTaskExecutor(makeSqliteIdentityRepository(databasePath))
+  const identityRepository = makeSqliteIdentityRepository(databasePath)
+  const executeIdentity = makeIdentityTaskExecutor(identityRepository)
+  const executeAbsenceConfirmation = makeAbsenceConfirmationExecutor(
+    identityRepository,
+    discoveryRuntime(Boolean(options.blockDiscovery)),
+  )
   const executeInspection = makeInspectionTaskExecutor(
     websiteInspector(options.failInspectionFor),
     makeSqliteInspectionRepository(databasePath),
@@ -243,6 +251,7 @@ function assembledWorkerLayer(
       DiscoverBusinesses: executeDiscovery,
       CorroborateBusiness: executeIdentity,
       InspectWebsite: executeInspection,
+      ConfirmAbsentWebsite: executeAbsenceConfirmation,
       AssessWebsiteOpportunity: executeAssessment,
       ScoreCandidate: makeScoreCandidateTaskExecutor(databasePath),
     }),

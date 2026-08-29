@@ -13,6 +13,7 @@ export type StageExecutors = Readonly<{
   DiscoverBusinesses: StageTaskExecutor
   CorroborateBusiness: StageTaskExecutor
   InspectWebsite: StageTaskExecutor
+  ConfirmAbsentWebsite: StageTaskExecutor
   AssessWebsiteOpportunity: StageTaskExecutor
   ScoreCandidate: StageTaskExecutor
 }>

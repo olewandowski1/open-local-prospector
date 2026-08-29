@@ -54,6 +54,20 @@ describe("SQLite identity repository", () => {
     expect(countCanonical(databasePath)).toBe(1)
   })
 
+  // Reading several pages reported one telephone twice, and the unique index lost the business.
+  it("keeps a business whose telephone was reported from two pages", async () => {
+    const { repository, brief, runId, databasePath } = await workspace()
+
+    const committed = await commit(repository, databasePath, runId, brief, "one", {
+      name: "Warsztat Kowalski",
+      telephones: ["601 234 567", "601 234 567"],
+      websiteUrl: "https://kowalski.test/",
+    })
+
+    expect(committed.canonicalBusinessId).toBeDefined()
+    expect(countRows(databasePath, "select count(*) from contact_routes")).toBe(1)
+  })
+
   it("keeps two businesses apart when they share no route", async () => {
     const { repository, brief, runId, databasePath } = await workspace()
 
@@ -163,6 +177,15 @@ function planningTaskId(databasePath: string, runId: string): string {
       .prepare("select id from run_tasks where run_id = ? order by created_at limit 1")
       .pluck()
       .get(runId) as string
+  } finally {
+    database.close()
+  }
+}
+
+function countRows(databasePath: string, query: string): number {
+  const database = new Database(databasePath, { readonly: true })
+  try {
+    return Number(database.prepare(query).pluck().get())
   } finally {
     database.close()
   }

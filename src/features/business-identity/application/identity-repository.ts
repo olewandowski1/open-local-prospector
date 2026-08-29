@@ -31,11 +31,30 @@ export class IdentityPersistenceError extends Data.TaggedError("IdentityPersiste
   readonly operation: "load" | "lookup-query" | "record-query" | "commit"
 }> {}
 
+export type AbsenceContext = Readonly<{
+  canonicalBusinessId: string
+  name: string
+  locality: string
+  searchBrief: SearchBrief
+  /** Distinct public pages already recorded, which is what an absent website must be weighed against. */
+  corroboratingSources: number
+}>
+
 export interface IdentityRepository {
   readonly loadContext: (
     runId: string,
     discoveredBusinessId: string,
   ) => Effect.Effect<IdentityTaskContext, IdentityPersistenceError>
+  readonly loadAbsenceContext: (
+    runBusinessId: string,
+  ) => Effect.Effect<AbsenceContext, IdentityPersistenceError>
+  readonly recordAbsenceConfirmation: (input: {
+    runBusinessId: string
+    canonicalBusinessId: string
+    pagesRead: readonly string[]
+    websiteUrl?: string
+    collectedAt: Date
+  }) => Effect.Effect<void, IdentityPersistenceError>
   readonly commitEvaluation: (input: {
     runId: string
     taskId: string

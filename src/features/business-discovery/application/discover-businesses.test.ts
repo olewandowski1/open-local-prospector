@@ -110,6 +110,7 @@ describe("business discovery workflow", () => {
         DiscoverBusinesses: execute,
         CorroborateBusiness: unreachableStage,
         InspectWebsite: unreachableStage,
+        ConfirmAbsentWebsite: unreachableStage,
         AssessWebsiteOpportunity: unreachableStage,
         ScoreCandidate: unreachableStage,
       }),
