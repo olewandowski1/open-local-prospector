@@ -19,6 +19,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Ask discovery to look for a website by name before reporting that a business has none, and to
+  corroborate each business from more than one page, as `discovery-report-v3`. One market had
+  returned nine car repair garages of nine as having no website, every one read from a single
+  directory listing. Checked by hand, two of three sampled were genuinely without a site and one
+  had `mototeam.torun.pl`, so roughly one such claim in three was false while carrying the highest
+  score the rubric awards. Re-running that market took every business from one source to between
+  two and five, and a business with no website now reaches the top of the queue on five corroborating
+  pages rather than on one. An earlier wording of this change told the runtime to prefer a business's
+  own pages, which quietly selected against the businesses without a website that the product exists
+  to find; it now says the opposite explicitly.
+
 - Ask the discovery report to write a page address inside every business block it belongs to, as
   `discovery-report-v2`. The prompt asked for the pages read about each business but never said the
   address had to be repeated when one page covers several, so a run that opened with "public source
