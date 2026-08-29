@@ -166,7 +166,8 @@ export function verifyAgainstReport(
       business.websiteUrl && cited(business.websiteUrl, "website") ? business.websiteUrl : undefined
     // A contact must appear beside its source within the business's attributable report section.
     const section = sections.get(business.name)
-    const scope = section ? [section] : blocks
+    // Falling back to the whole report gave a business its neighbour's telephone, so bound it here.
+    const scope = section ? [section] : sourceUrls.flatMap((url) => blocksCiting(blocks, url))
     const contacts = business.contacts.filter((contact) => {
       if (!cited(contact.sourceUrl, "contact")) return false
       const reason = contactRejection(contact, countryCode, blocksCiting(scope, contact.sourceUrl))

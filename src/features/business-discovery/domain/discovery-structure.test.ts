@@ -255,6 +255,51 @@ describe("discovery structure verification", () => {
     )
   })
 
+  // The name is written with quotation marks the structured record drops, so no section is found.
+  it("refuses a neighbour's telephone when the report spells the name differently", () => {
+    const report = [
+      "1) Kwiaciarnia Zuza",
+      "https://www.facebook.com/kwiaciarnia-zuza",
+      "Telephone: 604 173 591",
+      "",
+      '2) Kwiaciarnia "Orchidea"',
+      "https://kwiaciarniaorchidea.com/",
+      "Telephone: 774 669 976",
+    ].join("\n")
+
+    const { businesses, rejections } = verifyAgainstReport(
+      {
+        schemaVersion: "discovery-structure-v1",
+        businesses: [
+          business({
+            name: "Kwiaciarnia Orchidea",
+            sourceUrls: ["https://kwiaciarniaorchidea.com/"],
+            contacts: [
+              {
+                type: "BusinessTelephone",
+                value: "774 669 976",
+                sourceUrl: "https://kwiaciarniaorchidea.com/",
+              },
+              {
+                type: "BusinessTelephone",
+                value: "604 173 591",
+                sourceUrl: "https://www.facebook.com/kwiaciarnia-zuza",
+              },
+            ],
+          }),
+        ],
+      },
+      report,
+      "PL",
+      isPublicUrl,
+    )
+
+    expect(businesses[0]?.contacts.map((contact) => contact.value)).toEqual(["774 669 976"])
+    expect(rejections).toContainEqual(
+      expect.objectContaining({ value: "604 173 591", reason: "not-beside-its-source" }),
+    )
+  })
+
   // A report that covers one business twice must not hand its second entry to the business before.
   it("gives every mention of a business to that business", () => {
     const report = [

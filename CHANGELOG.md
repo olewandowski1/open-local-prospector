@@ -73,6 +73,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Stop attributing a neighbour's telephone to a business. A contact must appear beside its source
+  inside the section of the report describing that business, but when the section could not be
+  located the check fell back to the whole report, and a difference as small as a pair of quotation
+  marks around the name was enough to trigger it. One florist held telephone numbers taken from two
+  other florists' pages, which is a number a reader could have rung. The fallback is now bounded by
+  the business's own cited sources, so a page belonging to someone else can no longer supply it.
 - Key a business on the digits of its telephone. The identity fingerprint ran the number through
   the general word normaliser, so "tel. 59 842 82 91" and "59 842 82 91" described two businesses,
   as did "509 180 099" and "509 18 00 99". Eleven businesses appeared in the queue twice, and
