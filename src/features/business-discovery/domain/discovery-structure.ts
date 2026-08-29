@@ -1,6 +1,6 @@
 import { Effect, JSONSchema, Schema } from "effect"
 
-export const DISCOVERY_REPORT_PROMPT_VERSION = "discovery-report-v1" as const
+export const DISCOVERY_REPORT_PROMPT_VERSION = "discovery-report-v2" as const
 export const DISCOVERY_STRUCTURE_PROMPT_VERSION = "discovery-structure-v1" as const
 export const DISCOVERY_STRUCTURE_SCHEMA_VERSION = "discovery-structure-v1" as const
 

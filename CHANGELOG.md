@@ -19,6 +19,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Ask the discovery report to write a page address inside every business block it belongs to, as
+  `discovery-report-v2`. The prompt asked for the pages read about each business but never said the
+  address had to be repeated when one page covers several, so a run that opened with "public source
+  read for all entries" and never repeated it lost every contact to the co-location rule, and with
+  them all twelve businesses. The same market twenty minutes earlier, with a source cited per
+  business, rejected nothing. Re-running it after the change took the report from 4 cited blocks to
+  21, contact rejections from 20 to 10, and businesses reaching scoring from 0 of 12 to 10 of 13.
+
 - Qualify a candidate at 72 points rather than 60, and record it as rubric `opportunity-score-v5`.
   Severity 3 contributes 33 points, contactability and local decision-making contribute 25 to every
   candidate, and apparent commercial value has never fallen below 6.5, so anything the runtime rated
