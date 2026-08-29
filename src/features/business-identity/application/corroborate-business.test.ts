@@ -48,7 +48,8 @@ describe("business identity workflow", () => {
     expect(readScalar(database.path, "select count(*) from run_businesses")).toBe(2)
   })
 
-  it("keeps same-name businesses distinct when their identity fingerprints differ", async () => {
+  // Sharing neither a telephone nor a site, these are neighbours rather than one business twice.
+  it("keeps same-name businesses distinct when they share no route", async () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const execute = makeIdentityTaskExecutor(makeSqliteIdentityRepository(database.path))
@@ -57,13 +58,35 @@ describe("business identity workflow", () => {
       execute(await seedIdentityTask(database.path, "phone-one", business("+48123456789"))),
     )
     await Effect.runPromise(
-      execute(await seedIdentityTask(database.path, "phone-two", business("+48222333444"))),
+      execute(
+        await seedIdentityTask(
+          database.path,
+          "phone-two",
+          business("+48222333444", "https://usmiech-reda.pl/"),
+        ),
+      ),
     )
 
     expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(2)
     expect(
       readScalar(database.path, "select count(distinct canonical_business_id) from run_businesses"),
     ).toBe(2)
+  })
+
+  // One garage listing its two numbers in a different order had become two businesses.
+  it("recognises a business by a route it shares, though the telephone differs", async () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const execute = makeIdentityTaskExecutor(makeSqliteIdentityRepository(database.path))
+
+    await Effect.runPromise(
+      execute(await seedIdentityTask(database.path, "route-one", business("+48123456789"))),
+    )
+    await Effect.runPromise(
+      execute(await seedIdentityTask(database.path, "route-two", business("+48222333444"))),
+    )
+
+    expect(readScalar(database.path, "select count(*) from canonical_businesses")).toBe(1)
   })
 
   it("excludes a centrally controlled outlet without scheduling inspection", async () => {
@@ -98,17 +121,17 @@ describe("business identity workflow", () => {
   })
 })
 
-function business(telephone = "+48123456789"): StructuredBusiness {
+function business(telephone = "+48123456789", site = "https://usmiech.pl/"): StructuredBusiness {
   return {
     name: "Gabinet Uśmiech",
     locality: "Kraków",
     decisionScope: "Local",
     centrallyControlled: false,
     onlineOnly: false,
-    websiteUrl: "https://usmiech.pl/",
-    sourceUrls: ["https://usmiech.pl/"],
-    presences: [{ type: "Website", url: "https://usmiech.pl/" }],
-    contacts: [{ type: "BusinessTelephone", value: telephone, sourceUrl: "https://usmiech.pl/" }],
+    websiteUrl: site,
+    sourceUrls: [site],
+    presences: [{ type: "Website", url: site }],
+    contacts: [{ type: "BusinessTelephone", value: telephone, sourceUrl: site }],
   }
 }
 

@@ -73,6 +73,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Recognise a business by any route it carries, not by one computed key. Identity was a single
+  fingerprint taken from the first available of a telephone, website host, contact or name, then
+  matched by exact equality, so the same business forked three ways: on which of its telephones a
+  run listed first, on whether the country code was written, and on whether that run captured a
+  telephone at all. Three runs of one market on a reset workspace produced 20 records for 15
+  businesses, and because reassessment re-resolves identity, a stale score could sit at the top of
+  the queue while every attempt to refresh it wrote to the other copy. A business is now found by a
+  shared telephone, website host or address. See
+  [ADR 0015](docs/adr/0015-resolve-identity-by-any-shared-route.md).
 - Stop attributing a neighbour's telephone to a business. A contact must appear beside its source
   inside the section of the report describing that business, but when the section could not be
   located the check fell back to the whole report, and a difference as small as a pair of quotation

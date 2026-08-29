@@ -1,9 +1,53 @@
 import { describe, expect, it } from "vitest"
 
 import type { StructuredBusiness } from "@/features/business-discovery"
-import { evaluateBusinessIdentity } from "@/features/business-identity/domain/business-identity"
+import {
+  evaluateBusinessIdentity,
+  routeMatchKey,
+  telephoneSubscriberNumber,
+  websiteMatchKey,
+} from "@/features/business-identity/domain/business-identity"
 
 const collectedAt = new Date("2026-08-16T10:00:00.000Z")
+
+describe("route match keys", () => {
+  // One garage wrote its number both ways and became two businesses.
+  it("reads one subscriber number however the country code was written", () => {
+    const keys = ["(+48) 602 764 645", "48602764645", "602 764 645", "+48-602-764-645"].map(
+      (value) => routeMatchKey({ type: "BusinessTelephone", value }),
+    )
+
+    expect(new Set(keys)).toEqual(new Set(["tel:602764645"]))
+  })
+
+  it("refuses a number too short to be a subscriber number", () => {
+    expect(telephoneSubscriberNumber("12 34")).toBeUndefined()
+    expect(routeMatchKey({ type: "BusinessTelephone", value: "brak" })).toBeUndefined()
+  })
+
+  it("keys a website on its host, ignoring www and the path", () => {
+    const keys = [
+      "https://www.autotytan.pl/",
+      "https://autotytan.pl/kontakt/",
+      "http://AUTOTYTAN.pl",
+    ].map(websiteMatchKey)
+
+    expect(new Set(keys)).toEqual(new Set(["web:autotytan.pl"]))
+  })
+
+  it("keys an address without regard to how it was capitalised", () => {
+    expect(routeMatchKey({ type: "GenericEmail", value: " Kontakt@JimmySerwis.pl " })).toBe(
+      "mail:kontakt@jimmyserwis.pl",
+    )
+  })
+
+  it("gives no key to a route that cannot identify a business", () => {
+    expect(
+      routeMatchKey({ type: "ContactForm", value: "https://example.test/kontakt" }),
+    ).toBeUndefined()
+    expect(websiteMatchKey("not a url")).toBeUndefined()
+  })
+})
 
 describe("business identity evaluation", () => {
   it("accepts a local business that kept a verified contact route", () => {

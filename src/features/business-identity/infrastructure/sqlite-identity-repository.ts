@@ -7,7 +7,11 @@ import type {
   IdentityTaskContext,
 } from "@/features/business-identity/application/identity-repository"
 import { IdentityPersistenceError } from "@/features/business-identity/application/identity-repository"
-import type { IdentityEvaluation } from "@/features/business-identity/domain/business-identity"
+import {
+  type IdentityEvaluation,
+  routeMatchKey,
+  websiteMatchKey,
+} from "@/features/business-identity/domain/business-identity"
 import { sharedDatabase } from "@/features/local-application"
 import type { SearchBrief } from "@/features/prospecting-runs"
 
@@ -156,6 +160,8 @@ function upsertCanonical(
     .prepare("select id from canonical_businesses where identity_fingerprint = ?")
     .get(fingerprint) as { id: string } | undefined
   if (existing) return existing.id
+  const knownByRoute = resolveByRoute(database, evaluation)
+  if (knownByRoute) return knownByRoute
   const locality = searchBrief.searchArea.displayName.split(",")[0]?.trim() ?? searchBrief.location
   const normalizedName = normalizeCanonicalName(evaluation.canonicalName)
   const id = crypto.randomUUID()
@@ -181,6 +187,32 @@ function upsertCanonical(
       now.getTime(),
     )
   return id
+}
+
+// A run that captured a different telephone, or none, once keyed the same garage as a new business.
+function resolveByRoute(
+  database: Database.Database,
+  evaluation: IdentityEvaluation,
+): string | undefined {
+  const keys = [
+    ...evaluation.contacts.map((contact) => routeMatchKey(contact)),
+    ...evaluation.presences
+      .filter((presence) => presence.type === "Website")
+      .map((presence) => websiteMatchKey(presence.url)),
+  ].filter((key): key is string => key !== undefined)
+  if (keys.length === 0) return undefined
+  const placeholders = keys.map(() => "?").join(",")
+  return database
+    .prepare(
+      `select canonical_business_id from contact_routes
+       where match_key in (${placeholders}) and canonical_business_id is not null
+       union
+       select canonical_business_id from online_presences
+       where match_key in (${placeholders}) and canonical_business_id is not null
+       limit 1`,
+    )
+    .pluck()
+    .get(...keys, ...keys) as string | undefined
 }
 
 function normalizeCanonicalName(name: string): string {
@@ -236,7 +268,7 @@ function replacePresences(
   const insert = database.prepare(
     `insert into online_presences
      (id, canonical_business_id, run_business_id, type, url, source_identifier,
-      association_state, collected_at) values (?, ?, ?, ?, ?, ?, ?, ?)`,
+      association_state, match_key, collected_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
   for (const presence of evaluation.presences) {
     insert.run(
@@ -247,6 +279,7 @@ function replacePresences(
       presence.url,
       presence.sourceIdentifier,
       presence.associationState,
+      (presence.type === "Website" ? websiteMatchKey(presence.url) : undefined) ?? null,
       presence.collectedAt.getTime(),
     )
   }
@@ -261,8 +294,8 @@ function replaceContacts(
   database.prepare("delete from contact_routes where run_business_id = ?").run(runBusinessId)
   const insert = database.prepare(
     `insert into contact_routes
-     (id, canonical_business_id, run_business_id, type, value, source_url, collected_at)
-     values (?, ?, ?, ?, ?, ?, ?)`,
+     (id, canonical_business_id, run_business_id, type, value, source_url, match_key, collected_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?)`,
   )
   for (const contact of evaluation.contacts) {
     insert.run(
@@ -272,6 +305,7 @@ function replaceContacts(
       contact.type,
       contact.value,
       contact.sourceUrl,
+      routeMatchKey(contact) ?? null,
       contact.collectedAt.getTime(),
     )
   }

@@ -61,9 +61,13 @@ export const onlinePresences = sqliteTable(
     url: text().notNull(),
     sourceIdentifier: text("source_identifier").notNull(),
     associationState: text("association_state").notNull(),
+    matchKey: text("match_key"),
     collectedAt: integer("collected_at", { mode: "timestamp_ms" }).notNull(),
   },
-  (table) => [uniqueIndex("online_presences_run_url_idx").on(table.runBusinessId, table.url)],
+  (table) => [
+    uniqueIndex("online_presences_run_url_idx").on(table.runBusinessId, table.url),
+    index("online_presences_match_key_idx").on(table.matchKey),
+  ],
 )
 
 export const contactRoutes = sqliteTable(
@@ -79,9 +83,11 @@ export const contactRoutes = sqliteTable(
     type: text().notNull(),
     value: text().notNull(),
     sourceUrl: text("source_url").notNull(),
+    matchKey: text("match_key"),
     collectedAt: integer("collected_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
     uniqueIndex("contact_routes_run_value_idx").on(table.runBusinessId, table.type, table.value),
+    index("contact_routes_match_key_idx").on(table.matchKey),
   ],
 )

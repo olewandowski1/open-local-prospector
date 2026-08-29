@@ -151,6 +151,39 @@ function fingerprint(
   return `name:${normalizeWords(canonicalName)}|${locality}|${country}`
 }
 
+// A business is one business however it was written down, so it is found by any route it carries.
+export function routeMatchKey(
+  route: Readonly<{ type: string; value: string }>,
+): string | undefined {
+  if (route.type === "BusinessTelephone") {
+    const subscriber = telephoneSubscriberNumber(route.value)
+    return subscriber ? `tel:${subscriber}` : undefined
+  }
+  if (route.type === "GenericEmail") {
+    const address = route.value.trim().toLocaleLowerCase("en")
+    return address ? `mail:${address}` : undefined
+  }
+  return undefined
+}
+
+export function websiteMatchKey(url: string): string | undefined {
+  // Not the fingerprint's host, which folds punctuation away and could collide two real hosts.
+  try {
+    const host = new URL(url).hostname.toLocaleLowerCase("en").replace(/^www[.]/u, "")
+    return host ? `web:${host}` : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// One business writes its number several ways, so the country code cannot be part of the match.
+const SUBSCRIBER_DIGITS = 9
+
+export function telephoneSubscriberNumber(value: string): string | undefined {
+  const digits = normalizeTelephone(value)
+  if (digits.length < SUBSCRIBER_DIGITS) return undefined
+  return digits.slice(-SUBSCRIBER_DIGITS)
+}
 // A number is its digits: word normalising kept "tel." and "telefon", so one business became two.
 export function normalizeTelephone(value: string): string {
   return value.replace(/\D/gu, "")

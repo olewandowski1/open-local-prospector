@@ -127,6 +127,13 @@
       "when": 1787921076613,
       "tag": "0017_giant_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1787997281305,
+      "tag": "0018_cool_vengeance",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Resolve Identity By Any Shared Route, Not One Computed Key
 
-Status: Proposed
+Status: Accepted
 
 Amends [ADR 0013](0013-search-then-structure.md).
 
@@ -60,14 +60,16 @@ Resolve a business against the routes it carries, rather than against one key co
   subscriber number, a website host, or an email address. Create a record only when nothing matches.
 - **Compare telephones as subscriber numbers**, digits only, with a leading country calling code
   removed, so `+48 602 764 645`, `48602764645` and `602 764 645` are one number.
-- **Compare website hosts without `www.`**, as `websiteHost` already does.
+- **Compare website hosts without `www.`**, using the real hostname rather than the fingerprint's,
+  which folds punctuation away and could collide two genuinely different hosts.
 - The stored fingerprint stays, as the record's primary key and as what suppression entries
   reference. It is now the strongest route the business is known by rather than the only one it can
   be found by.
-- **Stored fingerprints must be migrated with the change.** Identity is looked up by exact
-  fingerprint equality, so altering how one is computed without rewriting the stored values makes a
-  known business unmatchable and creates a third record rather than merging two. This was verified
-  before shipping the digits change.
+- **Fingerprint computation is left alone.** Identity is looked up by exact fingerprint equality,
+  so changing how one is computed without rewriting every stored value makes a known business
+  unmatchable and creates a third record rather than merging two, as was found before shipping the
+  digits change. Resolving by route removes the need to touch it: an inconsistent fingerprint no
+  longer forks a business, because the routes are consulted before a record is created.
 
 ## What it does to the real workspace
 
@@ -82,6 +84,19 @@ merging exactly three pairs and nothing else:
 
 Those three are precisely the duplicates that reached the queue, so the rule removes all of the
 duplication a reader would see, and no two businesses are joined without a route they share.
+
+## As implemented
+
+Each contact route and website presence stores the key it is matched by, in a `match_key` column
+with an index, written from one tested domain function so the stored value cannot drift from the
+computed one. Resolution tries the fingerprint first, which is unchanged, then the routes.
+
+Applied to the workspace the three runs had produced, the backfill wrote 48 contact routes and 21
+website presences, and the merge absorbed exactly the three records the ADR predicted, leaving 17
+canonical records and no two businesses sharing a route. One existing test had to change with it:
+two fixtures differing only in telephone but sharing one website were asserted to be two
+businesses, which is the assumption this ADR overturns. Its intent survives as a case where the
+neighbours share neither a telephone nor a site.
 
 ## What it deliberately does not do
 
